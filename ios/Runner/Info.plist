@@ -2,6 +2,16 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>RESCATE360 usa tu ubicación para mostrarte el mapa de emergencia y ubicar tus reportes y solicitudes de ayuda.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>RESCATE360 usa la cámara para adjuntar fotos como evidencia de un incidente.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>RESCATE360 accede a tus fotos para adjuntarlas como evidencia de un incidente.</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>tel</string>
+	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
