@@ -21,7 +21,7 @@ export default function Funciones() {
 
         <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {funciones.map((f) => (
-            <div key={f.titulo} className="rounded-2xl border border-surface-border bg-surface p-6 transition hover:border-primary/60">
+            <div key={f.titulo} className="rounded-2xl border border-surface-border bg-surface p-6 transition-all duration-300 hover:-translate-y-1 hover:border-primary/60 hover:shadow-lg hover:shadow-primary/5">
               <div className="text-3xl">{f.icono}</div>
               <h3 className="mt-4 text-lg font-bold">{f.titulo}</h3>
               <p className="mt-2 text-sm text-ink-soft">{f.texto}</p>

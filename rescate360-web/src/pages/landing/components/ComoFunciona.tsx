@@ -32,7 +32,7 @@ export default function ComoFunciona() {
           {pasos.map((paso) => (
             <div
               key={paso.numero}
-              className="rounded-2xl border border-surface-border bg-surface p-6"
+              className="rounded-2xl border border-surface-border bg-surface p-6 transition-all duration-300 hover:-translate-y-1 hover:border-primary/60"
             >
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-lg font-bold">
                 {paso.numero}
