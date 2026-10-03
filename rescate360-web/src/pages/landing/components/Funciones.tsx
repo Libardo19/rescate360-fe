@@ -1,30 +1,32 @@
+import { TriangleAlert, HandHelping, Map, Bell, BookOpen, ShieldCheck } from 'lucide-react'
+
 const funciones = [
-  { icono: '🚨', titulo: 'Reportar incidentes', texto: 'Accidentes, incendios, inundaciones y más, con ubicación y evidencias.' },
-  { icono: '🆘', titulo: 'Solicitar ayuda', texto: 'Pide asistencia médica, alimentaria, refugio o rescate.' },
-  { icono: '🗺️', titulo: 'Mapa en tiempo real', texto: 'Incidentes, alertas y centros de ayuda cerca de ti.' },
-  { icono: '🔔', titulo: 'Alertas de tu zona', texto: 'Entérate de lo que ocurre en tu comunidad al momento.' },
-  { icono: '🏥', titulo: 'Centros de ayuda', texto: 'Refugios, centros de salud y puntos de acopio por cercanía.' },
-  { icono: '🔎', titulo: 'Personas desaparecidas', texto: 'Consulta y colabora en la búsqueda de personas.' },
-  { icono: '📖', titulo: 'Guía de emergencia', texto: 'Qué hacer ante sismos, inundaciones, incendios y primeros auxilios.' },
-  { icono: '❤️', titulo: 'Donaciones', texto: 'Apoya a las personas afectadas por emergencias.' },
-  { icono: '📍', titulo: 'Botón SOS', texto: 'Comparte tu ubicación con organismos y voluntarios cercanos.' },
+  { icono: TriangleAlert, color: 'bg-red-500', titulo: 'Reporta incidentes', texto: 'Informa emergencias de forma rápida y sencilla.' },
+  { icono: HandHelping, color: 'bg-blue-500', titulo: 'Solicita ayuda', texto: 'Conecta con los organismos de respuesta y la comunidad.' },
+  { icono: Map, color: 'bg-green-600', titulo: 'Encuentra lo cercano', texto: 'Ubica centros de ayuda, hospitales y más.' },
+  { icono: Bell, color: 'bg-amber-500', titulo: 'Recibe alertas', texto: 'Mantente al día con la información oficial.' },
+  { icono: BookOpen, color: 'bg-violet-500', titulo: 'Guías de emergencia', texto: 'Infórmate y prepárate ante cualquier situación.' },
+  { icono: ShieldCheck, color: 'bg-teal-500', titulo: 'Funciona sin internet', texto: 'Reporta y consulta incluso sin conexión.' },
 ]
 
 export default function Funciones() {
   return (
-    <section id="funciones" className="scroll-mt-20 border-t border-surface-border">
-      <div className="mx-auto max-w-6xl px-6 py-24">
-        <h2 className="text-center text-3xl font-extrabold sm:text-4xl">Todo lo que necesitas en una emergencia</h2>
-        <p className="mx-auto mt-3 max-w-2xl text-center text-ink-soft">
-          Herramientas pensadas para actuar rápido y mantener a tu comunidad informada.
-        </p>
+    <section id="funciones" className="scroll-mt-20 bg-white text-slate-900">
+      <div className="mx-auto max-w-6xl px-6 py-20">
+        <div className="mx-auto h-1 w-10 rounded bg-brand" />
+        <h2 className="mt-4 text-center text-3xl font-extrabold text-navy-900">
+          ¿Qué puedes hacer con RESCATE360?
+        </h2>
+        <p className="mt-2 text-center text-slate-500">Todo lo que necesitas en un solo lugar.</p>
 
-        <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {funciones.map((f) => (
-            <div key={f.titulo} className="rounded-2xl border border-surface-border bg-surface p-6 transition-all duration-300 hover:-translate-y-1 hover:border-primary/60 hover:shadow-lg hover:shadow-primary/5">
-              <div className="text-3xl">{f.icono}</div>
-              <h3 className="mt-4 text-lg font-bold">{f.titulo}</h3>
-              <p className="mt-2 text-sm text-ink-soft">{f.texto}</p>
+        <div className="mt-14 grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-3 lg:grid-cols-6">
+          {funciones.map(({ icono: Icono, color, titulo, texto }) => (
+            <div key={titulo} className="flex flex-col items-center text-center">
+              <div className={`flex h-16 w-16 items-center justify-center rounded-full text-white ${color}`}>
+                <Icono size={28} />
+              </div>
+              <h3 className="mt-4 font-bold text-navy-900">{titulo}</h3>
+              <p className="mt-1 text-sm text-slate-500">{texto}</p>
             </div>
           ))}
         </div>
