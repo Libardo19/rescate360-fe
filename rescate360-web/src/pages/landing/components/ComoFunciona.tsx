@@ -1,44 +1,44 @@
+import { ArrowRight, ClipboardList, MapPin, Users } from 'lucide-react'
+import bomberos from '../../../assets/bomberos.png'
+
 const pasos = [
-  {
-    numero: '1',
-    titulo: 'Reporta o solicita ayuda',
-    texto:
-      'Describe lo que ocurre, comparte tu ubicación y adjunta fotos o videos desde la app.',
-  },
-  {
-    numero: '2',
-    titulo: 'Se prioriza y se verifica',
-    texto:
-      'La IA propone una prioridad y la organización verifica el reporte. La decisión del administrador siempre prevalece.',
-  },
-  {
-    numero: '3',
-    titulo: 'Se atiende y se hace seguimiento',
-    texto:
-      'Los voluntarios de la organización acuden, actualizan el estado y mantienen informada a la comunidad.',
-  },
+  { numero: '01', titulo: 'Reporta', texto: 'Comparte lo que ves y la ubicación.', icono: ClipboardList },
+  { numero: '02', titulo: 'Ubicación', texto: 'El sistema identifica la zona y otros detalles.', icono: MapPin },
+  { numero: '03', titulo: 'Ayuda', texto: 'Los organismos y la comunidad actúan de inmediato.', icono: Users },
 ]
 
 export default function ComoFunciona() {
   return (
-    <section id="como-funciona" className="scroll-mt-20 border-t border-surface-border bg-surface/40">
-      <div className="mx-auto max-w-6xl px-6 py-24">
-        <h2 className="text-center text-3xl font-extrabold sm:text-4xl">¿Cómo funciona?</h2>
-        <p className="mx-auto mt-3 max-w-2xl text-center text-ink-soft">
-          De la alerta a la atención, en tres pasos.
-        </p>
-
-        <div className="mt-14 grid gap-6 md:grid-cols-3">
-          {pasos.map((paso) => (
-            <div
-              key={paso.numero}
-              className="rounded-2xl border border-surface-border bg-surface p-6 transition-all duration-300 hover:-translate-y-1 hover:border-primary/60"
-            >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-lg font-bold">
-                {paso.numero}
+    <section id="como-funciona" className="relative scroll-mt-20 overflow-hidden text-white">
+      <img
+        src={bomberos}
+        alt=""
+        loading="lazy"
+        className="absolute inset-0 h-full w-full object-cover object-[center_58%]"
+      />
+      <div className="absolute inset-0 bg-navy-950/85" />
+      <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-6 py-10 md:grid-cols-[0.72fr_1.5fr] md:py-12">
+        <div>
+          <span className="mb-3 block h-1 w-9 rounded bg-brand" />
+          <h2 className="text-2xl font-extrabold sm:text-3xl">¿Cómo funciona?</h2>
+          <p className="mt-2 max-w-xs text-xs leading-relaxed text-white/75">
+            Es muy fácil. En pocos pasos puedes hacer la diferencia.
+          </p>
+        </div>
+        <div className="grid gap-5 sm:grid-cols-3 sm:gap-3">
+          {pasos.map(({ numero, titulo, texto, icono: Icono }, index) => (
+            <div className="landing-reveal relative flex gap-3 sm:flex-col" key={numero} style={{ animationDelay: `${index * 120}ms` }}>
+              <div className="flex shrink-0 flex-col items-center gap-2 sm:flex-row">
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-brand shadow-lg shadow-brand/20 transition duration-300 hover:scale-110">
+                  <Icono size={19} />
+                </span>
+                <span className="text-xs font-bold text-white/70">{numero}</span>
+                {index < pasos.length - 1 && <ArrowRight size={16} className="ml-3 hidden text-white/70 sm:block" />}
               </div>
-              <h3 className="mt-5 text-lg font-bold">{paso.titulo}</h3>
-              <p className="mt-2 text-sm text-ink-soft">{paso.texto}</p>
+              <div>
+                <h3 className="text-sm font-bold">{titulo}</h3>
+                <p className="mt-1 max-w-48 text-xs leading-relaxed text-white/80">{texto}</p>
+              </div>
             </div>
           ))}
         </div>

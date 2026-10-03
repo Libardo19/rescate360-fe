@@ -12,21 +12,25 @@ const funciones = [
 export default function Funciones() {
   return (
     <section id="funciones" className="scroll-mt-20 bg-white text-slate-900">
-      <div className="mx-auto max-w-6xl px-6 py-20">
+      <div className="mx-auto max-w-6xl px-6 py-12 sm:py-14">
         <div className="mx-auto h-1 w-10 rounded bg-brand" />
         <h2 className="mt-4 text-center text-3xl font-extrabold text-navy-900">
           ¿Qué puedes hacer con RESCATE360?
         </h2>
-        <p className="mt-2 text-center text-slate-500">Todo lo que necesitas en un solo lugar.</p>
+        <p className="mt-2 text-center text-sm text-slate-500">Todo lo que necesitas en un solo lugar.</p>
 
-        <div className="mt-14 grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-3 lg:grid-cols-6">
-          {funciones.map(({ icono: Icono, color, titulo, texto }) => (
-            <div key={titulo} className="flex flex-col items-center text-center">
-              <div className={`flex h-16 w-16 items-center justify-center rounded-full text-white ${color}`}>
-                <Icono size={28} />
+        <div className="mt-9 grid grid-cols-2 gap-y-8 md:grid-cols-6">
+          {funciones.map(({ icono: Icono, color, titulo, texto }, index) => (
+            <div
+              key={titulo}
+              className={`landing-reveal flex flex-col items-center px-3 text-center ${index % 6 !== 5 ? 'md:border-r md:border-slate-200' : ''}`}
+              style={{ animationDelay: `${index * 90}ms` }}
+            >
+              <div className={`flex h-12 w-12 items-center justify-center rounded-full text-white shadow-sm transition duration-300 hover:scale-110 sm:h-14 sm:w-14 ${color}`}>
+                <Icono size={23} />
               </div>
-              <h3 className="mt-4 font-bold text-navy-900">{titulo}</h3>
-              <p className="mt-1 text-sm text-slate-500">{texto}</p>
+              <h3 className="mt-3 text-xs font-bold text-navy-900 sm:text-sm">{titulo}</h3>
+              <p className="mt-1 text-xs leading-relaxed text-slate-600">{texto}</p>
             </div>
           ))}
         </div>
