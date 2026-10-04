@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../features/auth/presentation/views/bienvenida_screen.dart';
 import '../features/auth/presentation/views/login_screen.dart';
 import '../features/auth/presentation/views/registro_screen.dart';
-import '../features/home/presentation/views/home_screen.dart';
+import '../features/home/presentation/views/principal_screen.dart';
 
 /// Rutas nombradas de la app.
 /// Navegación inicial (según lo pedido):
@@ -25,10 +25,14 @@ class AppRouter {
       case registro:
         return _build(const RegistroScreen(), settings);
       case home:
-        return _build(const HomeScreen(), settings);
+        return _build(const PrincipalScreen(), settings);
       default:
         return _build(
-          Scaffold(body: Center(child: Text('Ruta no encontrada: ${settings.name}'))),
+          Scaffold(
+            body: Center(
+              child: Text('Ruta no encontrada: ${settings.name}'),
+            ),
+          ),
           settings,
         );
     }

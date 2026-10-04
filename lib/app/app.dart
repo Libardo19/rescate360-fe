@@ -11,9 +11,8 @@ class RescateApp extends StatelessWidget {
     return MaterialApp(
       title: 'RESCATE360',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark,
-      darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.dark,
+      theme: AppTheme.claro,
+      themeMode: ThemeMode.light,
       initialRoute: AppRouter.inicial,
       onGenerateRoute: AppRouter.onGenerateRoute,
     );
