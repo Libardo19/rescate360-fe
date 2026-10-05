@@ -1,6 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { login } from '../../services/auth.service'
+import { useAuth } from '../../context/AuthContext'
 import fondoLogin from '../../assets/fondoLogin.png'
 
 export default function LoginPage() {
@@ -10,18 +13,39 @@ export default function LoginPage() {
   const [recordarme, setRecordarme] = useState(true)
   const [mensaje, setMensaje] = useState('')
   const [esError, setEsError] = useState(false)
+  const [cargando, setCargando] = useState(false)
+  const navigate = useNavigate()
+  const { iniciarSesion } = useAuth()
 
-  const enviar = (e: FormEvent) => {
+  const enviar = async (e: FormEvent) => {
     e.preventDefault()
     setMensaje('')
     setEsError(false)
-    if (!email.trim() || !password) {
+
+    if (!email || !password) {
       setEsError(true)
       setMensaje('Ingresa tu correo y tu contraseña.')
       return
     }
 
-    setMensaje('El acceso web aún no está conectado al servicio de autenticación. No se inició sesión.')
+    setCargando(true)
+
+    try {
+      const { token, usuario } = await login({ email, password })
+      iniciarSesion(token, usuario)
+
+      if (usuario.rol === 'administrador') navigate('/admin')
+      else if (usuario.rol === 'super_admin') navigate('/superadmin')
+      else {
+        setEsError(true)
+        setMensaje('Tu cuenta es para la app móvil. Descarga la app de RESCATE360.')
+      }
+    } catch {
+      setEsError(true)
+      setMensaje('Correo o contraseña incorrectos.')
+    } finally {
+      setCargando(false)
+    }
   }
 
   const recuperarClave = () => {
