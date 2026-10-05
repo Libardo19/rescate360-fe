@@ -21,6 +21,10 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  void _ir(BuildContext context, String ruta) {
+    Navigator.of(context).pushNamed(ruta);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -28,7 +32,7 @@ class HomeScreen extends StatelessWidget {
         _Encabezado(
           nombreUsuario: nombreUsuario,
           onBuscar: () => _proximamente(context),
-          onNotificaciones: () => _proximamente(context),
+          onNotificaciones: () => _ir(context, '/alertas'),
         ),
         Expanded(
           child: SingleChildScrollView(
@@ -42,25 +46,25 @@ class HomeScreen extends StatelessWidget {
                       icono: Icons.add_circle_outline,
                       etiqueta: 'Reportar incidente',
                       color: AppColors.danger,
-                      onTap: () => _proximamente(context),
+                      onTap: () => _ir(context, '/reportar-incidente'),
                     ),
                     _AccionRapida(
                       icono: Icons.person_search_outlined,
                       etiqueta: 'Personas desaparecidas',
                       color: AppColors.info,
-                      onTap: () => _proximamente(context),
+                      onTap: () => _ir(context, '/personas-desaparecidas'),
                     ),
                     _AccionRapida(
                       icono: Icons.volunteer_activism_outlined,
                       etiqueta: 'Solicitar ayuda',
                       color: AppColors.warning,
-                      onTap: () => _proximamente(context),
+                      onTap: () => _ir(context, '/solicitar-ayuda'),
                     ),
                     _AccionRapida(
                       icono: Icons.notifications_active_outlined,
                       etiqueta: 'Ver alertas',
                       color: AppColors.success,
-                      onTap: () => _proximamente(context),
+                      onTap: () => _ir(context, '/alertas'),
                     ),
                   ],
                 ),
@@ -69,7 +73,10 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 const _VistaPreviaMapa(),
                 const SizedBox(height: 18),
-                _TarjetaInformativa(alertasActivas: alertasActivas),
+                _TarjetaInformativa(
+                  alertasActivas: alertasActivas,
+                  onTap: () => _ir(context, '/alertas'),
+                ),
               ],
             ),
           ),
@@ -270,7 +277,12 @@ class _VistaPreviaMapa extends StatelessWidget {
 
 class _TarjetaInformativa extends StatelessWidget {
   final int alertasActivas;
-  const _TarjetaInformativa({required this.alertasActivas});
+  final VoidCallback onTap;
+
+  const _TarjetaInformativa({
+    required this.alertasActivas,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -280,37 +292,42 @@ class _TarjetaInformativa extends StatelessWidget {
             ? 'Hay 1 alerta activa en tu zona'
             : 'Hay $alertasActivas alertas activas en tu zona';
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.surfaceBorder),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.danger.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(12),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.surfaceBorder),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.danger.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.campaign_outlined,
+                  color: AppColors.danger, size: 22),
             ),
-            child: const Icon(Icons.campaign_outlined,
-                color: AppColors.danger, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Mantente informado', style: AppTextStyles.body),
-                const SizedBox(height: 2),
-                Text(texto, style: AppTextStyles.bodySecondary),
-              ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Mantente informado', style: AppTextStyles.body),
+                  const SizedBox(height: 2),
+                  Text(texto, style: AppTextStyles.bodySecondary),
+                ],
+              ),
             ),
-          ),
-        ],
+            const Icon(Icons.chevron_right, color: AppColors.textMuted),
+          ],
+        ),
       ),
     );
   }
