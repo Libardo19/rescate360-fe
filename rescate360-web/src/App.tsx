@@ -10,6 +10,7 @@ import SuperAdminDashboard from './pages/superadmin/SuperAdminDashboard'
 import PaginaEnConstruccion from './pages/shared/PaginaEnConstruccion'
 import ReportesPage from './pages/admin/ReportesPage'
 import SolicitudesPage from './pages/admin/SolicitudesPage'
+import MapaPage from './pages/admin/MapaPage'
 
 export default function App() {
   return (
@@ -30,7 +31,7 @@ export default function App() {
             <Route index element={<AdminDashboard />} />
             <Route path="reportes" element={<ReportesPage />} />
             <Route path="solicitudes" element={<SolicitudesPage />} />
-            <Route path="mapa" element={<PaginaEnConstruccion titulo="Mapa operativo" />} />
+            <Route path="mapa" element={<MapaPage />} />
             <Route path="alertas" element={<PaginaEnConstruccion titulo="Alertas" />} />
             <Route path="centros" element={<PaginaEnConstruccion titulo="Centros de ayuda" />} />
             <Route path="zonas" element={<PaginaEnConstruccion titulo="Zonas peligrosas" />} />
