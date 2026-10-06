@@ -225,6 +225,29 @@ a:focus-visible {
   }
 }
 
+.showcase-phone-report,
+.showcase-phone-map,
+.showcase-phone-alerts {
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.showcase-phone-report img,
+.showcase-phone-map img,
+.showcase-phone-alerts img {
+  height: auto;
+  object-fit: contain;
+}
+
+.showcase-phone-report:hover,
+.showcase-phone-map:hover,
+.showcase-phone-alerts:hover {
+  box-shadow: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .landing-reveal {
     animation: none;
@@ -2324,5 +2347,3 @@ a:focus-visible {
     animation: none !important;
   }
 }
-
-

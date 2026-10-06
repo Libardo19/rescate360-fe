@@ -61,7 +61,7 @@ export default function LoginPage() {
       <div className="absolute inset-0 -z-10 bg-gradient-to-r from-white/25 via-white/10 to-navy-950/35" />
       <div className="login-content-enter mx-auto grid w-full max-w-4xl items-center gap-5 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(400px,440px)] lg:gap-8">
         <section className="flex flex-col items-center text-center">
-          <img src="/logo.svg" alt="" className="h-20 w-auto drop-shadow-sm sm:h-24" />
+          <img src="/logoRescate.png" alt="" className="h-20 w-auto drop-shadow-sm sm:h-24" />
           <h2 className="mt-3 text-3xl font-extrabold tracking-wide text-navy-900 sm:text-4xl">
             RESCATE<span className="text-brand">360</span>
           </h2>
