@@ -3,7 +3,14 @@ import '../features/alertas/presentation/views/alertas_screen.dart';
 import '../features/auth/presentation/views/bienvenida_screen.dart';
 import '../features/auth/presentation/views/login_screen.dart';
 import '../features/auth/presentation/views/registro_screen.dart';
+import '../features/centros_ayuda/presentation/views/centros_ayuda_screen.dart';
+import '../features/donaciones/presentation/views/donaciones_screen.dart';
+import '../features/guia_emergencia/presentation/views/guia_emergencia_screen.dart';
 import '../features/home/presentation/views/principal_screen.dart';
+import '../features/home/presentation/views/sos_screen.dart';
+import '../features/perfil/presentation/views/configuracion_screen.dart';
+import '../features/perfil/presentation/views/contactos_emergencia_screen.dart';
+import '../features/perfil/presentation/views/notificaciones_screen.dart';
 import '../features/personas_desaparecidas/presentation/views/personas_desaparecidas_screen.dart';
 import '../features/reportes/presentation/views/reportar_incidente_screen.dart';
 import '../features/solicitudes_ayuda/presentation/views/solicitar_ayuda_screen.dart';
@@ -23,6 +30,13 @@ class AppRouter {
   static const personasDesaparecidas = '/personas-desaparecidas';
   static const solicitarAyuda = '/solicitar-ayuda';
   static const alertas = '/alertas';
+  static const sos = '/sos';
+  static const contactosEmergencia = '/contactos-emergencia';
+  static const configuracion = '/configuracion';
+  static const notificaciones = '/notificaciones';
+  static const guiaEmergencia = '/guia-emergencia';
+  static const donaciones = '/donaciones';
+  static const centrosAyuda = '/centros-ayuda';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -42,6 +56,20 @@ class AppRouter {
         return _build(const SolicitarAyudaScreen(), settings);
       case alertas:
         return _build(const AlertasScreen(), settings);
+      case sos:
+        return _build(const SosScreen(), settings);
+      case contactosEmergencia:
+        return _build(const ContactosEmergenciaScreen(), settings);
+      case configuracion:
+        return _build(const ConfiguracionScreen(), settings);
+      case notificaciones:
+        return _build(const NotificacionesScreen(), settings);
+      case guiaEmergencia:
+        return _build(const GuiaEmergenciaScreen(), settings);
+      case donaciones:
+        return _build(const DonacionesScreen(), settings);
+      case centrosAyuda:
+        return _build(const CentrosAyudaScreen(), settings);
       default:
         return _build(
           Scaffold(

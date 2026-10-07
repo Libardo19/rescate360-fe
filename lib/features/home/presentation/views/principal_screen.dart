@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../mapa/presentation/views/mapa_emergencia_screen.dart';
+import '../../../perfil/presentation/views/mas_screen.dart';
 import 'home_screen.dart';
 
 /// Contenedor principal del ciudadano: barra de navegación inferior con
@@ -15,27 +17,45 @@ class PrincipalScreen extends StatefulWidget {
 class _PrincipalScreenState extends State<PrincipalScreen> {
   int _indice = 0;
 
-  // Mapa, Reportes y Más se reemplazan por sus vistas reales conforme
-  // se vayan construyendo.
-  final List<Widget> _paginas = const [
-    HomeScreen(),
-    _PaginaPendiente(titulo: 'Mapa'),
-    _PaginaPendiente(titulo: 'Reportes'),
-    _PaginaPendiente(titulo: 'Más'),
-  ];
+  // Las pestañas se construyen la primera vez que se visitan.
+  final Set<int> _visitadas = {0};
+
+  Widget _construirPagina(int i) {
+    switch (i) {
+      case 0:
+        return const HomeScreen();
+      case 1:
+        return const MapaEmergenciaScreen();
+      case 2:
+        return const _PaginaPendiente(titulo: 'Reportes');
+      default:
+        return const MasScreen();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: IndexedStack(index: _indice, children: _paginas),
+      body: IndexedStack(
+        index: _indice,
+        children: List.generate(
+          4,
+          (i) => _visitadas.contains(i)
+              ? _construirPagina(i)
+              : const SizedBox.shrink(),
+        ),
+      ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           border: Border(top: BorderSide(color: AppColors.surfaceBorder)),
         ),
         child: BottomNavigationBar(
           currentIndex: _indice,
-          onTap: (i) => setState(() => _indice = i),
+          onTap: (i) => setState(() {
+            _indice = i;
+            _visitadas.add(i);
+          }),
           type: BottomNavigationBarType.fixed,
           backgroundColor: AppColors.surface,
           selectedItemColor: AppColors.primary,
