@@ -1,72 +1,82 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
-import '../../../../shared/widgets/etiqueta_estado.dart';
 import '../../../../shared/widgets/pestanas_segmentadas.dart';
+import '../../data/models/persona_desaparecida.dart';
+import '../viewmodels/personas_desaparecidas_viewmodel.dart';
+import '../widgets/persona_card.dart';
+import 'detalle_persona_screen.dart';
+import 'registrar_persona_screen.dart';
 
-enum EstadoPersona { urgente, enInvestigacion, encontrada }
-
-class PersonaDesaparecida {
-  final String nombre;
-  final int edad;
-  final String sexo;
-  final String fechaVista;
-  final String lugar;
-  final EstadoPersona estado;
-
-  const PersonaDesaparecida({
-    required this.nombre,
-    required this.edad,
-    required this.sexo,
-    required this.fechaVista,
-    required this.lugar,
-    required this.estado,
-  });
-}
-
-// Datos de ejemplo hasta conectar la API.
-const List<PersonaDesaparecida> _personasEjemplo = [
-  PersonaDesaparecida(
-    nombre: 'María Fernanda López',
-    edad: 15,
-    sexo: 'Mujer',
-    fechaVista: '12/04/2025',
-    lugar: 'Barrio El Prado',
-    estado: EstadoPersona.urgente,
-  ),
-  PersonaDesaparecida(
-    nombre: 'Carlos Andrés Rojas',
-    edad: 32,
-    sexo: 'Hombre',
-    fechaVista: '10/04/2025',
-    lugar: 'Vereda La Esperanza',
-    estado: EstadoPersona.enInvestigacion,
-  ),
-  PersonaDesaparecida(
-    nombre: 'Lucía Herrera',
-    edad: 8,
-    sexo: 'Mujer',
-    fechaVista: '08/04/2025',
-    lugar: 'Centro',
-    estado: EstadoPersona.encontrada,
-  ),
-];
-
-class PersonasDesaparecidasScreen extends StatefulWidget {
+class PersonasDesaparecidasScreen extends ConsumerStatefulWidget {
   const PersonasDesaparecidasScreen({super.key});
 
   @override
-  State<PersonasDesaparecidasScreen> createState() =>
+  ConsumerState<PersonasDesaparecidasScreen> createState() =>
       _PersonasDesaparecidasScreenState();
 }
 
 class _PersonasDesaparecidasScreenState
-    extends State<PersonasDesaparecidasScreen> {
+    extends ConsumerState<PersonasDesaparecidasScreen> {
+  final _scroll = ScrollController();
   int _pestana = 0;
+  bool _extendido = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(_alDesplazar);
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  // El botón se encoge al bajar la lista y se expande al subir.
+  void _alDesplazar() {
+    if (!_scroll.hasClients) return;
+    final direccion = _scroll.position.userScrollDirection;
+    if (direccion == ScrollDirection.reverse && _extendido) {
+      setState(() => _extendido = false);
+    } else if (direccion == ScrollDirection.forward && !_extendido) {
+      setState(() => _extendido = true);
+    }
+  }
+
+  Future<void> _registrar() async {
+    final publicado = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => const RegistrarPersonaScreen()),
+    );
+    if (publicado == true && mounted) {
+      setState(() {
+        _pestana = 0;
+        _extendido = true;
+      });
+      if (_scroll.hasClients) _scroll.jumpTo(0);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Reporte publicado. Quedó en revisión.'),
+        ),
+      );
+    }
+  }
+
+  void _abrirDetalle(PersonaDesaparecida persona) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => DetallePersonaScreen(persona: persona),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final lista = _personasEjemplo.where((p) {
+    final personas = ref.watch(personasViewModelProvider);
+    final lista = personas.where((p) {
       final encontrada = p.estado == EstadoPersona.encontrada;
       return _pestana == 0 ? !encontrada : encontrada;
     }).toList();
@@ -76,6 +86,18 @@ class _PersonasDesaparecidasScreenState
       appBar: AppBar(
         title: const Text('Personas desaparecidas', style: AppTextStyles.h2),
         centerTitle: false,
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _registrar,
+        isExtended: _extendido,
+        backgroundColor: AppColors.accent,
+        foregroundColor: Colors.white,
+        elevation: 4,
+        icon: const Icon(Icons.person_add_alt_1),
+        label: const Text(
+          'Reportar persona',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
       ),
       body: SafeArea(
         child: Column(
@@ -90,102 +112,28 @@ class _PersonasDesaparecidasScreenState
             ),
             Expanded(
               child: lista.isEmpty
-                  ? const Center(
-                      child: Text('No hay registros en esta sección',
-                          style: AppTextStyles.bodySecondary),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-                      itemCount: lista.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (_, i) => _TarjetaPersona(persona: lista[i]),
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TarjetaPersona extends StatelessWidget {
-  final PersonaDesaparecida persona;
-  const _TarjetaPersona({required this.persona});
-
-  String get _iniciales {
-    final partes = persona.nombre.trim().split(' ');
-    final primera = partes.first.isNotEmpty ? partes.first[0] : '';
-    final segunda = partes.length > 1 ? partes[1][0] : '';
-    return (primera + segunda).toUpperCase();
-  }
-
-  (String, Color) get _estado {
-    switch (persona.estado) {
-      case EstadoPersona.urgente:
-        return ('URGENTE', AppColors.danger);
-      case EstadoPersona.enInvestigacion:
-        return ('En investigación', AppColors.warning);
-      case EstadoPersona.encontrada:
-        return ('Encontrada', AppColors.success);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final (textoEstado, colorEstado) = _estado;
-
-    return InkWell(
-      onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Próximamente')),
-      ),
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.surfaceBorder),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CircleAvatar(
-              radius: 28,
-              backgroundColor: AppColors.surface,
-              child: Text(_iniciales, style: AppTextStyles.h2),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32),
                         child: Text(
-                          persona.nombre,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
+                          _pestana == 0
+                              ? 'No hay personas en búsqueda por ahora'
+                              : 'Aún no hay personas encontradas',
+                          textAlign: TextAlign.center,
+                          style: AppTextStyles.bodySecondary,
                         ),
                       ),
-                      const SizedBox(width: 6),
-                      EtiquetaEstado(texto: textoEstado, color: colorEstado),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text('${persona.edad} años · ${persona.sexo}',
-                      style: AppTextStyles.bodySecondary),
-                  const SizedBox(height: 2),
-                  Text('Vista por última vez: ${persona.fechaVista}',
-                      style: AppTextStyles.caption),
-                  Text(persona.lugar, style: AppTextStyles.caption),
-                ],
-              ),
+                    )
+                  : ListView.separated(
+                      controller: _scroll,
+                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 96),
+                      itemCount: lista.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (_, i) => PersonaCard(
+                        persona: lista[i],
+                        onTap: () => _abrirDetalle(lista[i]),
+                      ),
+                    ),
             ),
           ],
         ),

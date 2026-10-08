@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/utils/validators.dart';
@@ -16,6 +17,8 @@ class ReportarIncidenteScreen extends StatefulWidget {
 }
 
 class _ReportarIncidenteScreenState extends State<ReportarIncidenteScreen> {
+  static const int _maxAdjuntos = 4;
+
   static const List<OpcionTipo> _tipos = [
     OpcionTipo(
         id: 'accidente',
@@ -51,6 +54,9 @@ class _ReportarIncidenteScreenState extends State<ReportarIncidenteScreen> {
 
   final _formKey = GlobalKey<FormState>();
   final _descripcionCtrl = TextEditingController();
+  final _picker = ImagePicker();
+  final List<AdjuntoReporte> _adjuntos = [];
+
   String? _tipoSeleccionado;
   bool _ubicacionActual = false;
   bool _intentoEnviar = false;
@@ -62,6 +68,131 @@ class _ReportarIncidenteScreenState extends State<ReportarIncidenteScreen> {
     super.dispose();
   }
 
+  void _avisar(String mensaje) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensaje)),
+    );
+  }
+
+  // ------------------------------------------------------------ adjuntos
+  void _opcionesAdjuntar() {
+    if (_adjuntos.length >= _maxAdjuntos) {
+      _avisar('Puedes adjuntar máximo $_maxAdjuntos archivos.');
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.background,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined,
+                  color: AppColors.primary),
+              title: const Text('Tomar foto'),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _tomarFoto();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined,
+                  color: AppColors.primary),
+              title: const Text('Elegir fotos de la galería'),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _elegirFotos();
+              },
+            ),
+            ListTile(
+              leading:
+                  const Icon(Icons.videocam_outlined, color: AppColors.primary),
+              title: const Text('Grabar video (máx. 1 min)'),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _elegirVideo(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.video_library_outlined,
+                  color: AppColors.primary),
+              title: const Text('Elegir video de la galería'),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _elegirVideo(ImageSource.gallery);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _agregarFoto(XFile archivo) async {
+    final bytes = await archivo.readAsBytes();
+    if (!mounted) return;
+    setState(() {
+      _adjuntos.add(
+        AdjuntoReporte(archivo: archivo, esVideo: false, vistaPrevia: bytes),
+      );
+    });
+  }
+
+  Future<void> _tomarFoto() async {
+    try {
+      final archivo = await _picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 1280,
+        imageQuality: 85,
+      );
+      if (archivo != null) await _agregarFoto(archivo);
+    } catch (_) {
+      _avisar('No pudimos abrir la cámara.');
+    }
+  }
+
+  Future<void> _elegirFotos() async {
+    try {
+      final archivos = await _picker.pickMultiImage(
+        maxWidth: 1280,
+        imageQuality: 85,
+      );
+      for (final archivo in archivos) {
+        if (_adjuntos.length >= _maxAdjuntos) {
+          _avisar('Puedes adjuntar máximo $_maxAdjuntos archivos.');
+          break;
+        }
+        await _agregarFoto(archivo);
+      }
+    } catch (_) {
+      _avisar('No pudimos abrir la galería.');
+    }
+  }
+
+  Future<void> _elegirVideo(ImageSource fuente) async {
+    try {
+      final archivo = await _picker.pickVideo(
+        source: fuente,
+        maxDuration: const Duration(seconds: 60),
+      );
+      if (archivo == null || !mounted) return;
+      setState(() {
+        _adjuntos.add(AdjuntoReporte(archivo: archivo, esVideo: true));
+      });
+    } catch (_) {
+      _avisar('No pudimos abrir la cámara o la galería de videos.');
+    }
+  }
+
+  // ------------------------------------------------------------ envío
   String? _validarDescripcion(String? valor) {
     final req = Validators.requerido(valor, campo: 'La descripción');
     if (req != null) return req;
@@ -77,7 +208,8 @@ class _ReportarIncidenteScreenState extends State<ReportarIncidenteScreen> {
     if (!formOk || _tipoSeleccionado == null || !_ubicacionActual) return;
 
     setState(() => _enviando = true);
-    // TODO: enviar a la API (rescate360-be) desde el viewmodel de reportes.
+    // TODO: enviar a la API (rescate360-be) desde el viewmodel de reportes,
+    // incluyendo los archivos de _adjuntos.
     await Future.delayed(const Duration(milliseconds: 600));
     if (!mounted) return;
     setState(() => _enviando = false);
@@ -132,9 +264,10 @@ class _ReportarIncidenteScreenState extends State<ReportarIncidenteScreen> {
                 ),
                 const SizedBox(height: 20),
                 CampoAdjuntos(
-                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Próximamente')),
-                  ),
+                  adjuntos: _adjuntos,
+                  maximo: _maxAdjuntos,
+                  onAgregar: _opcionesAdjuntar,
+                  onQuitar: (i) => setState(() => _adjuntos.removeAt(i)),
                 ),
                 const SizedBox(height: 28),
                 PrimaryButton(
