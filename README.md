@@ -7,7 +7,7 @@ Plataforma de apoyo y coordinación comunitaria ante emergencias. Este repositor
 Universidad Popular del Cesar · Ingeniería de Software II
 Equipo: Libardo José Acosta García, Sergio Eli Saucedo, Oscar Javier Ávila Ovallos
 
-> **Estado:** solo estructura de carpetas y archivos vacíos. Todavía no hay código. Las carpetas `android/`, `ios/` y el `pubspec.yaml` se generan con `flutter create --org co.rescate360 --project-name rescate360 .` cuando arranque el desarrollo.
+> **Estado:** ambiente listo (dependencias, permisos Android/iOS, variables de entorno). Pantallas de bienvenida, login, registro e inicio en progreso.
 
 ---
 
@@ -19,11 +19,57 @@ Equipo: Libardo José Acosta García, Sergio Eli Saucedo, Oscar Javier Ávila Ov
 | Arquitectura | **MVVM** por feature (`data/` + `presentation/viewmodels` + `presentation/views`) |
 | Estado | `flutter_riverpod` |
 | HTTP | `dio` (REST/JSON) |
-| Almacenamiento local | `drift` o `sqflite` (cola offline y caché) + `flutter_secure_storage` (JWT) |
-| Mapa y ubicación | `google_maps_flutter` + `geolocator` |
-| Notificaciones | `firebase_messaging` |
-| Contingencia sin conexión | `connectivity_plus`, `workmanager`, `telephony` (SMS Android), `nearby_connections` |
-| Otros | `image_picker`, `intl` |
+| Almacenamiento local | `sqflite` (cola offline y caché) + `flutter_secure_storage` (JWT) |
+| Mapa y ubicación | `flutter_map` + OpenStreetMap + `geolocator` |
+| Notificaciones | `firebase_messaging` (semana 4) |
+| Contingencia sin conexión | `connectivity_plus`; `workmanager`, SMS y `nearby_connections` en la semana 7 |
+| Otros | `image_picker`, `url_launcher`, `intl`, `uuid` |
+
+## Ambiente de desarrollo
+
+> Guía paso a paso (backend + app) para montar el proyecto en tu PC: [AMBIENTACION.md](https://github.com/Libardo19/rescate360-be/blob/main/docs/AMBIENTACION.md).
+
+La app **no corre en Docker**: se ejecuta en un emulador o celular con el SDK de Flutter instalado en el PC. En Docker solo va el backend ([rescate360-be](https://github.com/Libardo19/rescate360-be)).
+
+Probado con **Flutter 3.44.9 / Dart 3.12.2** y Android SDK 36.
+
+```bash
+cp .env.example .env
+flutter pub get
+flutter run --dart-define-from-file=.env
+```
+
+- `.env` se lee en `lib/core/config/env.dart` (`API_BASE_URL`, `MAP_TILE_URL`, `EMERGENCY_LINE`). No guardar secretos ahí: todo lo que va en la app se puede extraer del APK.
+- **API local:** con el backend arriba (`docker compose up -d`), el emulador Android llega a tu PC por `http://10.0.2.2:8000`. En un celular físico usa la IP de tu PC en la red (ej. `http://192.168.1.10:8000`).
+- `http://` sin HTTPS solo está permitido en el build **debug** (`android/app/src/debug/AndroidManifest.xml`).
+- **Permisos ya declarados:** Internet, ubicación (Android y iOS), cámara y galería (iOS), y abrir el marcador para llamar al 123.
+
+### Mapa: `flutter_map` + OpenStreetMap
+
+- **Sin API key ni tarjeta de crédito** (Google Maps exige cuenta de facturación en Google Cloud).
+- Las teselas son configurables (`MAP_TILE_URL`), así que se puede cambiar de proveedor sin tocar código. También permite guardarlas en caché para usar el mapa **sin conexión**, algo importante en una emergencia.
+- Usa `latlong2` → `LatLng(lat, lng)`. **Ojo:** GeoJSON/PostGIS devuelven `[lng, lat]`, al revés. Convertir en `data/models`.
+- Los servidores públicos de OpenStreetMap son para desarrollo. Hay que configurar `userAgentPackageName` en el `TileLayer`, y en producción usar un proveedor (MapTiler, Stadia, etc.) o un servidor propio.
+
+### Dependencias (`pubspec.yaml`)
+
+| Paquete | Uso |
+|---|---|
+| `flutter_riverpod` 2.x | Estado (los viewmodels ya existentes usan la API 2.x; la 3.x queda para después) |
+| `dio` | HTTP hacia la API |
+| `flutter_map` + `latlong2` | Mapa de emergencia |
+| `geolocator` | GPS |
+| `flutter_secure_storage` | Token JWT |
+| `sqflite` | Cola offline y caché local |
+| `connectivity_plus` | Detectar si hay red |
+| `image_picker` | Fotos de evidencia |
+| `url_launcher` | Llamar al 123 y "Cómo llegar" |
+| `intl` | Fechas y formatos |
+| `uuid` | UUID generado en el dispositivo (deduplicación offline) |
+
+**Se agregan más adelante**, porque necesitan configuración previa:
+- `firebase_core` + `firebase_messaging` (semana 4): requieren crear el proyecto de Firebase y correr `flutterfire configure`.
+- `workmanager`, SMS y `nearby_connections` (semana 7). `nearby_connections` **solo funciona en Android**, y el paquete `telephony` está sin mantenimiento. Hay que evaluar alternativas cuando se llegue ahí.
 
 ## Estructura
 
