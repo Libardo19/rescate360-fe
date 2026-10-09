@@ -243,7 +243,7 @@ export default function ZonasPage() {
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-        <section id="zonas-map" className="min-w-0 scroll-mt-4 rounded-2xl border border-panel-border bg-panel-card p-5">
+        <section id="zonas-map" className="relative z-0 isolate min-w-0 scroll-mt-4 rounded-2xl border border-panel-border bg-panel-card p-5">
           <h2 className="font-bold">Mapa de zonas de riesgo</h2>
           <div className="mt-3 flex flex-wrap gap-3 text-xs text-panel-text-soft">
             {(Object.keys(niveles) as NivelRiesgo[]).map((n) => (

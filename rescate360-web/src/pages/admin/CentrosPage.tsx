@@ -344,7 +344,7 @@ export default function CentrosPage() {
           </div>
         </section>
 
-        <section id="centros-map" className="min-w-0 scroll-mt-4 rounded-2xl border border-panel-border bg-panel-card p-5">
+        <section id="centros-map" className="relative z-0 isolate min-w-0 scroll-mt-4 rounded-2xl border border-panel-border bg-panel-card p-5">
           <h2 className="font-bold">Ubicación en el mapa</h2>
           <div className="mt-4 overflow-hidden rounded-xl border border-panel-border">
             <MapContainer center={CENTRO_MAPA} zoom={13} scrollWheelZoom className="h-[420px] w-full">
