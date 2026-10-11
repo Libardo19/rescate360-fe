@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
@@ -7,50 +8,21 @@ import '../../../../shared/widgets/campo_texto.dart';
 import '../../../../shared/widgets/campos_reporte.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../../../shared/widgets/selector_tipo.dart';
+import '../../data/models/reporte_model.dart';
+import '../viewmodels/reportes_viewmodel.dart';
+import '../widgets/selector_tipo_incidente.dart';
 
-class ReportarIncidenteScreen extends StatefulWidget {
+class ReportarIncidenteScreen extends ConsumerStatefulWidget {
   const ReportarIncidenteScreen({super.key});
 
   @override
-  State<ReportarIncidenteScreen> createState() =>
+  ConsumerState<ReportarIncidenteScreen> createState() =>
       _ReportarIncidenteScreenState();
 }
 
-class _ReportarIncidenteScreenState extends State<ReportarIncidenteScreen> {
+class _ReportarIncidenteScreenState
+    extends ConsumerState<ReportarIncidenteScreen> {
   static const int _maxAdjuntos = 4;
-
-  static const List<OpcionTipo> _tipos = [
-    OpcionTipo(
-        id: 'accidente',
-        etiqueta: 'Accidente',
-        icono: Icons.directions_car_outlined,
-        color: AppColors.danger),
-    OpcionTipo(
-        id: 'robo',
-        etiqueta: 'Robo',
-        icono: Icons.shopping_bag_outlined,
-        color: AppColors.primary),
-    OpcionTipo(
-        id: 'inundacion',
-        etiqueta: 'Inundación',
-        icono: Icons.water_drop_outlined,
-        color: AppColors.info),
-    OpcionTipo(
-        id: 'deslizamiento',
-        etiqueta: 'Deslizamiento',
-        icono: Icons.terrain,
-        color: AppColors.warning),
-    OpcionTipo(
-        id: 'incendio',
-        etiqueta: 'Incendio',
-        icono: Icons.local_fire_department_outlined,
-        color: AppColors.danger),
-    OpcionTipo(
-        id: 'otro',
-        etiqueta: 'Otro',
-        icono: Icons.more_horiz,
-        color: AppColors.textSecondary),
-  ];
 
   final _formKey = GlobalKey<FormState>();
   final _descripcionCtrl = TextEditingController();
@@ -208,13 +180,36 @@ class _ReportarIncidenteScreenState extends State<ReportarIncidenteScreen> {
     if (!formOk || _tipoSeleccionado == null || !_ubicacionActual) return;
 
     setState(() => _enviando = true);
-    // TODO: enviar a la API (rescate360-be) desde el viewmodel de reportes,
-    // incluyendo los archivos de _adjuntos.
+
+    final fotos = _adjuntos
+        .where((a) => !a.esVideo && a.vistaPrevia != null)
+        .map((a) => a.vistaPrevia!)
+        .toList();
+    final videos = _adjuntos.where((a) => a.esVideo).length;
+
+    final reporte = ReporteCiudadano(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      tipo: _tipoSeleccionado!,
+      descripcion: _descripcionCtrl.text.trim(),
+      fecha: DateTime.now(),
+      // TODO: usar la dirección real cuando se conecte el GPS.
+      lugar: 'Mi ubicación actual',
+      esMio: true,
+      estado: EstadoReporteCiudadano.pendiente,
+      fotos: fotos,
+      videos: videos,
+    );
+
+    // TODO: enviar a la API (rescate360-be), incluyendo los archivos de
+    // _adjuntos.
     await Future.delayed(const Duration(milliseconds: 600));
     if (!mounted) return;
+    ref.read(reportesCiudadanoProvider.notifier).agregar(reporte);
     setState(() => _enviando = false);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Reporte enviado')),
+      const SnackBar(
+        content: Text('Reporte enviado. Míralo en la pestaña Reportes.'),
+      ),
     );
     Navigator.of(context).pop();
   }
@@ -238,7 +233,7 @@ class _ReportarIncidenteScreenState extends State<ReportarIncidenteScreen> {
                 const Text('Tipo de incidente', style: AppTextStyles.body),
                 const SizedBox(height: 10),
                 SelectorTipo(
-                  opciones: _tipos,
+                  opciones: tiposIncidente,
                   seleccionado: _tipoSeleccionado,
                   onSeleccionar: (id) => setState(() => _tipoSeleccionado = id),
                   errorText: (_intentoEnviar && _tipoSeleccionado == null)

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_text_styles.dart';
 import '../../../mapa/presentation/views/mapa_emergencia_screen.dart';
 import '../../../perfil/presentation/views/mas_screen.dart';
+import '../../../reportes/presentation/views/mis_reportes_screen.dart';
 import 'home_screen.dart';
 
 /// Contenedor principal del ciudadano: barra de navegación inferior con
@@ -27,7 +27,7 @@ class _PrincipalScreenState extends State<PrincipalScreen> {
       case 1:
         return const MapaEmergenciaScreen();
       case 2:
-        return const _PaginaPendiente(titulo: 'Reportes');
+        return const ReportesScreen();
       default:
         return const MasScreen();
     }
@@ -82,27 +82,6 @@ class _PrincipalScreenState extends State<PrincipalScreen> {
               icon: Icon(Icons.more_horiz),
               label: 'Más',
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PaginaPendiente extends StatelessWidget {
-  final String titulo;
-  const _PaginaPendiente({required this.titulo});
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(titulo, style: AppTextStyles.h1),
-            const SizedBox(height: 6),
-            const Text('Próximamente', style: AppTextStyles.bodySecondary),
           ],
         ),
       ),
