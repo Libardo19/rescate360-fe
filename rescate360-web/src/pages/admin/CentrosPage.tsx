@@ -76,6 +76,11 @@ export default function CentrosPage() {
   const [errorForm, setErrorForm] = useState('')
   const [guardando, setGuardando] = useState(false)
 
+  const enfocarCentroEnMapa = (centro: Centro) => {
+    setEnfocado(centro)
+    document.getElementById('centros-map')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   useEffect(() => {
     listarCentros()
       .then(setCentros)
@@ -288,7 +293,16 @@ export default function CentrosPage() {
                         </div>
                       </td>
                       <td className="px-5 py-3 text-panel-text-soft">{etiqueta}</td>
-                      <td className="hidden px-5 py-3 text-panel-text-soft md:table-cell">{c.ubicacion}</td>
+                      <td className="hidden px-5 py-3 text-panel-text-soft md:table-cell">
+                        <button
+                          type="button"
+                          onClick={() => enfocarCentroEnMapa(c)}
+                          aria-label={`Ver ${c.nombre} en el mapa`}
+                          className="text-left hover:text-panel-primary hover:underline"
+                        >
+                          {c.ubicacion}
+                        </button>
+                      </td>
                       <td className="px-5 py-3">
                         <span className={`rounded-full px-3 py-1 text-xs font-medium ${estados[c.estado].clase}`}>
                           {estados[c.estado].etiqueta}
@@ -297,7 +311,7 @@ export default function CentrosPage() {
                       <td className="px-5 py-3">
                         <div className="flex justify-end gap-1 text-panel-text-soft">
                           <button
-                            onClick={() => setEnfocado(c)}
+                            onClick={() => enfocarCentroEnMapa(c)}
                             title="Ver en el mapa"
                             aria-label="Ver en el mapa"
                             className="rounded p-2 hover:bg-panel-bg hover:text-panel-primary"
@@ -330,7 +344,7 @@ export default function CentrosPage() {
           </div>
         </section>
 
-        <section className="min-w-0 rounded-2xl border border-panel-border bg-panel-card p-5">
+        <section id="centros-map" className="min-w-0 scroll-mt-4 rounded-2xl border border-panel-border bg-panel-card p-5">
           <h2 className="font-bold">Ubicación en el mapa</h2>
           <div className="mt-4 overflow-hidden rounded-xl border border-panel-border">
             <MapContainer center={CENTRO_MAPA} zoom={13} scrollWheelZoom className="h-[420px] w-full">
