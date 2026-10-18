@@ -36,7 +36,7 @@ export default function PanelLayout({ menu, titulo }: Props) {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-navy-900 text-white transition-transform lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-navy-900 text-white transition-transform lg:sticky lg:top-0 lg:bottom-auto lg:h-dvh lg:self-start lg:translate-x-0 ${
           abierto ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -70,7 +70,7 @@ export default function PanelLayout({ menu, titulo }: Props) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center gap-4 border-b border-panel-border bg-panel-card px-4 py-3 sm:px-6">
+        <header className="sticky top-0 z-20 flex items-center gap-4 border-b border-panel-border bg-panel-card px-4 py-3 sm:px-6">
           <button className="lg:hidden" onClick={() => setAbierto(true)} aria-label="Abrir menú">
             <Menu size={22} />
           </button>
