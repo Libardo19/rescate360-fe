@@ -158,12 +158,12 @@ export default function AlertasPage() {
 
       {modalAbierto && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4 sm:p-6"
           onClick={() => setModalAbierto(false)}
         >
           <form
             onSubmit={publicar}
-            className="w-full max-w-lg rounded-2xl bg-panel-card p-6 shadow-2xl"
+            className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl bg-panel-card p-6 shadow-2xl sm:max-h-[calc(100dvh-3rem)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between">
