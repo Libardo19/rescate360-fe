@@ -159,8 +159,8 @@ export default function SolicitudesPage() {
         Mostrando {filtradas.length} de {solicitudes.length} solicitudes
       </p>
 
-      <div className="mt-2 overflow-x-auto rounded-2xl border border-panel-border bg-panel-card">
-        <table className="w-full text-left text-sm">
+      <div className="mt-2 max-w-full overflow-x-auto rounded-2xl border border-panel-border bg-panel-card">
+        <table className="w-full min-w-[850px] text-left text-sm">
           <thead className="text-xs uppercase text-panel-text-muted">
             <tr>
               <th className="px-5 py-3">Prioridad</th>

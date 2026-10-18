@@ -128,8 +128,8 @@ export default function ReportesPage() {
         Mostrando {filtrados.length} de {reportes.length} reportes
       </p>
 
-      <div className="mt-2 overflow-x-auto rounded-2xl border border-panel-border bg-panel-card">
-        <table className="w-full text-left text-sm">
+      <div className="mt-2 max-w-full overflow-x-auto rounded-2xl border border-panel-border bg-panel-card">
+        <table className="w-full min-w-[740px] text-left text-sm">
           <thead className="text-xs uppercase text-panel-text-muted">
             <tr>
               <th className="px-5 py-3">Tipo</th>
