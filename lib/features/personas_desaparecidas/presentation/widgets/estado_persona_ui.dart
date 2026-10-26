@@ -1,0 +1,32 @@
+import 'package:flutter/material.dart';
+import '../../../../app/theme/app_colors.dart';
+import '../../data/models/persona_desaparecida.dart';
+
+/// Texto y color de cada estado, para usarlos en la lista y en el detalle.
+extension EstadoPersonaUi on EstadoPersona {
+  String get etiqueta {
+    switch (this) {
+      case EstadoPersona.urgente:
+        return 'URGENTE';
+      case EstadoPersona.enInvestigacion:
+        return 'En investigación';
+      case EstadoPersona.enRevision:
+        return 'En revisión';
+      case EstadoPersona.encontrada:
+        return 'Encontrada';
+    }
+  }
+
+  Color get color {
+    switch (this) {
+      case EstadoPersona.urgente:
+        return AppColors.danger;
+      case EstadoPersona.enInvestigacion:
+        return AppColors.warning;
+      case EstadoPersona.enRevision:
+        return AppColors.info;
+      case EstadoPersona.encontrada:
+        return AppColors.success;
+    }
+  }
+}
