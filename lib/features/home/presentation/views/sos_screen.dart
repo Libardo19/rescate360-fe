@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../solicitudes_ayuda/presentation/viewmodels/solicitudes_ayuda_viewmodel.dart';
 
 /// Botón SOS (mockup 16). Se activa manteniendo presionado 3 segundos para
 /// evitar activaciones por error.
 ///
-/// IMPORTANTE: por ahora es solo la interfaz. Falta conectar el envío real de
-/// la alerta y la ubicación con el backend.
-class SosScreen extends StatefulWidget {
+/// Al activarse lee el GPS y envía POST /solicitudes-ayuda/sos: el backend la crea
+/// con prioridad crítica. "Cancelar alerta" la cancela en el backend.
+class SosScreen extends ConsumerStatefulWidget {
   const SosScreen({super.key});
 
   @override
-  State<SosScreen> createState() => _SosScreenState();
+  ConsumerState<SosScreen> createState() => _SosScreenState();
 }
 
-class _SosScreenState extends State<SosScreen>
+class _SosScreenState extends ConsumerState<SosScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _progreso;
   bool _activado = false;
+  // Id de la solicitud SOS creada, para poder cancelarla
+  String? _solicitudId;
 
   @override
   void initState() {
@@ -34,9 +38,22 @@ class _SosScreenState extends State<SosScreen>
     super.dispose();
   }
 
-  void _activar() {
-    // TODO: enviar la alerta y la ubicación actual al backend.
+  void _avisar(String texto) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(texto)));
+  }
+
+  Future<void> _activar() async {
     if (mounted) setState(() => _activado = true);
+    final resultado = await ref.read(solicitudesAyudaViewModelProvider).enviarSos();
+    if (!mounted) return;
+    if (resultado.error != null) {
+      // No salió: se vuelve a dejar el botón listo para intentarlo otra vez
+      _progreso.reset();
+      setState(() => _activado = false);
+      _avisar('No se pudo enviar el SOS: ${resultado.error}');
+      return;
+    }
+    _solicitudId = resultado.solicitud!.id;
   }
 
   void _iniciar() {
@@ -47,7 +64,14 @@ class _SosScreenState extends State<SosScreen>
     if (!_activado) _progreso.reverse();
   }
 
-  void _cancelarAlerta() {
+  Future<void> _cancelarAlerta() async {
+    final id = _solicitudId;
+    if (id != null) {
+      final resultado = await ref.read(solicitudesAyudaViewModelProvider).cancelar(id);
+      if (!mounted) return;
+      if (resultado.error != null) return _avisar(resultado.error!);
+    }
+    _solicitudId = null;
     _progreso.reset();
     setState(() => _activado = false);
   }

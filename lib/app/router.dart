@@ -15,6 +15,7 @@ import '../features/perfil/presentation/views/contactos_emergencia_screen.dart';
 import '../features/perfil/presentation/views/notificaciones_screen.dart';
 import '../features/personas_desaparecidas/presentation/views/personas_desaparecidas_screen.dart';
 import '../features/reportes/presentation/views/reportar_incidente_screen.dart';
+import '../features/solicitudes_ayuda/presentation/views/mis_solicitudes_screen.dart';
 import '../features/solicitudes_ayuda/presentation/views/solicitar_ayuda_screen.dart';
 
 /// Rutas nombradas de la app.
@@ -36,6 +37,7 @@ class AppRouter {
   static const reportarIncidente = '/reportar-incidente';
   static const personasDesaparecidas = '/personas-desaparecidas';
   static const solicitarAyuda = '/solicitar-ayuda';
+  static const misSolicitudes = '/mis-solicitudes';
   static const alertas = '/alertas';
   static const sos = '/sos';
   static const contactosEmergencia = '/contactos-emergencia';
@@ -65,6 +67,8 @@ class AppRouter {
         return _build(const PersonasDesaparecidasScreen(), settings);
       case solicitarAyuda:
         return _build(const SolicitarAyudaScreen(), settings);
+      case misSolicitudes:
+        return _build(const MisSolicitudesScreen(), settings);
       case alertas:
         return _build(const AlertasScreen(), settings);
       case sos:

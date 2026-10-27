@@ -123,6 +123,11 @@ class MasScreen extends ConsumerWidget {
                   onTap: () => _proximamente(context),
                 ),
                 FilaOpcion(
+                  icono: Icons.support_agent,
+                  titulo: 'Mis solicitudes de ayuda',
+                  onTap: () => _ir(context, '/mis-solicitudes'),
+                ),
+                FilaOpcion(
                   icono: Icons.contacts_outlined,
                   titulo: 'Contactos de emergencia',
                   onTap: () => _ir(context, '/contactos-emergencia'),
