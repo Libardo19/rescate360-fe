@@ -46,6 +46,9 @@ class ApiClient {
   Future<T> delete<T>(String ruta) => _llamar(() => dio.delete(ruta));
 }
 
+/// Las evidencias llegan como ruta relativa (/uploads/...): la app necesita la URL completa.
+String urlArchivo(String ruta) => ruta.startsWith('http') ? ruta : '${Env.apiBaseUrl}$ruta';
+
 /// La sesión vencida (sin refresh posible) la escucha SesionViewModel para volver al login.
 final sesionExpiradaProvider = StateProvider<int>((ref) => 0);
 
