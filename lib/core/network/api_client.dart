@@ -8,7 +8,7 @@ import 'interceptors/error_interceptor.dart';
 
 /// Cliente HTTP único de la app. Todas las llamadas reales pasan por aquí.
 ///
-/// URL base: `Env.apiBaseUrl` (por defecto http://10.0.2.2:8000, el localhost de la PC
+/// URL base: `Env.apiBaseUrl` (localhost:8000 en Chrome; 10.0.2.2:8000 en el emulador Android, el localhost de la PC
 /// visto desde el emulador Android). En un teléfono real:
 ///   flutter run --dart-define=API_BASE_URL=http://<IP-de-tu-PC>:8000
 class ApiClient {
