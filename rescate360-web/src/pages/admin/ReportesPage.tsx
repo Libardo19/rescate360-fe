@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Search, X, CheckCircle2, XCircle, Copy, Building2, Image as ImagenIcono } from 'lucide-react'
+import { Search, X, CheckCircle2, XCircle, Copy, Building2, Image as ImagenIcono, Sparkles, UserCog } from 'lucide-react'
 import {
   listarReportes,
   listarTipos,
@@ -7,12 +7,14 @@ import {
   rechazarReporte,
   marcarDuplicado,
   asignarOrganizacionReporte,
+  fijarPrioridadReporte,
 } from '../../services/reportes.service'
 import { listarOrganizaciones } from '../../services/organizaciones.service'
 import { mensajeDeError } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
 import type { Reporte, EstadoReporte, TipoSugerido } from '../../types/reporte'
 import type { Organizacion } from '../../types/organizacion'
+import type { Prioridad } from '../../types/solicitud'
 
 const etiquetaEstado: Record<EstadoReporte, string> = {
   pendiente: 'Pendiente',
@@ -29,6 +31,24 @@ const colorEstado: Record<EstadoReporte, string> = {
   duplicado: 'bg-slate-200 text-slate-600',
   no_verificable: 'bg-slate-200 text-slate-600',
 }
+
+const etiquetaPrioridad: Record<Prioridad, string> = {
+  critica: 'Crítica',
+  alta: 'Alta',
+  media: 'Media',
+  baja: 'Baja',
+  pendiente: 'Sin clasificar',
+}
+
+const colorPrioridad: Record<Prioridad, string> = {
+  critica: 'bg-red-600 text-white',
+  alta: 'bg-red-100 text-red-700',
+  media: 'bg-amber-100 text-amber-700',
+  baja: 'bg-green-100 text-green-700',
+  pendiente: 'bg-slate-200 text-slate-600',
+}
+
+const prioridadDe = (r: Reporte): Prioridad => r.prioridadManual ?? r.prioridadIA
 
 // Valor especial del filtro: todo lo que el ciudadano escribió y no está en la lista sugerida
 const OTROS = 'otros'
@@ -167,6 +187,7 @@ export default function ReportesPage() {
         <table className="w-full min-w-[740px] text-left text-sm">
           <thead className="text-xs uppercase text-panel-text-muted">
             <tr>
+              <th className="px-5 py-3">Prioridad</th>
               <th className="px-5 py-3">Tipo</th>
               <th className="px-5 py-3">Descripción</th>
               <th className="px-5 py-3">Reportante</th>
@@ -178,13 +199,19 @@ export default function ReportesPage() {
           <tbody>
             {filtrados.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-5 py-10 text-center text-panel-text-soft">
+                <td colSpan={7} className="px-5 py-10 text-center text-panel-text-soft">
                   No hay reportes con esos filtros.
                 </td>
               </tr>
             )}
             {filtrados.map((r) => (
               <tr key={r.id} className="border-t border-panel-border">
+                <td className="px-5 py-3">
+                  <span className={`rounded-full px-3 py-1 text-xs font-medium ${colorPrioridad[prioridadDe(r)]}`}>
+                    {etiquetaPrioridad[prioridadDe(r)]}
+                  </span>
+                  <p className="mt-1 text-[11px] text-panel-text-muted">{r.prioridadManual ? 'Manual' : 'Sugerida por IA'}</p>
+                </td>
                 <td className="px-5 py-3 font-medium">
                   {r.tipoEtiqueta}
                   {r.evidencias.length > 0 && (
@@ -262,6 +289,39 @@ export default function ReportesPage() {
                 </div>
               )}
             </dl>
+
+            <div className="mt-5 rounded-xl bg-panel-bg p-4 text-sm">
+              <p className="flex flex-wrap items-center gap-2 font-semibold">
+                <Sparkles size={16} className="text-panel-info" />
+                Sugerencia de la IA:
+                <span className={`rounded-full px-2 py-0.5 text-xs ${colorPrioridad[seleccionado.prioridadIA]}`}>
+                  {etiquetaPrioridad[seleccionado.prioridadIA]}
+                </span>
+                {seleccionado.confianzaIA !== null && (
+                  <span className="text-xs font-normal text-panel-text-muted">confianza {Math.round(seleccionado.confianzaIA * 100)}%</span>
+                )}
+              </p>
+              <p className="mt-1 text-panel-text-soft">{seleccionado.motivoIA}</p>
+              <p className="mt-3 flex items-center gap-2 text-xs font-semibold">
+                <UserCog size={14} className="text-panel-primary" /> Prioridad manual (prevalece)
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {(['critica', 'alta', 'media', 'baja'] as const).map((p) => (
+                  <button
+                    key={p}
+                    disabled={guardando}
+                    onClick={() => guardar(() => fijarPrioridadReporte(seleccionado.id, p))}
+                    className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition disabled:opacity-50 ${
+                      seleccionado.prioridadManual === p
+                        ? 'border-panel-primary bg-panel-primary text-white'
+                        : 'border-panel-border text-panel-text-soft hover:bg-panel-card'
+                    }`}
+                  >
+                    {etiquetaPrioridad[p]}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {seleccionado.evidencias.length > 0 && (
               <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3">
