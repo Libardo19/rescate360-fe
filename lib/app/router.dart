@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../features/alertas/presentation/views/alertas_screen.dart';
+import '../features/auth/presentation/views/activar_cuenta_screen.dart';
 import '../features/auth/presentation/views/bienvenida_screen.dart';
 import '../features/auth/presentation/views/login_screen.dart';
+import '../features/auth/presentation/views/recuperar_contrasena_screen.dart';
 import '../features/auth/presentation/views/registro_screen.dart';
 import '../features/centros_ayuda/presentation/views/centros_ayuda_screen.dart';
 import '../features/donaciones/presentation/views/donaciones_screen.dart';
@@ -22,9 +24,14 @@ import '../features/solicitudes_ayuda/presentation/views/solicitar_ayuda_screen.
 class AppRouter {
   AppRouter._();
 
+  /// Permite navegar sin context (p. ej. volver al inicio cuando vence la sesión).
+  static final navigatorKey = GlobalKey<NavigatorState>();
+
   static const inicial = '/';
   static const login = '/login';
   static const registro = '/registro';
+  static const activar = '/activar';
+  static const recuperar = '/recuperar';
   static const home = '/home';
   static const reportarIncidente = '/reportar-incidente';
   static const personasDesaparecidas = '/personas-desaparecidas';
@@ -46,6 +53,10 @@ class AppRouter {
         return _build(const LoginScreen(), settings);
       case registro:
         return _build(const RegistroScreen(), settings);
+      case activar:
+        return _build(const ActivarCuentaScreen(), settings);
+      case recuperar:
+        return _build(RecuperarContrasenaScreen(correoInicial: settings.arguments as String?), settings);
       case home:
         return _build(const PrincipalScreen(), settings);
       case reportarIncidente:

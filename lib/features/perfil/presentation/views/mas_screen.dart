@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../shared/widgets/fila_opcion.dart';
+import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
 
 /// Pestaña "Más": perfil, acceso a SOS y al resto de módulos (mockups 12 a 18).
-class MasScreen extends StatelessWidget {
-  /// Hasta conectar el viewmodel de auth, el nombre llega por parámetro.
-  final String nombreUsuario;
-
-  const MasScreen({super.key, this.nombreUsuario = 'Usuario'});
+class MasScreen extends ConsumerWidget {
+  const MasScreen({super.key});
 
   void _ir(BuildContext context, String ruta) {
     Navigator.of(context).pushNamed(ruta);
@@ -20,7 +19,7 @@ class MasScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _cerrarSesion(BuildContext context) async {
+  Future<void> _cerrarSesion(BuildContext context, WidgetRef ref) async {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -38,14 +37,16 @@ class MasScreen extends StatelessWidget {
         ],
       ),
     );
-    if (confirmar == true && context.mounted) {
-      // TODO: limpiar la sesión en el viewmodel de auth antes de salir.
-      Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
+    if (confirmar == true) {
+      // Borra los tokens; app.dart escucha el cambio y vuelve a la bienvenida
+      await ref.read(authViewModelProvider.notifier).cerrarSesion();
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final usuario = ref.watch(authViewModelProvider).usuario;
+    final nombreUsuario = usuario?.nombre ?? 'Usuario';
     final inicial =
         nombreUsuario.isNotEmpty ? nombreUsuario[0].toUpperCase() : 'U';
 
@@ -76,7 +77,7 @@ class MasScreen extends StatelessWidget {
                     children: [
                       Text(nombreUsuario, style: AppTextStyles.h1),
                       const SizedBox(height: 2),
-                      const Text('Ciudadano',
+                      Text(usuario?.rol.etiqueta ?? 'Ciudadano',
                           style: AppTextStyles.bodySecondary),
                     ],
                   ),
@@ -172,7 +173,7 @@ class MasScreen extends StatelessWidget {
                 foregroundColor: AppColors.danger,
                 side: const BorderSide(color: AppColors.danger, width: 1.2),
               ),
-              onPressed: () => _cerrarSesion(context),
+              onPressed: () => _cerrarSesion(context, ref),
               child: const Text('Cerrar sesión'),
             ),
           ],

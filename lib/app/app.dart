@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../features/perfil/presentation/viewmodels/ajustes_viewmodel.dart';
 import 'router.dart';
 import 'theme/app_theme.dart';
@@ -15,8 +16,16 @@ class RescateApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ajustes = ref.watch(ajustesProvider);
 
+    // Al cerrar sesión (o si vence y no se puede renovar) se vuelve a la bienvenida
+    ref.listen<AuthState>(authViewModelProvider, (antes, ahora) {
+      if ((antes?.autenticado ?? false) && !ahora.autenticado) {
+        AppRouter.navigatorKey.currentState?.pushNamedAndRemoveUntil(AppRouter.inicial, (_) => false);
+      }
+    });
+
     return MaterialApp(
       title: 'RESCATE360',
+      navigatorKey: AppRouter.navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.claro,
       themeMode: ThemeMode.light,

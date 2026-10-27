@@ -21,8 +21,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _identificadorCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
 
-  // Por ahora solo es visual: aún no se guarda la sesión en el dispositivo.
-  bool _recordarme = false;
+  // La sesión siempre queda guardada (cifrada) en el dispositivo hasta cerrar sesión.
+  bool _recordarme = true;
 
   @override
   void dispose() {
@@ -38,14 +38,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           password: _passwordCtrl.text,
         );
     if (ok && mounted) {
-      Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
+      final rol = ref.read(authViewModelProvider).usuario!.rol;
+      Navigator.of(context).pushNamedAndRemoveUntil(rutaInicio(rol), (_) => false);
     }
   }
 
   void _olvideContrasena() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Próximamente')),
-    );
+    ref.read(authViewModelProvider.notifier).limpiarError();
+    Navigator.of(context).pushNamed('/recuperar', arguments: _identificadorCtrl.text.trim());
   }
 
   @override
@@ -73,11 +73,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 24),
                 CampoTexto(
-                  etiqueta: 'Correo electrónico o número de teléfono',
+                  etiqueta: 'Correo electrónico',
                   controlador: _identificadorCtrl,
                   hint: 'tucorreo@ejemplo.com',
                   tipoTeclado: TextInputType.emailAddress,
-                  validador: Validators.correoOTelefono,
+                  validador: Validators.correo,
                 ),
                 const SizedBox(height: 16),
                 CampoPassword(
@@ -132,6 +132,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           TextSpan(text: '¿No tienes cuenta? '),
                           TextSpan(
                               text: 'Regístrate', style: AppTextStyles.link),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Center(
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(context).pushNamed('/activar'),
+                    child: RichText(
+                      textAlign: TextAlign.center,
+                      text: const TextSpan(
+                        style: AppTextStyles.bodySecondary,
+                        children: [
+                          TextSpan(text: '¿Eres voluntario y tienes un código? '),
+                          TextSpan(
+                              text: 'Activa tu cuenta', style: AppTextStyles.link),
                         ],
                       ),
                     ),
