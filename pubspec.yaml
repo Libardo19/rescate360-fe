@@ -13,7 +13,6 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   flutter_riverpod: ^2.5.1
-  google_maps_flutter: ^2.18.1
   geolocator: ^14.1.1
   image_picker: ^1.2.4
   dio: ^5.11.1
