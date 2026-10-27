@@ -1,4 +1,5 @@
-export type EstadoPersona = 'en_busqueda' | 'en_proceso' | 'encontrada'
+// Igual que la BD: o la persona sigue desaparecida o ya la encontraron
+export type EstadoPersona = 'buscando' | 'encontrado'
 export type Genero = 'femenino' | 'masculino' | 'otro'
 
 export interface Persona {

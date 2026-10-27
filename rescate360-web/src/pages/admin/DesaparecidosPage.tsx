@@ -16,14 +16,13 @@ import { listarPersonas, registrarPersona, actualizarEstadoPersona } from '../..
 import type { Persona, EstadoPersona, Genero } from '../../types/persona'
 
 const estados: Record<EstadoPersona, { etiqueta: string; clase: string }> = {
-  en_busqueda: { etiqueta: 'En búsqueda', clase: 'bg-red-100 text-red-700' },
-  en_proceso: { etiqueta: 'En proceso', clase: 'bg-amber-100 text-amber-700' },
-  encontrada: { etiqueta: 'Encontrada', clase: 'bg-green-100 text-green-700' },
+  buscando: { etiqueta: 'En búsqueda', clase: 'bg-red-100 text-red-700' },
+  encontrado: { etiqueta: 'Encontrada', clase: 'bg-green-100 text-green-700' },
 }
 
 const generos: Record<Genero, string> = { femenino: 'Femenino', masculino: 'Masculino', otro: 'Otro' }
 
-const orden: Record<EstadoPersona, number> = { en_busqueda: 0, en_proceso: 1, encontrada: 2 }
+const orden: Record<EstadoPersona, number> = { buscando: 0, encontrado: 1 }
 
 const iniciales = (nombre: string) =>
   nombre
@@ -95,10 +94,10 @@ export default function DesaparecidosPage() {
     const lista = personas ?? []
     const dia = 24 * 60 * 60 * 1000
     return {
-      enBusqueda: lista.filter((p) => p.estado === 'en_busqueda').length,
-      encontradas: lista.filter((p) => p.estado === 'encontrada').length,
-      enProceso: lista.filter((p) => p.estado === 'en_proceso').length,
-      sinNovedades: lista.filter((p) => p.estado !== 'encontrada' && ahora - new Date(p.actualizado).getTime() > dia)
+      enBusqueda: lista.filter((p) => p.estado === 'buscando').length,
+      encontradas: lista.filter((p) => p.estado === 'encontrado').length,
+      nuevas: lista.filter((p) => p.estado === 'buscando' && ahora - new Date(p.actualizado).getTime() <= dia).length,
+      sinNovedades: lista.filter((p) => p.estado !== 'encontrado' && ahora - new Date(p.actualizado).getTime() > dia)
         .length,
     }
   }, [personas, ahora])
@@ -177,7 +176,7 @@ export default function DesaparecidosPage() {
   const tarjetas = [
     { valor: resumen.enBusqueda, titulo: 'Personas reportadas', pie: 'En búsqueda', icono: UserSearch, color: 'bg-red-500', pieColor: 'text-red-600' },
     { valor: resumen.encontradas, titulo: 'Encontradas', pie: 'Sanas y a salvo', icono: UserCheck, color: 'bg-blue-500', pieColor: 'text-blue-600' },
-    { valor: resumen.enProceso, titulo: 'En proceso', pie: 'De verificación', icono: Clock, color: 'bg-amber-500', pieColor: 'text-amber-600' },
+    { valor: resumen.nuevas, titulo: 'Con novedades', pie: 'Últimas 24 h', icono: Clock, color: 'bg-amber-500', pieColor: 'text-amber-600' },
     { valor: resumen.sinNovedades, titulo: 'Sin novedades', pie: 'Más de 24 h sin cambios', icono: BellOff, color: 'bg-violet-500', pieColor: 'text-violet-600' },
   ]
 

@@ -20,5 +20,5 @@ export async function obtenerDashboardAdmin(): Promise<DashboardAdmin> {
   if (USE_MOCK) return MOCK
 
   // BACKEND: confirmar la ruta real y la forma de la respuesta.
-  return api<DashboardAdmin>('/admin/dashboard')
+  return api<DashboardAdmin>('/dashboard')
 }

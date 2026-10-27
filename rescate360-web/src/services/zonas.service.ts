@@ -16,7 +16,7 @@ export async function listarZonas(): Promise<Zona[]> {
 
   // BACKEND: confirmar la ruta real y la forma de la respuesta.
   // Si las zonas llegan como polígonos y no como círculo, hay que ajustar el tipo y el mapa.
-  return api<Zona[]>('/admin/zonas')
+  return api<Zona[]>('/zonas-peligrosas')
 }
 
 export async function crearZona(datos: DatosZona): Promise<Zona> {
@@ -27,7 +27,7 @@ export async function crearZona(datos: DatosZona): Promise<Zona> {
   }
 
   // BACKEND: endpoint para crear una zona peligrosa.
-  return api<Zona>('/admin/zonas', { method: 'POST', body: JSON.stringify(datos) })
+  return api<Zona>('/zonas-peligrosas', { method: 'POST', body: JSON.stringify(datos) })
 }
 
 export async function actualizarZona(id: string, cambios: Partial<DatosZona>): Promise<Zona> {
@@ -39,5 +39,5 @@ export async function actualizarZona(id: string, cambios: Partial<DatosZona>): P
   }
 
   // BACKEND: endpoint para editar una zona (incluye activar o desactivar con el estado).
-  return api<Zona>(`/admin/zonas/${id}`, { method: 'PATCH', body: JSON.stringify(cambios) })
+  return api<Zona>(`/zonas-peligrosas/${id}`, { method: 'PATCH', body: JSON.stringify(cambios) })
 }
