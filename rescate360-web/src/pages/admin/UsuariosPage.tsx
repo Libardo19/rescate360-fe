@@ -11,14 +11,21 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  KeyRound,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
-import { listarUsuarios, crearUsuario, actualizarUsuario } from '../../services/usuarios.service'
-import type { UsuarioSistema, RolGestionable, EstadoUsuario } from '../../types/usuarioSistema'
+import { listarUsuarios, crearUsuario, actualizarUsuario, regenerarCodigo } from '../../services/usuarios.service'
+import { listarOrganizaciones } from '../../services/organizaciones.service'
+import { mensajeDeError } from '../../services/api'
+import CodigoActivacion from '../../components/CodigoActivacion'
+import type { UsuarioSistema, EstadoUsuario, Invitacion } from '../../types/usuarioSistema'
+import type { Rol } from '../../types/auth'
+import type { Organizacion } from '../../types/organizacion'
 
 const POR_PAGINA = 6
 
-const roles: Record<RolGestionable, string> = {
+const roles: Record<Rol, string> = {
+  super_admin: 'Super admin',
   administrador: 'Administrador',
   voluntario: 'Voluntario',
   ciudadano: 'Ciudadano',
@@ -51,18 +58,26 @@ export default function UsuariosPage() {
   const [usuarios, setUsuarios] = useState<UsuarioSistema[] | null>(null)
   const [error, setError] = useState('')
   const [busqueda, setBusqueda] = useState('')
-  const [filtroRol, setFiltroRol] = useState<'todos' | RolGestionable>('todos')
+  const [filtroRol, setFiltroRol] = useState<'todos' | Rol>('todos')
   const [pagina, setPagina] = useState(1)
   const [modal, setModal] = useState<Modal>(null)
-  const [form, setForm] = useState({ nombre: '', email: '' })
+  const [form, setForm] = useState({ nombre: '', email: '', telefono: '', organizacion_id: '' })
+  const [invitacion, setInvitacion] = useState<Invitacion | null>(null)
+  const [organizaciones, setOrganizaciones] = useState<Organizacion[]>([])
+  const esSuperAdmin = sesion?.rol === 'super_admin'
   const [errorForm, setErrorForm] = useState('')
   const [guardando, setGuardando] = useState(false)
 
   useEffect(() => {
     listarUsuarios()
       .then(setUsuarios)
-      .catch(() => setError('No se pudieron cargar los usuarios.'))
+      .catch((e) => setError(mensajeDeError(e, 'No se pudieron cargar los usuarios.')))
   }, [])
+
+  // El super admin elige a qué organización entra el voluntario que invita
+  useEffect(() => {
+    if (esSuperAdmin) listarOrganizaciones().then((lista) => setOrganizaciones(lista.filter((o) => o.activa))).catch(() => {})
+  }, [esSuperAdmin])
 
   const filtrados = useMemo(() => {
     if (!usuarios) return []
@@ -98,19 +113,19 @@ export default function UsuariosPage() {
     setPagina(1)
   }
 
-  const cambiarRol = (valor: 'todos' | RolGestionable) => {
+  const cambiarRol = (valor: 'todos' | Rol) => {
     setFiltroRol(valor)
     setPagina(1)
   }
 
   const abrirCrear = () => {
-    setForm({ nombre: '', email: '' })
+    setForm({ nombre: '', email: '', telefono: '', organizacion_id: organizaciones[0]?.id ?? '' })
     setErrorForm('')
     setModal({ modo: 'crear' })
   }
 
   const abrirEditar = (u: UsuarioSistema) => {
-    setForm({ nombre: u.nombre, email: u.email })
+    setForm({ nombre: u.nombre, email: u.email, telefono: u.telefono ?? '', organizacion_id: u.organizacion_id ?? '' })
     setErrorForm('')
     setModal({ modo: 'editar', usuario: u })
   }
@@ -130,6 +145,11 @@ export default function UsuariosPage() {
       setErrorForm('El correo no tiene un formato válido.')
       return
     }
+    if (actual.modo === 'crear' && esSuperAdmin && !form.organizacion_id) {
+      setErrorForm('Elige la organización del voluntario.')
+      return
+    }
+    const telefono = form.telefono.trim() || undefined
     const duplicado = usuarios?.some(
       (u) => u.email === email && (actual.modo === 'crear' || u.id !== actual.usuario.id),
     )
@@ -142,15 +162,21 @@ export default function UsuariosPage() {
     setErrorForm('')
     try {
       if (actual.modo === 'crear') {
-        const nuevo = await crearUsuario({ nombre, email })
-        setUsuarios((lista) => [...(lista ?? []), nuevo])
+        const nueva = await crearUsuario({
+          nombre,
+          email,
+          telefono,
+          ...(esSuperAdmin ? { organizacion_id: form.organizacion_id } : {}),
+        })
+        setUsuarios((lista) => [...(lista ?? []), nueva.usuario])
+        setInvitacion(nueva)
       } else {
-        const actualizado = await actualizarUsuario(actual.usuario.id, { nombre, email })
+        const actualizado = await actualizarUsuario(actual.usuario.id, { nombre, email, ...(telefono ? { telefono } : {}) })
         setUsuarios((lista) => lista?.map((u) => (u.id === actualizado.id ? actualizado : u)) ?? null)
       }
       setModal(null)
-    } catch {
-      setErrorForm('No se pudo guardar el usuario.')
+    } catch (e) {
+      setErrorForm(mensajeDeError(e, 'No se pudo guardar el usuario.'))
     } finally {
       setGuardando(false)
     }
@@ -164,8 +190,18 @@ export default function UsuariosPage() {
     try {
       const actualizado = await actualizarUsuario(u.id, { estado: nuevo })
       setUsuarios((lista) => lista?.map((x) => (x.id === actualizado.id ? actualizado : x)) ?? null)
-    } catch {
-      setError('No se pudo cambiar el estado del usuario.')
+    } catch (e) {
+      setError(mensajeDeError(e, 'No se pudo cambiar el estado del usuario.'))
+    }
+  }
+
+  const nuevoCodigo = async (u: UsuarioSistema) => {
+    if (!window.confirm(`¿Generar un código nuevo para ${u.nombre}? El anterior deja de servir.`)) return
+    setError('')
+    try {
+      setInvitacion(await regenerarCodigo(u.id))
+    } catch (e) {
+      setError(mensajeDeError(e, 'No se pudo generar el código.'))
     }
   }
 
@@ -225,11 +261,11 @@ export default function UsuariosPage() {
             </div>
             <select
               value={filtroRol}
-              onChange={(e) => cambiarRol(e.target.value as 'todos' | RolGestionable)}
+              onChange={(e) => cambiarRol(e.target.value as 'todos' | Rol)}
               className={`${campo} sm:w-44`}
             >
               <option value="todos">Todos los roles</option>
-              {(Object.keys(roles) as RolGestionable[]).map((r) => (
+              {(Object.keys(roles) as Rol[]).map((r) => (
                 <option key={r} value={r}>
                   {roles[r]}
                 </option>
@@ -260,7 +296,7 @@ export default function UsuariosPage() {
                 </tr>
               )}
               {visibles.map((u) => {
-                const esMiCuenta = u.email === sesion?.email
+                const esMiCuenta = u.id === sesion?.id
                 return (
                   <tr key={u.id} className="border-t border-panel-border">
                     <td className="whitespace-nowrap px-5 py-3 text-panel-text-muted">{u.codigo}</td>
@@ -280,7 +316,7 @@ export default function UsuariosPage() {
                       </span>
                     </td>
                     <td className="hidden whitespace-nowrap px-5 py-3 text-panel-text-soft md:table-cell">
-                      {formatearAcceso(u.ultimoAcceso)}
+                      {formatearAcceso(u.ultimo_acceso)}
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex justify-end gap-1 text-panel-text-soft">
@@ -292,6 +328,16 @@ export default function UsuariosPage() {
                         >
                           <Pencil size={16} />
                         </button>
+                        {u.estado === 'en_espera' && (
+                          <button
+                            onClick={() => nuevoCodigo(u)}
+                            title="Generar código de activación nuevo"
+                            aria-label="Generar código de activación nuevo"
+                            className="rounded p-2 hover:bg-panel-bg hover:text-panel-primary"
+                          >
+                            <KeyRound size={16} />
+                          </button>
+                        )}
                         <button
                           onClick={() => alternarBloqueo(u)}
                           disabled={esMiCuenta}
@@ -392,11 +438,44 @@ export default function UsuariosPage() {
                 />
               </div>
               <div>
+                <label htmlFor="telefono" className="text-sm font-medium">
+                  Celular <span className="text-panel-text-muted">(opcional)</span>
+                </label>
+                <input
+                  id="telefono"
+                  type="tel"
+                  placeholder="300 123 4567"
+                  value={form.telefono}
+                  onChange={(e) => setForm({ ...form, telefono: e.target.value })}
+                  className={`${campo} mt-1`}
+                />
+              </div>
+              {modal.modo === 'crear' && esSuperAdmin && (
+                <div>
+                  <label htmlFor="organizacion" className="text-sm font-medium">
+                    Organización
+                  </label>
+                  <select
+                    id="organizacion"
+                    value={form.organizacion_id}
+                    onChange={(e) => setForm({ ...form, organizacion_id: e.target.value })}
+                    className={`${campo} mt-1`}
+                  >
+                    {organizaciones.length === 0 && <option value="">Primero crea una organización</option>}
+                    {organizaciones.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div>
                 <label htmlFor="rol" className="text-sm font-medium">
                   Rol
                 </label>
                 <select id="rol" disabled value={modal.modo === 'crear' ? 'voluntario' : modal.usuario.rol} className={`${campo} mt-1 opacity-70`}>
-                  {(Object.keys(roles) as RolGestionable[]).map((r) => (
+                  {(Object.keys(roles) as Rol[]).map((r) => (
                     <option key={r} value={r}>
                       {roles[r]}
                     </option>
@@ -404,7 +483,7 @@ export default function UsuariosPage() {
                 </select>
                 <p className="mt-1 text-xs text-panel-text-muted">
                   {modal.modo === 'crear'
-                    ? 'El nuevo usuario recibirá una invitación y quedará "En espera" hasta activar su cuenta.'
+                    ? 'Al crearlo verás un código de activación para entregarle. Queda "En espera" hasta que active su cuenta en la app.'
                     : 'Los administradores los crea el super admin, y el rol no se cambia desde aquí.'}
                 </p>
               </div>
@@ -431,6 +510,8 @@ export default function UsuariosPage() {
           </form>
         </div>
       )}
+
+      {invitacion && <CodigoActivacion invitacion={invitacion} onCerrar={() => setInvitacion(null)} />}
     </div>
   )
 }
