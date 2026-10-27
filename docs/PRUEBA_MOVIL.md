@@ -1,5 +1,7 @@
 # Prueba desde teléfonos físicos
 
+> Cómo publicar el API con un túnel y cómo se conectan los compañeros: ver `docs/CONEXION_TUNEL.md`.
+
 La app se conecta al API por HTTPS y el API consulta PostgreSQL. El teléfono nunca
 se conecta directamente a PostgreSQL. `10.0.2.2` solo sirve para el emulador Android;
 `localhost` en un teléfono apunta al propio teléfono.
