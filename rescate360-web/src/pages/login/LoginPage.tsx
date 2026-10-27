@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { login } from '../../services/auth.service'
+import { ApiError, borrarTokens } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
 import fondoLogin from '../../assets/fondoLogin.png'
 
@@ -31,18 +32,22 @@ export default function LoginPage() {
     setCargando(true)
 
     try {
-      const { token, usuario } = await login({ email, password })
-      iniciarSesion(token, usuario)
+      const sesion = await login({ email, password })
+      const { rol } = sesion.usuario
 
-      if (usuario.rol === 'administrador') navigate('/admin')
-      else if (usuario.rol === 'super_admin') navigate('/superadmin')
-      else {
+      if (rol === 'administrador' || rol === 'super_admin') {
+        iniciarSesion(sesion)
+        navigate(rol === 'administrador' ? '/admin' : '/superadmin')
+      } else {
+        // Ciudadanos y voluntarios usan la app: no se guarda la sesión en el panel
+        borrarTokens()
         setEsError(true)
         setMensaje('Tu cuenta es para la app móvil. Descarga la app de RESCATE360.')
       }
-    } catch {
+    } catch (error) {
       setEsError(true)
-      setMensaje('Correo o contraseña incorrectos.')
+      // El backend explica el motivo: credenciales, cuenta bloqueada, sin activar u organización inactiva
+      setMensaje(error instanceof ApiError ? error.message : 'No se pudo conectar con el servidor. Intenta de nuevo.')
     } finally {
       setCargando(false)
     }
@@ -156,9 +161,10 @@ export default function LoginPage() {
 
               <button
                 type="submit"
-                className="min-h-11 w-full rounded-lg bg-navy-900 py-2.5 font-semibold text-white transition hover:bg-navy-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy-900"
+                disabled={cargando}
+                className="min-h-11 w-full rounded-lg bg-navy-900 py-2.5 font-semibold text-white transition hover:bg-navy-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy-900 disabled:opacity-60"
               >
-                Iniciar sesión
+                {cargando ? 'Ingresando…' : 'Iniciar sesión'}
               </button>
               <p className="pt-1 text-center text-sm text-slate-600">
                 ¿No tienes cuenta?{' '}

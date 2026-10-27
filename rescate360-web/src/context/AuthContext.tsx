@@ -1,9 +1,10 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
-import type { Usuario } from '../types/auth'
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import type { LoginResponse, Usuario } from '../types/auth'
+import { borrarTokens, guardarTokens, registrarAlExpirarSesion } from '../services/api'
 
 interface AuthState {
   usuario: Usuario | null
-  iniciarSesion: (token: string, usuario: Usuario) => void
+  iniciarSesion: (sesion: LoginResponse) => void
   cerrarSesion: () => void
 }
 
@@ -15,17 +16,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return guardado ? (JSON.parse(guardado) as Usuario) : null
   })
 
-  const iniciarSesion = (token: string, u: Usuario) => {
-    sessionStorage.setItem('token', token)
+  const iniciarSesion = ({ access_token, refresh_token, usuario: u }: LoginResponse) => {
+    guardarTokens(access_token, refresh_token)
     sessionStorage.setItem('usuario', JSON.stringify(u))
     setUsuario(u)
   }
 
   const cerrarSesion = () => {
-    sessionStorage.removeItem('token')
+    borrarTokens()
     sessionStorage.removeItem('usuario')
     setUsuario(null)
   }
+
+  // Si el token vence y no se puede renovar, api.ts avisa y la sesión se cierra
+  // (ProtectedRoute lleva al login).
+  useEffect(() => {
+    registrarAlExpirarSesion(() => {
+      sessionStorage.removeItem('usuario')
+      setUsuario(null)
+    })
+  }, [])
 
   return (
     <AuthContext.Provider value={{ usuario, iniciarSesion, cerrarSesion }}>
