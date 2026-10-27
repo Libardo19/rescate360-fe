@@ -24,8 +24,8 @@ class AuthState {
   bool get autenticado => usuario != null;
 }
 
-/// Ruta de inicio según el rol (el voluntario tendrá la suya con sus tareas asignadas).
-String rutaInicio(Rol rol) => '/home';
+/// Ruta de inicio según el rol: el ciudadano va a su app y el voluntario a sus casos y tareas.
+String rutaInicio(Rol rol) => rol == Rol.voluntario ? '/voluntario' : '/home';
 
 class AuthViewModel extends StateNotifier<AuthState> {
   AuthViewModel(this._repo) : super(const AuthState());

@@ -16,6 +16,7 @@ import '../features/perfil/presentation/views/notificaciones_screen.dart';
 import '../features/personas_desaparecidas/presentation/views/personas_desaparecidas_screen.dart';
 import '../features/reportes/presentation/views/reportar_incidente_screen.dart';
 import '../features/solicitudes_ayuda/presentation/views/mis_solicitudes_screen.dart';
+import '../features/voluntario/presentation/views/voluntario_screen.dart';
 import '../features/solicitudes_ayuda/presentation/views/solicitar_ayuda_screen.dart';
 
 /// Rutas nombradas de la app.
@@ -34,6 +35,7 @@ class AppRouter {
   static const activar = '/activar';
   static const recuperar = '/recuperar';
   static const home = '/home';
+  static const voluntario = '/voluntario';
   static const reportarIncidente = '/reportar-incidente';
   static const personasDesaparecidas = '/personas-desaparecidas';
   static const solicitarAyuda = '/solicitar-ayuda';
@@ -61,6 +63,8 @@ class AppRouter {
         return _build(RecuperarContrasenaScreen(correoInicial: settings.arguments as String?), settings);
       case home:
         return _build(const PrincipalScreen(), settings);
+      case voluntario:
+        return _build(const VoluntarioScreen(), settings);
       case reportarIncidente:
         return _build(const ReportarIncidenteScreen(), settings);
       case personasDesaparecidas:
