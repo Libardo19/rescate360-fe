@@ -1,13 +1,13 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './routes/ProtectedRoute'
-import { menuAdmin } from './routes/menus'
+import { menuAdmin, menuSuperAdmin } from './routes/menus'
 import PanelLayout from './layouts/PanelLayout'
 import LandingPage from './pages/landing/LandingPage'
 import LoginPage from './pages/login/LoginPage'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import SuperAdminDashboard from './pages/superadmin/SuperAdminDashboard'
-import PaginaEnConstruccion from './pages/shared/PaginaEnConstruccion'
+import OrganizacionesPage from './pages/superadmin/OrganizacionesPage'
 import ReportesPage from './pages/admin/ReportesPage'
 import SolicitudesPage from './pages/admin/SolicitudesPage'
 import MapaPage from './pages/admin/MapaPage'
@@ -52,10 +52,17 @@ export default function App() {
             path="/superadmin"
             element={
               <ProtectedRoute roles={['super_admin']}>
-                <SuperAdminDashboard />
+                <PanelLayout menu={menuSuperAdmin} titulo="Super admin" />
               </ProtectedRoute>
             }
-          />
+          >
+            <Route index element={<SuperAdminDashboard />} />
+            <Route path="organizaciones" element={<OrganizacionesPage />} />
+            <Route path="usuarios" element={<UsuariosPage />} />
+            <Route path="solicitudes" element={<SolicitudesPage />} />
+            <Route path="reportes" element={<ReportesPage />} />
+            <Route path="mapa" element={<MapaPage />} />
+          </Route>
         </Routes>
       </BrowserRouter>
     </AuthProvider>

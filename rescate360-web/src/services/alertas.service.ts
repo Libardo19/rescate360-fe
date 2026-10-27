@@ -14,7 +14,7 @@ export async function listarAlertas(): Promise<Alerta[]> {
   if (USE_MOCK) return mock.map((a) => ({ ...a }))
 
   // BACKEND: confirmar la ruta real y la forma de la respuesta.
-  return api<Alerta[]>('/admin/alertas')
+  return api<Alerta[]>('/alertas')
 }
 
 export async function crearAlerta(datos: NuevaAlerta): Promise<Alerta> {
@@ -25,7 +25,7 @@ export async function crearAlerta(datos: NuevaAlerta): Promise<Alerta> {
   }
 
   // BACKEND: endpoint para publicar una alerta.
-  return api<Alerta>('/admin/alertas', { method: 'POST', body: JSON.stringify(datos) })
+  return api<Alerta>('/alertas', { method: 'POST', body: JSON.stringify(datos) })
 }
 
 export async function finalizarAlerta(id: string): Promise<Alerta> {
@@ -37,5 +37,5 @@ export async function finalizarAlerta(id: string): Promise<Alerta> {
   }
 
   // BACKEND: endpoint para desactivar o cerrar una alerta.
-  return api<Alerta>(`/admin/alertas/${id}/finalizar`, { method: 'PATCH' })
+  return api<Alerta>(`/alertas/${id}/finalizar`, { method: 'PATCH' })
 }

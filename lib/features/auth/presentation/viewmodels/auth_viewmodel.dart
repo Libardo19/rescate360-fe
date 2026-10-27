@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/errors/exceptions.dart';
+import '../../../../core/network/api_client.dart';
+import '../../../../shared/models/rol.dart';
 import '../../../../shared/models/usuario_model.dart';
+import '../../data/repositories/auth_repository.dart';
 
-/// Estado de autenticación. Por ahora se resuelve con datos mock
-/// (ver TODOs); cuando exista el backend, [AuthViewModel] pasará a llamar
-/// a auth_repository.dart -> auth_remote_datasource.dart en su lugar.
+/// Estado de autenticación de la app.
 class AuthState {
   final bool loading;
   final String? error;
@@ -22,53 +24,93 @@ class AuthState {
   bool get autenticado => usuario != null;
 }
 
+/// Ruta de inicio según el rol: el ciudadano va a su app y el voluntario a sus casos y tareas.
+String rutaInicio(Rol rol) => rol == Rol.voluntario ? '/voluntario' : '/home';
+
 class AuthViewModel extends StateNotifier<AuthState> {
-  AuthViewModel() : super(const AuthState());
+  AuthViewModel(this._repo) : super(const AuthState());
 
-  /// Login mock: simula una llamada de red y autentica a cualquier
-  /// correo/contraseña que cumplan las validaciones del formulario.
-  /// TODO(backend): reemplazar por auth_repository.iniciarSesion(correo, password).
-  Future<bool> iniciarSesion({
-    required String correo,
-    required String password,
-  }) async {
+  final AuthRepository _repo;
+
+  static const _soloPanel =
+      'Tu cuenta es de administrador: entra desde el panel web de RESCATE360.';
+
+  /// Ejecuta una acción de auth y deja el usuario o el error en el estado.
+  Future<bool> _autenticar(Future<UsuarioModel> Function() accion) async {
     state = state.copyWith(loading: true, error: null);
-    await Future.delayed(const Duration(milliseconds: 700));
-
-    final usuario = UsuarioModel.mock(
-      nombre: correo.split('@').first,
-      correo: correo,
-    );
-    state = state.copyWith(loading: false, usuario: usuario);
-    return true;
+    try {
+      final usuario = await accion();
+      if (usuario.rol.usaPanelWeb) {
+        await _repo.cerrarSesion();
+        state = const AuthState(error: _soloPanel);
+        return false;
+      }
+      state = AuthState(usuario: usuario);
+      return true;
+    } catch (e) {
+      state = AuthState(error: ApiException.desde(e).mensaje);
+      return false;
+    }
   }
 
-  /// Registro mock: valida y "crea" la cuenta localmente.
-  /// TODO(backend): reemplazar por auth_repository.registrar(...).
+  Future<bool> iniciarSesion({required String correo, required String password}) =>
+      _autenticar(() => _repo.iniciarSesion(correo.toLowerCase(), password));
+
   Future<bool> registrar({
     required String nombre,
     required String correo,
     String? telefono,
     required String password,
-  }) async {
-    state = state.copyWith(loading: true, error: null);
-    await Future.delayed(const Duration(milliseconds: 700));
+  }) =>
+      _autenticar(() => _repo.registrar(
+            nombre: nombre,
+            email: correo.toLowerCase(),
+            telefono: telefono,
+            password: password,
+          ));
 
-    final usuario = UsuarioModel.mock(
-      nombre: nombre,
-      correo: correo,
-      telefono: telefono,
-    );
-    state = state.copyWith(loading: false, usuario: usuario);
+  /// Voluntario invitado: correo + código que le entregó su administrador + contraseña nueva.
+  Future<bool> activar({required String correo, required String codigo, required String password}) =>
+      _autenticar(() => _repo.activar(email: correo.toLowerCase(), codigo: codigo, password: password));
+
+  Future<bool> restablecer({required String correo, required String codigo, required String password}) =>
+      _autenticar(() => _repo.restablecer(email: correo.toLowerCase(), codigo: codigo, password: password));
+
+  /// Devuelve el mensaje del backend (es el mismo exista o no la cuenta).
+  Future<String?> pedirCodigoRecuperacion({required String correo, required String canal}) async {
+    state = state.copyWith(loading: true, error: null);
+    try {
+      final mensaje = await _repo.pedirCodigoRecuperacion(email: correo.toLowerCase(), canal: canal);
+      state = state.copyWith(loading: false);
+      return mensaje;
+    } catch (e) {
+      state = state.copyWith(loading: false, error: ApiException.desde(e).mensaje);
+      return null;
+    }
+  }
+
+  /// Al abrir la app: true si había una sesión válida guardada.
+  Future<bool> restaurarSesion() async {
+    final usuario = await _repo.restaurarSesion();
+    if (usuario == null || usuario.rol.usaPanelWeb) return false;
+    state = AuthState(usuario: usuario);
     return true;
   }
 
-  void cerrarSesion() {
+  Future<void> cerrarSesion() async {
+    await _repo.cerrarSesion();
     state = const AuthState();
   }
+
+  void limpiarError() => state = state.copyWith(error: null);
+
+  /// Tras editar "Mis datos": el nombre y el teléfono nuevos se ven en toda la app.
+  void actualizarUsuario(UsuarioModel usuario) => state = AuthState(usuario: usuario);
 }
 
-final authViewModelProvider =
-    StateNotifierProvider<AuthViewModel, AuthState>((ref) {
-  return AuthViewModel();
+final authViewModelProvider = StateNotifierProvider<AuthViewModel, AuthState>((ref) {
+  final viewModel = AuthViewModel(ref.watch(authRepositoryProvider));
+  // Si el token venció y no se pudo renovar, el estado vuelve a "sin sesión"
+  ref.listen<int>(sesionExpiradaProvider, (_, __) => viewModel.cerrarSesion());
+  return viewModel;
 });

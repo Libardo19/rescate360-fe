@@ -1,22 +1,25 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Search, X, CheckCircle2, XCircle, Copy } from 'lucide-react'
-import { listarReportes, cambiarEstadoReporte } from '../../services/reportes.service'
-import type { Reporte, EstadoReporte, TipoIncidente } from '../../types/reporte'
-
-const etiquetaTipo: Record<TipoIncidente, string> = {
-  accidente: 'Accidente',
-  robo: 'Robo',
-  inundacion: 'Inundación',
-  deslizamiento: 'Deslizamiento',
-  incendio: 'Incendio',
-  otro: 'Otro',
-}
+import { Search, X, CheckCircle2, XCircle, Copy, Building2, Image as ImagenIcono } from 'lucide-react'
+import {
+  listarReportes,
+  listarTipos,
+  verificarReporte,
+  rechazarReporte,
+  marcarDuplicado,
+  asignarOrganizacionReporte,
+} from '../../services/reportes.service'
+import { listarOrganizaciones } from '../../services/organizaciones.service'
+import { mensajeDeError } from '../../services/api'
+import { useAuth } from '../../context/AuthContext'
+import type { Reporte, EstadoReporte, TipoSugerido } from '../../types/reporte'
+import type { Organizacion } from '../../types/organizacion'
 
 const etiquetaEstado: Record<EstadoReporte, string> = {
   pendiente: 'Pendiente',
   verificado: 'Verificado',
   rechazado: 'Rechazado',
   duplicado: 'Duplicado',
+  no_verificable: 'No verificable',
 }
 
 const colorEstado: Record<EstadoReporte, string> = {
@@ -24,7 +27,11 @@ const colorEstado: Record<EstadoReporte, string> = {
   verificado: 'bg-green-100 text-green-700',
   rechazado: 'bg-red-100 text-red-700',
   duplicado: 'bg-slate-200 text-slate-600',
+  no_verificable: 'bg-slate-200 text-slate-600',
 }
+
+// Valor especial del filtro: todo lo que el ciudadano escribió y no está en la lista sugerida
+const OTROS = 'otros'
 
 const formatearFecha = (iso: string) =>
   new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
@@ -34,18 +41,31 @@ const campo =
 
 export default function ReportesPage() {
   const [reportes, setReportes] = useState<Reporte[] | null>(null)
+  const [tipos, setTipos] = useState<TipoSugerido[]>([])
   const [error, setError] = useState('')
   const [busqueda, setBusqueda] = useState('')
   const [filtroEstado, setFiltroEstado] = useState<'todos' | EstadoReporte>('todos')
-  const [filtroTipo, setFiltroTipo] = useState<'todos' | TipoIncidente>('todos')
+  const [filtroTipo, setFiltroTipo] = useState('todos')
   const [seleccionado, setSeleccionado] = useState<Reporte | null>(null)
   const [guardando, setGuardando] = useState(false)
+  const [motivo, setMotivo] = useState('')
+  const [original, setOriginal] = useState('')
+  const { usuario } = useAuth()
+  const esSuperAdmin = usuario?.rol === 'super_admin'
+  const [organizaciones, setOrganizaciones] = useState<Organizacion[]>([])
 
   useEffect(() => {
     listarReportes()
       .then(setReportes)
-      .catch(() => setError('No se pudieron cargar los reportes.'))
+      .catch((e) => setError(mensajeDeError(e, 'No se pudieron cargar los reportes.')))
+    listarTipos().then(setTipos).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (esSuperAdmin) listarOrganizaciones().then(setOrganizaciones).catch(() => {})
+  }, [esSuperAdmin])
+
+  const sugeridos = useMemo(() => new Set(tipos.map((t) => t.valor)), [tipos])
 
   const filtrados = useMemo(() => {
     if (!reportes) return []
@@ -55,22 +75,31 @@ export default function ReportesPage() {
         !texto ||
         r.descripcion.toLowerCase().includes(texto) ||
         r.ubicacion.toLowerCase().includes(texto) ||
-        r.reportante.toLowerCase().includes(texto)
+        r.reportante.toLowerCase().includes(texto) ||
+        r.tipoEtiqueta.toLowerCase().includes(texto)
       const coincideEstado = filtroEstado === 'todos' || r.estado === filtroEstado
-      const coincideTipo = filtroTipo === 'todos' || r.tipo === filtroTipo
+      const coincideTipo =
+        filtroTipo === 'todos' || (filtroTipo === OTROS ? !sugeridos.has(r.tipo) : r.tipo === filtroTipo)
       return coincideTexto && coincideEstado && coincideTipo
     })
-  }, [reportes, busqueda, filtroEstado, filtroTipo])
+  }, [reportes, busqueda, filtroEstado, filtroTipo, sugeridos])
 
-  const cambiarEstado = async (estado: Exclude<EstadoReporte, 'pendiente'>) => {
-    if (!seleccionado) return
+  const abrir = (r: Reporte) => {
+    setSeleccionado(r)
+    setMotivo('')
+    setOriginal('')
+    setError('')
+  }
+
+  const guardar = async (accion: () => Promise<Reporte>) => {
     setGuardando(true)
+    setError('')
     try {
-      const actualizado = await cambiarEstadoReporte(seleccionado.id, estado)
+      const actualizado = await accion()
       setReportes((lista) => lista?.map((r) => (r.id === actualizado.id ? actualizado : r)) ?? null)
       setSeleccionado(actualizado)
-    } catch {
-      setError('No se pudo actualizar el reporte.')
+    } catch (e) {
+      setError(mensajeDeError(e, 'No se pudo actualizar el reporte.'))
     } finally {
       setGuardando(false)
     }
@@ -79,14 +108,23 @@ export default function ReportesPage() {
   if (error && !reportes) return <p className="text-panel-accent">{error}</p>
   if (!reportes) return <p className="text-panel-text-soft">Cargando…</p>
 
+  const pendiente = seleccionado?.estado === 'pendiente'
+  // Candidatos a "original" de un duplicado: los demás reportes del mismo tipo primero
+  const candidatos = seleccionado
+    ? reportes
+        .filter((r) => r.id !== seleccionado.id && r.estado !== 'duplicado' && r.estado !== 'rechazado')
+        .sort((a, b) => Number(b.tipo === seleccionado.tipo) - Number(a.tipo === seleccionado.tipo))
+    : []
+
   return (
     <div>
       <h1 className="text-2xl font-extrabold text-panel-primary">Reportes</h1>
       <p className="mt-1 text-sm text-panel-text-soft">
-        Revisa los reportes de tu organización y verifícalos, recházalos o márcalos como duplicados.
+        Revisa los reportes de tu organización y verifícalos, recházalos o márcalos como duplicados. Un reporte
+        verificado aparece en el mapa de todos los ciudadanos.
       </p>
 
-      {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && !seleccionado && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
@@ -94,7 +132,7 @@ export default function ReportesPage() {
           <input
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar por descripción, ubicación o persona"
+            placeholder="Buscar por tipo, descripción, ubicación o persona"
             className={`${campo} w-full pl-9`}
           />
         </div>
@@ -110,17 +148,14 @@ export default function ReportesPage() {
             </option>
           ))}
         </select>
-        <select
-          value={filtroTipo}
-          onChange={(e) => setFiltroTipo(e.target.value as 'todos' | TipoIncidente)}
-          className={campo}
-        >
+        <select value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value)} className={campo}>
           <option value="todos">Todos los tipos</option>
-          {Object.entries(etiquetaTipo).map(([valor, etiqueta]) => (
-            <option key={valor} value={valor}>
-              {etiqueta}
+          {tipos.map((t) => (
+            <option key={t.valor} value={t.valor}>
+              {t.etiqueta}
             </option>
           ))}
+          <option value={OTROS}>Otros (escritos por el ciudadano)</option>
         </select>
       </div>
 
@@ -150,7 +185,14 @@ export default function ReportesPage() {
             )}
             {filtrados.map((r) => (
               <tr key={r.id} className="border-t border-panel-border">
-                <td className="px-5 py-3 font-medium">{etiquetaTipo[r.tipo]}</td>
+                <td className="px-5 py-3 font-medium">
+                  {r.tipoEtiqueta}
+                  {r.evidencias.length > 0 && (
+                    <span className="ml-2 inline-flex items-center gap-0.5 text-xs font-normal text-panel-text-muted">
+                      <ImagenIcono size={12} /> {r.evidencias.length}
+                    </span>
+                  )}
+                </td>
                 <td className="px-5 py-3">
                   <p className="max-w-xs truncate">{r.descripcion}</p>
                   <p className="text-xs text-panel-text-muted">{r.ubicacion}</p>
@@ -163,10 +205,7 @@ export default function ReportesPage() {
                   </span>
                 </td>
                 <td className="px-5 py-3 text-right">
-                  <button
-                    onClick={() => setSeleccionado(r)}
-                    className="text-sm font-semibold text-panel-primary hover:underline"
-                  >
+                  <button onClick={() => abrir(r)} className="text-sm font-semibold text-panel-primary hover:underline">
                     Ver detalle
                   </button>
                 </td>
@@ -187,7 +226,7 @@ export default function ReportesPage() {
           >
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-xl font-extrabold text-panel-primary">{etiquetaTipo[seleccionado.tipo]}</h2>
+                <h2 className="text-xl font-extrabold text-panel-primary">{seleccionado.tipoEtiqueta}</h2>
                 <span
                   className={`mt-2 inline-block rounded-full px-3 py-1 text-xs font-medium ${colorEstado[seleccionado.estado]}`}
                 >
@@ -216,31 +255,106 @@ export default function ReportesPage() {
                 <dt className="text-xs uppercase text-panel-text-muted">Fecha</dt>
                 <dd>{formatearFecha(seleccionado.fecha)}</dd>
               </div>
+              {seleccionado.motivoRechazo && (
+                <div>
+                  <dt className="text-xs uppercase text-panel-text-muted">Motivo del rechazo</dt>
+                  <dd>{seleccionado.motivoRechazo}</dd>
+                </div>
+              )}
             </dl>
 
-            <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-              <button
-                disabled={guardando || seleccionado.estado === 'verificado'}
-                onClick={() => cambiarEstado('verificado')}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-panel-success px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-40"
-              >
-                <CheckCircle2 size={16} /> Verificar
-              </button>
-              <button
-                disabled={guardando || seleccionado.estado === 'rechazado'}
-                onClick={() => cambiarEstado('rechazado')}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-panel-accent px-4 py-2 text-sm font-semibold text-panel-accent transition hover:bg-red-50 disabled:opacity-40"
-              >
-                <XCircle size={16} /> Rechazar
-              </button>
-              <button
-                disabled={guardando || seleccionado.estado === 'duplicado'}
-                onClick={() => cambiarEstado('duplicado')}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-panel-border px-4 py-2 text-sm font-semibold text-panel-text-soft transition hover:bg-panel-bg disabled:opacity-40"
-              >
-                <Copy size={16} /> Duplicado
-              </button>
-            </div>
+            {seleccionado.evidencias.length > 0 && (
+              <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {seleccionado.evidencias.map((e) =>
+                  e.tipo === 'foto' ? (
+                    <a key={e.id} href={e.url} target="_blank" rel="noreferrer">
+                      <img src={e.url} alt="Evidencia del reporte" className="h-28 w-full rounded-lg object-cover" />
+                    </a>
+                  ) : (
+                    <video key={e.id} src={e.url} controls className="h-28 w-full rounded-lg bg-black object-cover" />
+                  ),
+                )}
+              </div>
+            )}
+
+            {esSuperAdmin && (
+              <div className="mt-5">
+                <label htmlFor="organizacion" className="flex items-center gap-2 text-sm font-semibold">
+                  <Building2 size={16} className="text-panel-primary" /> Organización que lo atiende
+                </label>
+                <select
+                  id="organizacion"
+                  value={seleccionado.organizacionId ?? ''}
+                  disabled={guardando || !pendiente}
+                  onChange={(e) => e.target.value && guardar(() => asignarOrganizacionReporte(seleccionado.id, e.target.value))}
+                  className={`${campo} mt-2 w-full`}
+                >
+                  <option value="" disabled>
+                    Sin organización: elige una
+                  </option>
+                  {organizaciones
+                    .filter((o) => o.activa)
+                    .map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.nombre}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            )}
+
+            {error && <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+
+            {pendiente ? (
+              <div className="mt-6 space-y-3">
+                <button
+                  disabled={guardando}
+                  onClick={() => guardar(() => verificarReporte(seleccionado.id))}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-panel-success px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-40"
+                >
+                  <CheckCircle2 size={16} /> Verificar
+                </button>
+
+                <div className="flex gap-2">
+                  <input
+                    value={motivo}
+                    onChange={(e) => setMotivo(e.target.value)}
+                    maxLength={200}
+                    placeholder="Motivo del rechazo (opcional)"
+                    className={`${campo} flex-1`}
+                  />
+                  <button
+                    disabled={guardando}
+                    onClick={() => guardar(() => rechazarReporte(seleccionado.id, motivo.trim()))}
+                    className="flex items-center justify-center gap-2 rounded-lg border border-panel-accent px-4 py-2 text-sm font-semibold text-panel-accent transition hover:bg-red-50 disabled:opacity-40"
+                  >
+                    <XCircle size={16} /> Rechazar
+                  </button>
+                </div>
+
+                <div className="flex gap-2">
+                  <select value={original} onChange={(e) => setOriginal(e.target.value)} className={`${campo} min-w-0 flex-1`}>
+                    <option value="">Es duplicado de…</option>
+                    {candidatos.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.tipoEtiqueta} · {r.ubicacion} · {formatearFecha(r.fecha)}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    disabled={guardando || !original}
+                    onClick={() => guardar(() => marcarDuplicado(seleccionado.id, original))}
+                    className="flex items-center justify-center gap-2 rounded-lg border border-panel-border px-4 py-2 text-sm font-semibold text-panel-text-soft transition hover:bg-panel-bg disabled:opacity-40"
+                  >
+                    <Copy size={16} /> Duplicado
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className="mt-6 rounded-lg bg-panel-bg px-3 py-2 text-xs text-panel-text-soft">
+                Este reporte ya fue revisado. Solo los reportes pendientes se pueden verificar, rechazar o marcar como duplicados.
+              </p>
+            )}
           </div>
         </div>
       )}

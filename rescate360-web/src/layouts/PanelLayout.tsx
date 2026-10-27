@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { Bell, ChevronDown, LogOut, Menu, Search, X } from 'lucide-react'
+import { Bell, ChevronDown, KeyRound, LogOut, Menu, Search, X } from 'lucide-react'
 import Logo from '../pages/landing/components/Logo'
 import { useAuth } from '../context/AuthContext'
 import type { ItemMenu } from '../routes/menus'
+import CambiarClave from '../components/CambiarClave'
 
 interface Props {
   menu: ItemMenu[]
@@ -13,6 +14,7 @@ interface Props {
 export default function PanelLayout({ menu, titulo }: Props) {
   const [abierto, setAbierto] = useState(false)
   const [menuUsuario, setMenuUsuario] = useState(false)
+  const [cambiandoClave, setCambiandoClave] = useState(false)
   const { usuario, cerrarSesion } = useAuth()
   const navigate = useNavigate()
 
@@ -107,7 +109,16 @@ export default function PanelLayout({ menu, titulo }: Props) {
               </button>
 
               {menuUsuario && (
-                <div className="absolute right-0 mt-2 w-44 rounded-lg border border-panel-border bg-panel-card py-1 shadow-lg">
+                <div className="absolute right-0 mt-2 w-52 rounded-lg border border-panel-border bg-panel-card py-1 shadow-lg">
+                  <button
+                    onClick={() => {
+                      setMenuUsuario(false)
+                      setCambiandoClave(true)
+                    }}
+                    className="flex w-full items-center gap-2 px-4 py-2 text-sm text-panel-text-soft hover:bg-panel-bg"
+                  >
+                    <KeyRound size={16} /> Cambiar contraseña
+                  </button>
                   <button
                     onClick={salir}
                     className="flex w-full items-center gap-2 px-4 py-2 text-sm text-panel-text-soft hover:bg-panel-bg"
@@ -124,6 +135,7 @@ export default function PanelLayout({ menu, titulo }: Props) {
           <Outlet />
         </main>
       </div>
+      {cambiandoClave && <CambiarClave onCerrar={() => setCambiandoClave(false)} />}
     </div>
   )
 }

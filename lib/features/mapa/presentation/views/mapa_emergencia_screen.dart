@@ -1,19 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/config/env.dart';
 import '../../../../shared/widgets/etiqueta_estado.dart';
+import '../../data/models/marcador_mapa_model.dart';
+import '../viewmodels/mapa_viewmodel.dart';
 
-enum TipoPunto { incidente, alerta, centro }
+enum TipoPunto { incidente, solicitud, alerta, centro }
 
-enum FiltroMapa { todos, incidentes, alertas, centros }
+enum FiltroMapa { todos, incidentes, solicitudes, alertas, centros }
 
 extension on TipoPunto {
   String get etiqueta {
     switch (this) {
       case TipoPunto.incidente:
         return 'Incidente';
+      case TipoPunto.solicitud:
+        return 'Solicitud de ayuda';
       case TipoPunto.alerta:
         return 'Alerta';
       case TipoPunto.centro:
@@ -25,6 +32,8 @@ extension on TipoPunto {
     switch (this) {
       case TipoPunto.incidente:
         return AppColors.danger;
+      case TipoPunto.solicitud:
+        return AppColors.primary;
       case TipoPunto.alerta:
         return AppColors.warning;
       case TipoPunto.centro:
@@ -32,21 +41,12 @@ extension on TipoPunto {
     }
   }
 
-  double get matiz {
-    switch (this) {
-      case TipoPunto.incidente:
-        return BitmapDescriptor.hueRed;
-      case TipoPunto.alerta:
-        return BitmapDescriptor.hueOrange;
-      case TipoPunto.centro:
-        return BitmapDescriptor.hueAzure;
-    }
-  }
-
   IconData get icono {
     switch (this) {
       case TipoPunto.incidente:
         return Icons.report_gmailerrorred_outlined;
+      case TipoPunto.solicitud:
+        return Icons.support_agent;
       case TipoPunto.alerta:
         return Icons.warning_amber_rounded;
       case TipoPunto.centro:
@@ -55,231 +55,82 @@ extension on TipoPunto {
   }
 }
 
-/// Punto del mapa. Mientras no haya API, la posición se define como un
-/// desplazamiento (en grados) respecto a la ubicación del usuario.
-class PuntoMapa {
-  final String id;
-  final TipoPunto tipo;
-  final String titulo;
-  final String detalle;
-  final double dLat;
-  final double dLng;
+/// Capa del backend → tipo visual. Las zonas peligrosas se pintan como alertas.
+TipoPunto _tipoDe(MarcadorMapaModel p) => switch (p.capa) {
+      'reporte' => TipoPunto.incidente,
+      'solicitud' => TipoPunto.solicitud,
+      'centro' => TipoPunto.centro,
+      _ => TipoPunto.alerta,
+    };
 
-  const PuntoMapa({
-    required this.id,
-    required this.tipo,
-    required this.titulo,
-    required this.detalle,
-    required this.dLat,
-    required this.dLng,
-  });
-}
-
-// Datos de ejemplo hasta conectar la API: se ubican alrededor de la
-// posición del usuario para que siempre haya marcadores cerca.
-const List<PuntoMapa> _puntosEjemplo = [
-  PuntoMapa(
-    id: 'i1',
-    tipo: TipoPunto.incidente,
-    titulo: 'Accidente de tránsito',
-    detalle: 'Vía principal · Hace 30 min',
-    dLat: 0.0030,
-    dLng: -0.0020,
-  ),
-  PuntoMapa(
-    id: 'i2',
-    tipo: TipoPunto.incidente,
-    titulo: 'Robo reportado',
-    detalle: 'Sector comercial · Hace 2 h',
-    dLat: -0.0025,
-    dLng: 0.0035,
-  ),
-  PuntoMapa(
-    id: 'i3',
-    tipo: TipoPunto.incidente,
-    titulo: 'Incendio',
-    detalle: 'Zona residencial · Hace 4 h',
-    dLat: 0.0060,
-    dLng: 0.0040,
-  ),
-  PuntoMapa(
-    id: 'a1',
-    tipo: TipoPunto.alerta,
-    titulo: 'Alerta de inundación',
-    detalle: 'Zona baja cerca al río · Hace 1 h',
-    dLat: -0.0050,
-    dLng: -0.0030,
-  ),
-  PuntoMapa(
-    id: 'a2',
-    tipo: TipoPunto.alerta,
-    titulo: 'Alerta de deslizamiento',
-    detalle: 'Ladera norte · Hace 3 h',
-    dLat: 0.0080,
-    dLng: -0.0060,
-  ),
-  PuntoMapa(
-    id: 'c1',
-    tipo: TipoPunto.centro,
-    titulo: 'Centro de acopio',
-    detalle: 'Recibe ayuda humanitaria',
-    dLat: 0.0015,
-    dLng: 0.0045,
-  ),
-  PuntoMapa(
-    id: 'c2',
-    tipo: TipoPunto.centro,
-    titulo: 'Albergue municipal',
-    detalle: 'Refugio temporal',
-    dLat: -0.0040,
-    dLng: 0.0010,
-  ),
-  PuntoMapa(
-    id: 'c3',
-    tipo: TipoPunto.centro,
-    titulo: 'Puesto de salud',
-    detalle: 'Atención médica de emergencia',
-    dLat: 0.0045,
-    dLng: -0.0045,
-  ),
-];
-
-/// Mapa con la ubicación actual, búsqueda y filtros (mockup 5).
-class MapaEmergenciaScreen extends StatefulWidget {
+/// Mapa en vivo (mockup 5): tu ubicación y lo que pasa alrededor (GET /mapa cada 15 s),
+/// con búsqueda y filtros. Mapa de OpenStreetMap con flutter_map (no requiere API key).
+class MapaEmergenciaScreen extends ConsumerStatefulWidget {
   const MapaEmergenciaScreen({super.key});
 
   @override
-  State<MapaEmergenciaScreen> createState() => _MapaEmergenciaScreenState();
+  ConsumerState<MapaEmergenciaScreen> createState() => _MapaEmergenciaScreenState();
 }
 
-class _MapaEmergenciaScreenState extends State<MapaEmergenciaScreen> {
+class _MapaEmergenciaScreenState extends ConsumerState<MapaEmergenciaScreen> with WidgetsBindingObserver {
   final _busquedaCtrl = TextEditingController();
-
-  GoogleMapController? _controlador;
-  LatLng? _posicion;
-  String? _error;
-  bool _cargando = true;
-  bool _permisoBloqueado = false;
+  final _mapa = MapController();
   FiltroMapa _filtro = FiltroMapa.todos;
   String _consulta = '';
+  bool _mapaListo = false;
 
   @override
   void initState() {
     super.initState();
-    _obtenerUbicacion();
+    WidgetsBinding.instance.addObserver(this);
+    Future.microtask(() => ref.read(mapaViewModelProvider.notifier).iniciar());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState estado) {
+    ref.read(mapaViewModelProvider.notifier).pausar(estado != AppLifecycleState.resumed);
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _busquedaCtrl.dispose();
-    _controlador?.dispose();
+    _mapa.dispose();
     super.dispose();
   }
 
-  void _fallar(String mensaje) {
-    if (!mounted) return;
-    setState(() {
-      _error = mensaje;
-      _cargando = false;
-    });
-  }
-
-  Future<void> _obtenerUbicacion() async {
-    setState(() {
-      _cargando = true;
-      _error = null;
-      _permisoBloqueado = false;
-    });
-
-    try {
-      final servicioActivo = await Geolocator.isLocationServiceEnabled();
-      if (!servicioActivo) {
-        _fallar('El GPS está desactivado. Actívalo para ver tu ubicación.');
-        return;
-      }
-
-      var permiso = await Geolocator.checkPermission();
-      if (permiso == LocationPermission.denied) {
-        permiso = await Geolocator.requestPermission();
-      }
-      if (permiso == LocationPermission.denied) {
-        _fallar(
-            'Necesitamos el permiso de ubicación para mostrarte en el mapa.');
-        return;
-      }
-      if (permiso == LocationPermission.deniedForever) {
-        _permisoBloqueado = true;
-        _fallar('El permiso de ubicación está bloqueado. '
-            'Habilítalo en los ajustes del teléfono.');
-        return;
-      }
-
-      final posicion = await Geolocator.getCurrentPosition(
-        locationSettings:
-            const LocationSettings(accuracy: LocationAccuracy.high),
-      );
-      if (!mounted) return;
-      setState(() {
-        _posicion = LatLng(posicion.latitude, posicion.longitude);
-        _cargando = false;
-      });
-      _centrar();
-    } catch (_) {
-      _fallar('No pudimos obtener tu ubicación. Intenta de nuevo.');
-    }
-  }
-
   void _centrar() {
-    final posicion = _posicion;
-    if (posicion == null) return;
-    _controlador?.animateCamera(CameraUpdate.newLatLngZoom(posicion, 16));
+    final posicion = ref.read(mapaViewModelProvider).posicion;
+    if (posicion == null || !_mapaListo) return;
+    _mapa.move(LatLng(posicion.lat, posicion.lng), 16);
   }
 
-  LatLng _coordenadas(PuntoMapa p) => LatLng(
-        _posicion!.latitude + p.dLat,
-        _posicion!.longitude + p.dLng,
-      );
-
-  List<PuntoMapa> get _visibles {
+  List<MarcadorMapaModel> _visibles(Iterable<MarcadorMapaModel> puntos) {
     final q = _consulta.trim().toLowerCase();
-    return _puntosEjemplo.where((p) {
+    return puntos.where((p) {
+      final tipo = _tipoDe(p);
       final pasaFiltro = switch (_filtro) {
         FiltroMapa.todos => true,
-        FiltroMapa.incidentes => p.tipo == TipoPunto.incidente,
-        FiltroMapa.alertas => p.tipo == TipoPunto.alerta,
-        FiltroMapa.centros => p.tipo == TipoPunto.centro,
+        FiltroMapa.incidentes => tipo == TipoPunto.incidente,
+        FiltroMapa.solicitudes => tipo == TipoPunto.solicitud,
+        FiltroMapa.alertas => tipo == TipoPunto.alerta,
+        FiltroMapa.centros => tipo == TipoPunto.centro,
       };
-      final pasaBusqueda = q.isEmpty ||
-          p.titulo.toLowerCase().contains(q) ||
-          p.detalle.toLowerCase().contains(q);
+      final pasaBusqueda = q.isEmpty || p.titulo.toLowerCase().contains(q) || p.detalle.toLowerCase().contains(q);
       return pasaFiltro && pasaBusqueda;
     }).toList();
   }
 
-  Set<Marker> _construirMarcadores() {
-    return _visibles.map((p) {
-      return Marker(
-        markerId: MarkerId(p.id),
-        position: _coordenadas(p),
-        icon: BitmapDescriptor.defaultMarkerWithHue(p.tipo.matiz),
-        onTap: () => _verDetalle(p),
-      );
-    }).toSet();
+  String _distanciaA(MarcadorMapaModel p) {
+    final posicion = ref.read(mapaViewModelProvider).posicion;
+    if (posicion == null) return '';
+    final metros = Geolocator.distanceBetween(posicion.lat, posicion.lng, p.lat, p.lng);
+    final texto = metros < 1000 ? '${metros.round()} m' : '${(metros / 1000).toStringAsFixed(1)} km';
+    return p.aproximada ? 'A unos $texto de ti (ubicación aproximada)' : 'A $texto de ti';
   }
 
-  String _distanciaA(PuntoMapa p) {
-    final destino = _coordenadas(p);
-    final metros = Geolocator.distanceBetween(
-      _posicion!.latitude,
-      _posicion!.longitude,
-      destino.latitude,
-      destino.longitude,
-    );
-    if (metros < 1000) return 'A ${metros.round()} m de ti';
-    return 'A ${(metros / 1000).toStringAsFixed(1)} km de ti';
-  }
-
-  void _verDetalle(PuntoMapa p) {
+  void _verDetalle(MarcadorMapaModel p) {
+    final tipo = _tipoDe(p);
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.background,
@@ -298,17 +149,24 @@ class _MapaEmergenciaScreenState extends State<MapaEmergenciaScreen> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: p.tipo.color.withOpacity(0.12),
+                    color: tipo.color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(p.tipo.icono, color: p.tipo.color, size: 24),
+                  child: Icon(tipo.icono, color: tipo.color, size: 24),
                 ),
                 const SizedBox(width: 12),
                 Expanded(child: Text(p.titulo, style: AppTextStyles.h2)),
               ],
             ),
             const SizedBox(height: 14),
-            EtiquetaEstado(texto: p.tipo.etiqueta, color: p.tipo.color),
+            Wrap(
+              spacing: 8,
+              children: [
+                EtiquetaEstado(texto: tipo.etiqueta, color: tipo.color),
+                EtiquetaEstado(texto: p.estado.replaceAll('_', ' '), color: AppColors.textSecondary),
+                if (p.propio) const EtiquetaEstado(texto: 'Tuyo', color: AppColors.primary),
+              ],
+            ),
             const SizedBox(height: 12),
             Text(p.detalle, style: AppTextStyles.body),
             const SizedBox(height: 6),
@@ -319,23 +177,41 @@ class _MapaEmergenciaScreenState extends State<MapaEmergenciaScreen> {
     );
   }
 
-  void _irAlPrimerResultado() {
-    final visibles = _visibles;
-    if (visibles.isEmpty) return;
-    _controlador?.animateCamera(
-      CameraUpdate.newLatLngZoom(_coordenadas(visibles.first), 17),
+  void _irAlPrimerResultado(List<MarcadorMapaModel> visibles) {
+    if (visibles.isEmpty || !_mapaListo) return;
+    _mapa.move(LatLng(visibles.first.lat, visibles.first.lng), 17);
+  }
+
+  Marker _marcador(MarcadorMapaModel p) {
+    final tipo = _tipoDe(p);
+    final critico = p.prioridad == 'critica';
+    return Marker(
+      point: LatLng(p.lat, p.lng),
+      width: critico ? 46 : 40,
+      height: critico ? 46 : 40,
+      alignment: Alignment.topCenter,
+      child: GestureDetector(
+        onTap: () => _verDetalle(p),
+        child: Icon(
+          Icons.location_on,
+          size: critico ? 46 : 40,
+          // Lo ajeno (posición aproximada) se ve más tenue
+          color: p.aproximada ? tipo.color.withValues(alpha: 0.55) : tipo.color,
+          shadows: const [Shadow(color: Color(0x55000000), blurRadius: 4)],
+        ),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_cargando) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      );
+    final estado = ref.watch(mapaViewModelProvider);
+
+    if (estado.cargando) {
+      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
     }
 
-    if (_error != null || _posicion == null) {
+    if (estado.posicion == null) {
       return SafeArea(
         child: Center(
           child: Padding(
@@ -343,24 +219,23 @@ class _MapaEmergenciaScreenState extends State<MapaEmergenciaScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.location_off_outlined,
-                    size: 48, color: AppColors.textMuted),
+                const Icon(Icons.location_off_outlined, size: 48, color: AppColors.textMuted),
                 const SizedBox(height: 14),
                 Text(
-                  _error ?? 'No pudimos obtener tu ubicación.',
+                  estado.error ?? 'No pudimos obtener tu ubicación.',
                   textAlign: TextAlign.center,
                   style: AppTextStyles.bodySecondary,
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: _obtenerUbicacion,
+                  onPressed: () => ref.read(mapaViewModelProvider.notifier).iniciar(),
                   child: const Text('Reintentar'),
                 ),
-                if (_permisoBloqueado) ...[
+                if (estado.permisoBloqueado) ...[
                   const SizedBox(height: 12),
-                  OutlinedButton(
+                  const OutlinedButton(
                     onPressed: Geolocator.openAppSettings,
-                    child: const Text('Abrir ajustes'),
+                    child: Text('Abrir ajustes'),
                   ),
                 ],
               ],
@@ -370,17 +245,59 @@ class _MapaEmergenciaScreenState extends State<MapaEmergenciaScreen> {
       );
     }
 
+    final yo = LatLng(estado.posicion!.lat, estado.posicion!.lng);
+    final visibles = _visibles(estado.puntos.values);
+
     return Stack(
       children: [
-        GoogleMap(
-          initialCameraPosition: CameraPosition(target: _posicion!, zoom: 16),
-          onMapCreated: (c) => _controlador = c,
-          markers: _construirMarcadores(),
-          myLocationEnabled: true,
-          myLocationButtonEnabled: false,
-          zoomControlsEnabled: false,
-          mapToolbarEnabled: false,
-          padding: const EdgeInsets.only(bottom: 70),
+        FlutterMap(
+          mapController: _mapa,
+          options: MapOptions(
+            initialCenter: yo,
+            initialZoom: 15,
+            onMapReady: () => _mapaListo = true,
+          ),
+          children: [
+            TileLayer(urlTemplate: Env.mapTileUrl, userAgentPackageName: 'co.rescate360.app'),
+            // Zonas y alertas con radio real en metros
+            CircleLayer(
+              circles: [
+                for (final p in visibles)
+                  if (p.radioM != null)
+                    CircleMarker(
+                      point: LatLng(p.lat, p.lng),
+                      radius: p.radioM!,
+                      useRadiusInMeter: true,
+                      color: _tipoDe(p).color.withValues(alpha: 0.18),
+                      borderColor: _tipoDe(p).color,
+                      borderStrokeWidth: 2,
+                    ),
+              ],
+            ),
+            MarkerLayer(
+              markers: [
+                for (final p in visibles) _marcador(p),
+                // Mi ubicación
+                Marker(
+                  point: yo,
+                  width: 22,
+                  height: 22,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.info,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 3),
+                      boxShadow: const [BoxShadow(color: Color(0x553E7BFA), blurRadius: 10, spreadRadius: 4)],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const RichAttributionWidget(
+              alignment: AttributionAlignment.bottomLeft,
+              attributions: [TextSourceAttribution('© OpenStreetMap')],
+            ),
+          ],
         ),
         // Buscador
         Positioned(
@@ -396,11 +313,7 @@ class _MapaEmergenciaScreenState extends State<MapaEmergenciaScreen> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x26000000),
-                      blurRadius: 8,
-                      offset: Offset(0, 2),
-                    ),
+                    BoxShadow(color: Color(0x26000000), blurRadius: 8, offset: Offset(0, 2)),
                   ],
                 ),
                 child: TextField(
@@ -408,20 +321,18 @@ class _MapaEmergenciaScreenState extends State<MapaEmergenciaScreen> {
                   style: AppTextStyles.body,
                   textInputAction: TextInputAction.search,
                   onChanged: (v) => setState(() => _consulta = v),
-                  onSubmitted: (_) => _irAlPrimerResultado(),
+                  onSubmitted: (_) => _irAlPrimerResultado(visibles),
                   decoration: InputDecoration(
                     hintText: 'Buscar en el mapa',
                     filled: false,
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,
-                    prefixIcon: const Icon(Icons.search,
-                        color: AppColors.textMuted, size: 22),
+                    prefixIcon: const Icon(Icons.search, color: AppColors.textMuted, size: 22),
                     suffixIcon: _consulta.isEmpty
                         ? null
                         : IconButton(
-                            icon: const Icon(Icons.close,
-                                color: AppColors.textMuted, size: 20),
+                            icon: const Icon(Icons.close, color: AppColors.textMuted, size: 20),
                             onPressed: () {
                               _busquedaCtrl.clear();
                               setState(() => _consulta = '');
@@ -467,6 +378,13 @@ class _MapaEmergenciaScreenState extends State<MapaEmergenciaScreen> {
                   color: AppColors.danger,
                   activo: _filtro == FiltroMapa.incidentes,
                   onTap: () => setState(() => _filtro = FiltroMapa.incidentes),
+                ),
+                const SizedBox(width: 8),
+                _ChipFiltro(
+                  etiqueta: 'Solicitudes',
+                  color: AppColors.primary,
+                  activo: _filtro == FiltroMapa.solicitudes,
+                  onTap: () => setState(() => _filtro = FiltroMapa.solicitudes),
                 ),
                 const SizedBox(width: 8),
                 _ChipFiltro(
@@ -518,11 +436,7 @@ class _ChipFiltro extends StatelessWidget {
             color: activo ? AppColors.primary : AppColors.surfaceBorder,
           ),
           boxShadow: const [
-            BoxShadow(
-              color: Color(0x1F000000),
-              blurRadius: 6,
-              offset: Offset(0, 2),
-            ),
+            BoxShadow(color: Color(0x1F000000), blurRadius: 6, offset: Offset(0, 2)),
           ],
         ),
         child: Row(
@@ -532,10 +446,7 @@ class _ChipFiltro extends StatelessWidget {
               Container(
                 width: 9,
                 height: 9,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
               ),
               const SizedBox(width: 6),
             ],

@@ -10,6 +10,7 @@ import {
   Search,
   Users,
   ClipboardList,
+  Network,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -32,4 +33,15 @@ export const menuAdmin: ItemMenu[] = [
   { ruta: '/admin/desaparecidos', etiqueta: 'Personas desaparecidas', icono: Search },
   { ruta: '/admin/usuarios', etiqueta: 'Usuarios', icono: Users },
   { ruta: '/admin/auditoria', etiqueta: 'Auditoría', icono: ClipboardList },
+]
+
+// Super admin: el mismo panel, con alcance global. Reutiliza las páginas del administrador
+// (el backend le devuelve todo) y suma Organizaciones.
+export const menuSuperAdmin: ItemMenu[] = [
+  { ruta: '/superadmin', etiqueta: 'Inicio', icono: LayoutDashboard, fin: true },
+  { ruta: '/superadmin/organizaciones', etiqueta: 'Organizaciones', icono: Network },
+  { ruta: '/superadmin/usuarios', etiqueta: 'Usuarios', icono: Users },
+  { ruta: '/superadmin/solicitudes', etiqueta: 'Solicitudes de ayuda', icono: LifeBuoy },
+  { ruta: '/superadmin/reportes', etiqueta: 'Reportes', icono: FileWarning },
+  { ruta: '/superadmin/mapa', etiqueta: 'Mapa operativo', icono: MapaIcono },
 ]

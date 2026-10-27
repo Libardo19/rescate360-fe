@@ -29,5 +29,5 @@ export async function listarEventos(): Promise<EventoAuditoria[]> {
   // BACKEND: confirmar la ruta real. Con miles de eventos conviene que el filtrado
   // (fechas, tipo, usuario, módulo) y la paginación los haga el servidor, no el navegador.
   // El administrador solo debe recibir eventos de su propia organización.
-  return api<EventoAuditoria[]>('/admin/auditoria')
+  return api<EventoAuditoria[]>('/auditoria')
 }

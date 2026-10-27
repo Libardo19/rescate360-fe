@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../app/theme/modo_oscuro.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../shared/widgets/etiqueta_estado.dart';
 import '../../../../shared/widgets/pestanas_segmentadas.dart';
 import '../../../../shared/widgets/primary_button.dart';
@@ -16,10 +17,14 @@ extension EstadoReporteCiudadanoUi on EstadoReporteCiudadano {
     switch (this) {
       case EstadoReporteCiudadano.pendiente:
         return 'Pendiente';
-      case EstadoReporteCiudadano.enRevision:
-        return 'En revisión';
-      case EstadoReporteCiudadano.atendido:
-        return 'Atendido';
+      case EstadoReporteCiudadano.verificado:
+        return 'Verificado';
+      case EstadoReporteCiudadano.rechazado:
+        return 'Rechazado';
+      case EstadoReporteCiudadano.duplicado:
+        return 'Duplicado';
+      case EstadoReporteCiudadano.noVerificable:
+        return 'No verificable';
     }
   }
 
@@ -27,10 +32,13 @@ extension EstadoReporteCiudadanoUi on EstadoReporteCiudadano {
     switch (this) {
       case EstadoReporteCiudadano.pendiente:
         return AppColors.warning;
-      case EstadoReporteCiudadano.enRevision:
-        return AppColors.info;
-      case EstadoReporteCiudadano.atendido:
+      case EstadoReporteCiudadano.verificado:
         return AppColors.success;
+      case EstadoReporteCiudadano.rechazado:
+        return AppColors.danger;
+      case EstadoReporteCiudadano.duplicado:
+      case EstadoReporteCiudadano.noVerificable:
+        return AppColors.textMuted;
     }
   }
 }
@@ -76,7 +84,10 @@ class _ReportesScreenState extends ConsumerState<ReportesScreen> {
   List<ReporteCiudadano> _filtrar(List<ReporteCiudadano> todos) {
     return todos.where((r) {
       final pasaPestana = _pestana == 0 || r.esMio;
-      final pasaTipo = _tipoFiltro == null || r.tipo == _tipoFiltro;
+      // "Otro" agrupa los tipos que el ciudadano escribió y no están en la lista
+      final pasaTipo = _tipoFiltro == null ||
+          r.tipo == _tipoFiltro ||
+          (_tipoFiltro == 'otro' && buscarTipoIncidente(r.tipo) == null);
       return pasaPestana && pasaTipo;
     }).toList();
   }
@@ -123,7 +134,7 @@ class _ReportesScreenState extends ConsumerState<ReportesScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(tipo?.etiqueta ?? 'Incidente',
+                        Text(tipo?.etiqueta ?? r.tipoEtiqueta,
                             style: AppTextStyles.h2),
                         const SizedBox(height: 2),
                         Text(r.haceCuanto, style: AppTextStyles.caption),
@@ -172,7 +183,8 @@ class _ReportesScreenState extends ConsumerState<ReportesScreen> {
                           width: 90,
                           height: 90,
                           child: SinFiltroOscuro(
-                            child: Image.memory(foto, fit: BoxFit.cover),
+                            child: Image.network(urlArchivo(foto),
+                                fit: BoxFit.cover),
                           ),
                         ),
                       ),
@@ -204,7 +216,8 @@ class _ReportesScreenState extends ConsumerState<ReportesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final todos = ref.watch(reportesCiudadanoProvider);
+    final estado = ref.watch(reportesCiudadanoProvider);
+    final todos = estado.valueOrNull ?? const <ReporteCiudadano>[];
     final cantidadMios = todos.where((r) => r.esMio).length;
     final lista = _filtrar(todos);
 
@@ -275,22 +288,40 @@ class _ReportesScreenState extends ConsumerState<ReportesScreen> {
             ),
             const SizedBox(height: 12),
             Expanded(
-              child: lista.isEmpty
-                  ? _SinReportes(
-                      esMisReportes: _pestana == 1,
-                      hayFiltro: _tipoFiltro != null,
-                      onReportar: _reportar,
-                    )
-                  : ListView.separated(
-                      controller: _scroll,
-                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 96),
-                      itemCount: lista.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (_, i) => _TarjetaReporte(
-                        reporte: lista[i],
-                        onTap: () => _verDetalle(lista[i]),
-                      ),
-                    ),
+              child: RefreshIndicator(
+                onRefresh: () =>
+                    ref.read(reportesCiudadanoProvider.notifier).recargar(),
+                child: estado.isLoading && todos.isEmpty
+                    ? const Center(child: CircularProgressIndicator())
+                    : estado.hasError && todos.isEmpty
+                        ? ListView(children: const [
+                            Padding(
+                              padding: EdgeInsets.all(32),
+                              child: Text(
+                                  'No se pudieron cargar los reportes. Desliza hacia abajo para reintentar.',
+                                  textAlign: TextAlign.center,
+                                  style: AppTextStyles.bodySecondary),
+                            ),
+                          ])
+                        : lista.isEmpty
+                            ? _SinReportes(
+                                esMisReportes: _pestana == 1,
+                                hayFiltro: _tipoFiltro != null,
+                                onReportar: _reportar,
+                              )
+                            : ListView.separated(
+                                controller: _scroll,
+                                padding:
+                                    const EdgeInsets.fromLTRB(20, 4, 20, 96),
+                                itemCount: lista.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 12),
+                                itemBuilder: (_, i) => _TarjetaReporte(
+                                  reporte: lista[i],
+                                  onTap: () => _verDetalle(lista[i]),
+                                ),
+                              ),
+              ),
             ),
           ],
         ),
@@ -396,7 +427,7 @@ class _TarjetaReporte extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          tipo?.etiqueta ?? 'Incidente',
+                          tipo?.etiqueta ?? reporte.tipoEtiqueta,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(

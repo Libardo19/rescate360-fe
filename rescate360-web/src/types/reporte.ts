@@ -1,19 +1,58 @@
-export type EstadoReporte = 'pendiente' | 'verificado' | 'rechazado' | 'duplicado'
+// Valores iguales a los del backend
+export type EstadoReporte = 'pendiente' | 'verificado' | 'rechazado' | 'duplicado' | 'no_verificable'
 
-export type TipoIncidente =
-  | 'accidente'
-  | 'robo'
-  | 'inundacion'
-  | 'deslizamiento'
-  | 'incendio'
-  | 'otro'
+// El tipo es texto libre: hay una lista sugerida (GET /reportes/tipos), pero el ciudadano
+// puede escribir otro tipo de emergencia ("fuga de gas", "árbol caído"…)
+export type TipoIncidente = string
 
+export interface TipoSugerido {
+  valor: string
+  etiqueta: string
+}
+
+export interface Evidencia {
+  id: string
+  tipo: 'foto' | 'video'
+  url: string
+  mime: string
+}
+
+// ReporteOut del backend
+export interface ReporteApi {
+  id: string
+  usuario_id: string
+  tipo: string
+  tipo_etiqueta: string
+  descripcion: string
+  direccion: string | null
+  ubicacion: { lat: number; lng: number }
+  estado: EstadoReporte
+  organizacion_objetivo_id: string | null
+  organizacion_manual_id: string | null
+  verificado_por: string | null
+  verificado_en: string | null
+  motivo_rechazo: string | null
+  duplicado_de_id: string | null
+  evidencias: Evidencia[]
+  reportante: { id: string; nombre: string } | null
+  creado_en: string
+  actualizado_en: string
+}
+
+// Lo que usa la pantalla (lo arma reportes.service)
 export interface Reporte {
   id: string
   tipo: TipoIncidente
+  tipoEtiqueta: string
   descripcion: string
   ubicacion: string
+  lat: number
+  lng: number
   reportante: string
   fecha: string // formato ISO
   estado: EstadoReporte
+  evidencias: Evidencia[]
+  motivoRechazo: string | null
+  duplicadoDeId: string | null
+  organizacionId: string | null // la manual prevalece sobre la sugerida por la IA
 }

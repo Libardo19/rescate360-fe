@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../../../mapa/presentation/views/mapa_emergencia_screen.dart';
 import '../../../perfil/presentation/views/mas_screen.dart';
 import '../../../reportes/presentation/views/mis_reportes_screen.dart';
@@ -7,14 +9,14 @@ import 'home_screen.dart';
 
 /// Contenedor principal del ciudadano: barra de navegación inferior con
 /// Inicio, Mapa, Reportes y Más. Es el destino de la ruta '/home'.
-class PrincipalScreen extends StatefulWidget {
+class PrincipalScreen extends ConsumerStatefulWidget {
   const PrincipalScreen({super.key});
 
   @override
-  State<PrincipalScreen> createState() => _PrincipalScreenState();
+  ConsumerState<PrincipalScreen> createState() => _PrincipalScreenState();
 }
 
-class _PrincipalScreenState extends State<PrincipalScreen> {
+class _PrincipalScreenState extends ConsumerState<PrincipalScreen> {
   int _indice = 0;
 
   // Las pestañas se construyen la primera vez que se visitan.
@@ -23,7 +25,8 @@ class _PrincipalScreenState extends State<PrincipalScreen> {
   Widget _construirPagina(int i) {
     switch (i) {
       case 0:
-        return const HomeScreen();
+        final nombre = ref.watch(authViewModelProvider).usuario?.primerNombre ?? 'Usuario';
+        return HomeScreen(nombreUsuario: nombre);
       case 1:
         return const MapaEmergenciaScreen();
       case 2:

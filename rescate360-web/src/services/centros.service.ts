@@ -18,7 +18,7 @@ export async function listarCentros(): Promise<Centro[]> {
   if (USE_MOCK) return mock.map((c) => ({ ...c }))
 
   // BACKEND: confirmar la ruta real y la forma de la respuesta.
-  return api<Centro[]>('/admin/centros')
+  return api<Centro[]>('/centros-ayuda')
 }
 
 export async function crearCentro(datos: DatosCentro): Promise<Centro> {
@@ -29,7 +29,7 @@ export async function crearCentro(datos: DatosCentro): Promise<Centro> {
   }
 
   // BACKEND: endpoint para crear un centro de ayuda.
-  return api<Centro>('/admin/centros', { method: 'POST', body: JSON.stringify(datos) })
+  return api<Centro>('/centros-ayuda', { method: 'POST', body: JSON.stringify(datos) })
 }
 
 export async function actualizarCentro(id: string, cambios: Partial<DatosCentro>): Promise<Centro> {
@@ -41,5 +41,5 @@ export async function actualizarCentro(id: string, cambios: Partial<DatosCentro>
   }
 
   // BACKEND: endpoint para editar un centro (incluye activar o desactivar con el estado).
-  return api<Centro>(`/admin/centros/${id}`, { method: 'PATCH', body: JSON.stringify(cambios) })
+  return api<Centro>(`/centros-ayuda/${id}`, { method: 'PATCH', body: JSON.stringify(cambios) })
 }

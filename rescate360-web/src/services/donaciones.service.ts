@@ -21,7 +21,7 @@ export async function listarDonaciones(): Promise<Donacion[]> {
   if (USE_MOCK) return donaciones.map((d) => ({ ...d }))
 
   // BACKEND: confirmar la ruta real y la forma de la respuesta.
-  return api<Donacion[]>('/admin/donaciones')
+  return api<Donacion[]>('/donaciones')
 }
 
 export async function marcarDonacionRecibida(id: string): Promise<Donacion> {
@@ -33,14 +33,14 @@ export async function marcarDonacionRecibida(id: string): Promise<Donacion> {
   }
 
   // BACKEND: endpoint para confirmar la recepción de una donación.
-  return api<Donacion>(`/admin/donaciones/${id}/recibida`, { method: 'PATCH' })
+  return api<Donacion>(`/donaciones/${id}/recibida`, { method: 'PATCH' })
 }
 
 export async function listarCampanas(): Promise<Campana[]> {
   if (USE_MOCK) return campanas.map((c) => ({ ...c }))
 
   // BACKEND: confirmar la ruta real. El avance (recaudado) lo debería calcular el backend.
-  return api<Campana[]>('/admin/campanas')
+  return api<Campana[]>('/donaciones/campanas')
 }
 
 export async function crearCampana(datos: DatosCampana): Promise<Campana> {
@@ -51,7 +51,7 @@ export async function crearCampana(datos: DatosCampana): Promise<Campana> {
   }
 
   // BACKEND: endpoint para crear una campaña de donación.
-  return api<Campana>('/admin/campanas', { method: 'POST', body: JSON.stringify(datos) })
+  return api<Campana>('/donaciones/campanas', { method: 'POST', body: JSON.stringify(datos) })
 }
 
 export async function finalizarCampana(id: string): Promise<Campana> {
@@ -63,5 +63,5 @@ export async function finalizarCampana(id: string): Promise<Campana> {
   }
 
   // BACKEND: endpoint para cerrar una campaña.
-  return api<Campana>(`/admin/campanas/${id}/finalizar`, { method: 'PATCH' })
+  return api<Campana>(`/donaciones/campanas/${id}/finalizar`, { method: 'PATCH' })
 }

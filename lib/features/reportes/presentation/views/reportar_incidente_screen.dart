@@ -3,12 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/location/location_service.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/campo_texto.dart';
 import '../../../../shared/widgets/campos_reporte.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../../../shared/widgets/selector_tipo.dart';
-import '../../data/models/reporte_model.dart';
 import '../viewmodels/reportes_viewmodel.dart';
 import '../widgets/selector_tipo_incidente.dart';
 
@@ -26,17 +26,21 @@ class _ReportarIncidenteScreenState
 
   final _formKey = GlobalKey<FormState>();
   final _descripcionCtrl = TextEditingController();
+  // Cuando elige "Otro": el tipo de emergencia escrito por el ciudadano
+  final _otroTipoCtrl = TextEditingController();
   final _picker = ImagePicker();
   final List<AdjuntoReporte> _adjuntos = [];
 
   String? _tipoSeleccionado;
-  bool _ubicacionActual = false;
+  ({double lat, double lng})? _posicion;
+  bool get _ubicacionActual => _posicion != null;
   bool _intentoEnviar = false;
   bool _enviando = false;
 
   @override
   void dispose() {
     _descripcionCtrl.dispose();
+    _otroTipoCtrl.dispose();
     super.dispose();
   }
 
@@ -164,6 +168,27 @@ class _ReportarIncidenteScreenState
     }
   }
 
+  /// Lee el GPS real del teléfono
+  Future<void> _usarUbicacion() async {
+    try {
+      final posicion =
+          await ref.read(locationServiceProvider).ubicacionActual();
+      if (mounted) setState(() => _posicion = posicion);
+    } on UbicacionException catch (e) {
+      _avisar(e.mensaje);
+    }
+  }
+
+  String? _validarOtroTipo(String? valor) {
+    final texto = (valor ?? '').trim();
+    if (texto.length < 3)
+      return 'Escribe qué tipo de emergencia es (mínimo 3 letras)';
+    if (texto.length > 30) return 'Máximo 30 caracteres';
+    if (!RegExp(r'^[a-zA-Z0-9áéíóúüñÁÉÍÓÚÜÑ ]+$').hasMatch(texto))
+      return 'Usa solo letras, números y espacios';
+    return null;
+  }
+
   // ------------------------------------------------------------ envío
   String? _validarDescripcion(String? valor) {
     final req = Validators.requerido(valor, campo: 'La descripción');
@@ -180,37 +205,20 @@ class _ReportarIncidenteScreenState
     if (!formOk || _tipoSeleccionado == null || !_ubicacionActual) return;
 
     setState(() => _enviando = true);
-
-    final fotos = _adjuntos
-        .where((a) => !a.esVideo && a.vistaPrevia != null)
-        .map((a) => a.vistaPrevia!)
-        .toList();
-    final videos = _adjuntos.where((a) => a.esVideo).length;
-
-    final reporte = ReporteCiudadano(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      tipo: _tipoSeleccionado!,
+    final tipo = _tipoSeleccionado == 'otro'
+        ? _otroTipoCtrl.text.trim()
+        : _tipoSeleccionado!;
+    final error = await ref.read(reportesCiudadanoProvider.notifier).crear(
+      tipo: tipo,
       descripcion: _descripcionCtrl.text.trim(),
-      fecha: DateTime.now(),
-      // TODO: usar la dirección real cuando se conecte el GPS.
-      lugar: 'Mi ubicación actual',
-      esMio: true,
-      estado: EstadoReporteCiudadano.pendiente,
-      fotos: fotos,
-      videos: videos,
+      lat: _posicion!.lat,
+      lng: _posicion!.lng,
+      archivos: [for (final a in _adjuntos) a.archivo],
     );
-
-    // TODO: enviar a la API (rescate360-be), incluyendo los archivos de
-    // _adjuntos.
-    await Future.delayed(const Duration(milliseconds: 600));
     if (!mounted) return;
-    ref.read(reportesCiudadanoProvider.notifier).agregar(reporte);
     setState(() => _enviando = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Reporte enviado. Míralo en la pestaña Reportes.'),
-      ),
-    );
+    if (error != null) return _avisar(error);
+    _avisar('Reporte enviado. Míralo en la pestaña Reportes.');
     Navigator.of(context).pop();
   }
 
@@ -233,13 +241,26 @@ class _ReportarIncidenteScreenState
                 const Text('Tipo de incidente', style: AppTextStyles.body),
                 const SizedBox(height: 10),
                 SelectorTipo(
-                  opciones: tiposIncidente,
+                  opciones: ref.watch(tiposReporteProvider).maybeWhen(
+                        data: opcionesTipo,
+                        orElse: () => tiposIncidente,
+                      ),
                   seleccionado: _tipoSeleccionado,
                   onSeleccionar: (id) => setState(() => _tipoSeleccionado = id),
                   errorText: (_intentoEnviar && _tipoSeleccionado == null)
                       ? 'Selecciona el tipo de incidente'
                       : null,
                 ),
+                if (_tipoSeleccionado == 'otro') ...[
+                  const SizedBox(height: 14),
+                  CampoTexto(
+                    etiqueta: '¿Qué tipo de emergencia es?',
+                    controlador: _otroTipoCtrl,
+                    hint: 'Ej: fuga de gas, árbol caído',
+                    capitalizacion: TextCapitalization.sentences,
+                    validador: _validarOtroTipo,
+                  ),
+                ],
                 const SizedBox(height: 20),
                 CampoTexto(
                   etiqueta: 'Descripción',
@@ -252,7 +273,7 @@ class _ReportarIncidenteScreenState
                 const SizedBox(height: 20),
                 CampoUbicacion(
                   seleccionada: _ubicacionActual,
-                  onTap: () => setState(() => _ubicacionActual = true),
+                  onTap: _usarUbicacion,
                   errorText: (_intentoEnviar && !_ubicacionActual)
                       ? 'Indica la ubicación del incidente'
                       : null,

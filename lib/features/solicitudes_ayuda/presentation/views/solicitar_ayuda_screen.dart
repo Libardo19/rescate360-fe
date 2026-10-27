@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/location/location_service.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/campo_texto.dart';
 import '../../../../shared/widgets/campos_reporte.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../../../shared/widgets/selector_tipo.dart';
+import '../viewmodels/solicitudes_ayuda_viewmodel.dart';
 
-class SolicitarAyudaScreen extends StatefulWidget {
+class SolicitarAyudaScreen extends ConsumerStatefulWidget {
   const SolicitarAyudaScreen({super.key});
 
   @override
-  State<SolicitarAyudaScreen> createState() => _SolicitarAyudaScreenState();
+  ConsumerState<SolicitarAyudaScreen> createState() => _SolicitarAyudaScreenState();
 }
 
-class _SolicitarAyudaScreenState extends State<SolicitarAyudaScreen> {
+class _SolicitarAyudaScreenState extends ConsumerState<SolicitarAyudaScreen> {
   static const List<OpcionTipo> _tipos = [
     OpcionTipo(
         id: 'medica',
@@ -51,7 +54,8 @@ class _SolicitarAyudaScreenState extends State<SolicitarAyudaScreen> {
   final _formKey = GlobalKey<FormState>();
   final _descripcionCtrl = TextEditingController();
   String? _tipoSeleccionado;
-  bool _ubicacionActual = false;
+  ({double lat, double lng})? _posicion;
+  bool get _ubicacionActual => _posicion != null;
   bool _intentoEnviar = false;
   bool _enviando = false;
 
@@ -70,19 +74,36 @@ class _SolicitarAyudaScreenState extends State<SolicitarAyudaScreen> {
     return null;
   }
 
+  void _avisar(String texto) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(texto)));
+  }
+
+  /// Lee el GPS real del teléfono
+  Future<void> _usarUbicacion() async {
+    try {
+      final posicion = await ref.read(locationServiceProvider).ubicacionActual();
+      if (mounted) setState(() => _posicion = posicion);
+    } on UbicacionException catch (e) {
+      _avisar(e.mensaje);
+    }
+  }
+
   Future<void> _enviar() async {
     setState(() => _intentoEnviar = true);
     final formOk = _formKey.currentState!.validate();
     if (!formOk || _tipoSeleccionado == null || !_ubicacionActual) return;
 
     setState(() => _enviando = true);
-    // TODO: enviar a la API (rescate360-be) desde el viewmodel de solicitudes.
-    await Future.delayed(const Duration(milliseconds: 600));
+    final resultado = await ref.read(solicitudesAyudaViewModelProvider).pedirAyuda(
+          tipo: _tipoSeleccionado!,
+          descripcion: _descripcionCtrl.text.trim(),
+          lat: _posicion!.lat,
+          lng: _posicion!.lng,
+        );
     if (!mounted) return;
     setState(() => _enviando = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Solicitud enviada')),
-    );
+    if (resultado.error != null) return _avisar(resultado.error!);
+    _avisar('Solicitud enviada. Puedes seguirla en "Mis solicitudes".');
     Navigator.of(context).pop();
   }
 
@@ -125,7 +146,7 @@ class _SolicitarAyudaScreenState extends State<SolicitarAyudaScreen> {
                 const SizedBox(height: 20),
                 CampoUbicacion(
                   seleccionada: _ubicacionActual,
-                  onTap: () => setState(() => _ubicacionActual = true),
+                  onTap: _usarUbicacion,
                   errorText: (_intentoEnviar && !_ubicacionActual)
                       ? 'Indica dónde necesitas la ayuda'
                       : null,

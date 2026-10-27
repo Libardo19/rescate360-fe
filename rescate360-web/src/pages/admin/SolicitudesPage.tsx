@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Search, X, Sparkles, UserCog } from 'lucide-react'
-import { listarSolicitudes, actualizarSolicitud } from '../../services/solicitudes.service'
+import { Search, X, Sparkles, UserCog, Building2, Siren } from 'lucide-react'
+import { listarSolicitudes, actualizarSolicitud, asignarOrganizacion } from '../../services/solicitudes.service'
+import { listarOrganizaciones } from '../../services/organizaciones.service'
+import { mensajeDeError } from '../../services/api'
+import { useAuth } from '../../context/AuthContext'
+import type { Organizacion } from '../../types/organizacion'
 import { prioridadEfectiva } from '../../types/solicitud'
 import type { Solicitud, CambiosSolicitud, EstadoSolicitud, Prioridad, TipoAyuda } from '../../types/solicitud'
 
@@ -9,6 +13,7 @@ const etiquetaTipo: Record<TipoAyuda, string> = {
   alimentaria: 'Alimentaria',
   refugio: 'Refugio',
   rescate: 'Rescate',
+  ropa: 'Ropa',
   otro: 'Otro',
 }
 
@@ -26,15 +31,24 @@ const colorEstado: Record<EstadoSolicitud, string> = {
   cancelada: 'bg-slate-200 text-slate-600',
 }
 
-const etiquetaPrioridad: Record<Prioridad, string> = { alta: 'Alta', media: 'Media', baja: 'Baja' }
+const etiquetaPrioridad: Record<Prioridad, string> = {
+  critica: 'Crítica',
+  alta: 'Alta',
+  media: 'Media',
+  baja: 'Baja',
+  pendiente: 'Sin clasificar',
+}
 
 const colorPrioridad: Record<Prioridad, string> = {
+  critica: 'bg-red-600 text-white',
   alta: 'bg-red-100 text-red-700',
   media: 'bg-amber-100 text-amber-700',
   baja: 'bg-green-100 text-green-700',
+  pendiente: 'bg-slate-200 text-slate-600',
 }
 
-const peso: Record<Prioridad, number> = { alta: 0, media: 1, baja: 2 }
+// Lo crítico primero; lo que la IA no ha clasificado va justo después, para que alguien lo revise
+const peso: Record<Prioridad, number> = { critica: 0, pendiente: 1, alta: 2, media: 3, baja: 4 }
 
 const formatearFecha = (iso: string) =>
   new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
@@ -51,12 +65,22 @@ export default function SolicitudesPage() {
   const [filtroTipo, setFiltroTipo] = useState<'todos' | TipoAyuda>('todos')
   const [seleccionada, setSeleccionada] = useState<Solicitud | null>(null)
   const [guardando, setGuardando] = useState(false)
+  const { usuario } = useAuth()
+  const esSuperAdmin = usuario?.rol === 'super_admin'
+  const [organizaciones, setOrganizaciones] = useState<Organizacion[]>([])
 
   useEffect(() => {
     listarSolicitudes()
       .then(setSolicitudes)
-      .catch(() => setError('No se pudieron cargar las solicitudes.'))
+      .catch((e) => setError(mensajeDeError(e, 'No se pudieron cargar las solicitudes.')))
   }, [])
+
+  useEffect(() => {
+    if (esSuperAdmin) listarOrganizaciones().then(setOrganizaciones).catch(() => {})
+  }, [esSuperAdmin])
+
+  const nombreOrganizacion = (id: string | null) =>
+    id ? (organizaciones.find((o) => o.id === id)?.nombre ?? 'Asignada') : 'Sin organización'
 
   const filtradas = useMemo(() => {
     if (!solicitudes) return []
@@ -79,19 +103,26 @@ export default function SolicitudesPage() {
       })
   }, [solicitudes, busqueda, filtroEstado, filtroPrioridad, filtroTipo])
 
-  const aplicar = async (cambios: CambiosSolicitud) => {
-    if (!seleccionada) return
+  const guardar = async (accion: () => Promise<Solicitud>) => {
     setGuardando(true)
     setError('')
     try {
-      const actualizada = await actualizarSolicitud(seleccionada.id, cambios)
+      const actualizada = await accion()
       setSolicitudes((lista) => lista?.map((s) => (s.id === actualizada.id ? actualizada : s)) ?? null)
       setSeleccionada(actualizada)
-    } catch {
-      setError('No se pudo actualizar la solicitud.')
+    } catch (e) {
+      setError(mensajeDeError(e, 'No se pudo actualizar la solicitud.'))
     } finally {
       setGuardando(false)
     }
+  }
+
+  const aplicar = (cambios: CambiosSolicitud) => {
+    if (seleccionada) guardar(() => actualizarSolicitud(seleccionada.id, cambios))
+  }
+
+  const enrutar = (organizacionId: string) => {
+    if (seleccionada && organizacionId) guardar(() => asignarOrganizacion(seleccionada.id, organizacionId))
   }
 
   if (error && !solicitudes) return <p className="text-panel-accent">{error}</p>
@@ -190,7 +221,16 @@ export default function SolicitudesPage() {
                     </span>
                     <p className="mt-1 text-[11px] text-panel-text-muted">{s.prioridadManual ? 'Manual' : 'Sugerida por IA'}</p>
                   </td>
-                  <td className="px-5 py-3 font-medium">{etiquetaTipo[s.tipo]}</td>
+                  <td className="px-5 py-3 font-medium">
+                    {s.origen === 'sos' ? (
+                      <span className="inline-flex items-center gap-1 text-red-600">
+                        <Siren size={14} /> SOS
+                      </span>
+                    ) : (
+                      etiquetaTipo[s.tipo]
+                    )}
+                    {esSuperAdmin && <p className="text-[11px] font-normal text-panel-text-muted">{nombreOrganizacion(s.organizacionId)}</p>}
+                  </td>
                   <td className="px-5 py-3">
                     <p className="max-w-xs truncate">{s.descripcion}</p>
                     <p className="text-xs text-panel-text-muted">{s.ubicacion}</p>
@@ -271,7 +311,7 @@ export default function SolicitudesPage() {
                 <UserCog size={16} className="text-panel-primary" /> Prioridad manual
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
-                {(['alta', 'media', 'baja'] as Prioridad[]).map((p) => (
+                {(['critica', 'alta', 'media', 'baja'] as Prioridad[]).map((p) => (
                   <button
                     key={p}
                     disabled={guardando}
@@ -285,17 +325,35 @@ export default function SolicitudesPage() {
                     {etiquetaPrioridad[p]}
                   </button>
                 ))}
-                {seleccionada.prioridadManual && (
-                  <button
-                    disabled={guardando}
-                    onClick={() => aplicar({ prioridadManual: null })}
-                    className="rounded-lg px-3 py-2 text-sm text-panel-primary hover:underline disabled:opacity-50"
-                  >
-                    Usar la de la IA
-                  </button>
-                )}
               </div>
             </div>
+
+            {esSuperAdmin && (
+              <div className="mt-5">
+                <label htmlFor="organizacion" className="flex items-center gap-2 text-sm font-semibold">
+                  <Building2 size={16} className="text-panel-primary" /> Organización que la atiende
+                </label>
+                <select
+                  id="organizacion"
+                  value={seleccionada.organizacionId ?? ''}
+                  disabled={guardando}
+                  onChange={(e) => enrutar(e.target.value)}
+                  className={`${campo} mt-2 w-full`}
+                >
+                  <option value="" disabled>
+                    Sin organización: elige una
+                  </option>
+                  {organizaciones
+                    .filter((o) => o.activa)
+                    .map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.nombre}
+                      </option>
+                    ))}
+                </select>
+                <p className="mt-1 text-xs text-panel-text-muted">Al asignarla, su administrador y sus voluntarios la ven y la pueden tomar.</p>
+              </div>
+            )}
 
             <div className="mt-5">
               <label htmlFor="estado" className="text-sm font-semibold">
