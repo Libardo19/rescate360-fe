@@ -103,6 +103,9 @@ class AuthViewModel extends StateNotifier<AuthState> {
   }
 
   void limpiarError() => state = state.copyWith(error: null);
+
+  /// Tras editar "Mis datos": el nombre y el teléfono nuevos se ven en toda la app.
+  void actualizarUsuario(UsuarioModel usuario) => state = AuthState(usuario: usuario);
 }
 
 final authViewModelProvider = StateNotifierProvider<AuthViewModel, AuthState>((ref) {

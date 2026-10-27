@@ -11,6 +11,7 @@ import '../features/guia_emergencia/presentation/views/guia_emergencia_screen.da
 import '../features/home/presentation/views/principal_screen.dart';
 import '../features/home/presentation/views/sos_screen.dart';
 import '../features/perfil/presentation/views/configuracion_screen.dart';
+import '../features/perfil/presentation/views/mi_perfil_screen.dart';
 import '../features/perfil/presentation/views/contactos_emergencia_screen.dart';
 import '../features/perfil/presentation/views/notificaciones_screen.dart';
 import '../features/personas_desaparecidas/presentation/views/personas_desaparecidas_screen.dart';
@@ -44,6 +45,7 @@ class AppRouter {
   static const sos = '/sos';
   static const contactosEmergencia = '/contactos-emergencia';
   static const configuracion = '/configuracion';
+  static const miPerfil = '/mi-perfil';
   static const notificaciones = '/notificaciones';
   static const guiaEmergencia = '/guia-emergencia';
   static const donaciones = '/donaciones';
@@ -81,6 +83,8 @@ class AppRouter {
         return _build(const ContactosEmergenciaScreen(), settings);
       case configuracion:
         return _build(const ConfiguracionScreen(), settings);
+      case miPerfil:
+        return _build(const MiPerfilScreen(), settings);
       case notificaciones:
         return _build(const NotificacionesScreen(), settings);
       case guiaEmergencia:

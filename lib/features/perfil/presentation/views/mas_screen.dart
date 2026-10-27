@@ -120,7 +120,7 @@ class MasScreen extends ConsumerWidget {
                 FilaOpcion(
                   icono: Icons.person_outline,
                   titulo: 'Mis datos',
-                  onTap: () => _proximamente(context),
+                  onTap: () => _ir(context, '/mi-perfil'),
                 ),
                 FilaOpcion(
                   icono: Icons.support_agent,
