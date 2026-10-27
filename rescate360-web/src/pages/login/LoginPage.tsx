@@ -6,6 +6,8 @@ import { login } from '../../services/auth.service'
 import { ApiError, borrarTokens } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
 import fondoLogin from '../../assets/fondoLogin.png'
+import RecuperarClave from './RecuperarClave'
+import type { LoginResponse } from '../../types/auth'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -15,6 +17,7 @@ export default function LoginPage() {
   const [mensaje, setMensaje] = useState('')
   const [esError, setEsError] = useState(false)
   const [cargando, setCargando] = useState(false)
+  const [recuperando, setRecuperando] = useState(false)
   const navigate = useNavigate()
   const { iniciarSesion } = useAuth()
 
@@ -54,8 +57,22 @@ export default function LoginPage() {
   }
 
   const recuperarClave = () => {
-    setEsError(false)
-    setMensaje('La recuperación de contraseña estará disponible cuando se conecte el servicio de autenticación.')
+    setMensaje('')
+    setRecuperando(true)
+  }
+
+  // Tras cambiar la contraseña el backend ya devuelve la sesión: entra directo si es del panel
+  const claveRecuperada = (sesion: LoginResponse) => {
+    setRecuperando(false)
+    const { rol } = sesion.usuario
+    if (rol === 'administrador' || rol === 'super_admin') {
+      iniciarSesion(sesion)
+      navigate(rol === 'administrador' ? '/admin' : '/superadmin')
+    } else {
+      borrarTokens()
+      setEsError(false)
+      setMensaje('Tu contraseña cambió. Ingresa con ella en la app de RESCATE360.')
+    }
   }
 
   return (
@@ -179,6 +196,9 @@ export default function LoginPage() {
           </div>
         </section>
       </div>
+      {recuperando && (
+        <RecuperarClave emailInicial={email} onCerrar={() => setRecuperando(false)} onListo={claveRecuperada} />
+      )}
     </main>
   )
 }
