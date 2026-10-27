@@ -21,7 +21,7 @@ export interface ItemMenu {
 }
 
 export const menuAdmin: ItemMenu[] = [
-  { ruta: '/admin', etiqueta: 'Dashboard', icono: LayoutDashboard, fin: true },
+  { ruta: '/admin', etiqueta: 'Inicio', icono: LayoutDashboard, fin: true },
   { ruta: '/admin/reportes', etiqueta: 'Reportes', icono: FileWarning },
   { ruta: '/admin/solicitudes', etiqueta: 'Solicitudes de ayuda', icono: LifeBuoy },
   { ruta: '/admin/mapa', etiqueta: 'Mapa operativo', icono: MapaIcono },

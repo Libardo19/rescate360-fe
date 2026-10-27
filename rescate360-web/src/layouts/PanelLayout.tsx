@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { LogOut, Menu, X } from 'lucide-react'
+import { Bell, ChevronDown, LogOut, Menu, Search, X } from 'lucide-react'
 import Logo from '../pages/landing/components/Logo'
 import { useAuth } from '../context/AuthContext'
 import type { ItemMenu } from '../routes/menus'
@@ -12,6 +12,7 @@ interface Props {
 
 export default function PanelLayout({ menu, titulo }: Props) {
   const [abierto, setAbierto] = useState(false)
+  const [menuUsuario, setMenuUsuario] = useState(false)
   const { usuario, cerrarSesion } = useAuth()
   const navigate = useNavigate()
 
@@ -20,6 +21,14 @@ export default function PanelLayout({ menu, titulo }: Props) {
     navigate('/login')
   }
 
+  const iniciales =
+    usuario?.nombre
+      .split(' ')
+      .map((p) => p[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase() ?? ''
+
   return (
     <div className="flex min-h-screen bg-panel-bg text-panel-text">
       {abierto && (
@@ -27,7 +36,7 @@ export default function PanelLayout({ menu, titulo }: Props) {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-panel-primary text-white transition-transform lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-navy-900 text-white transition-transform lg:sticky lg:top-0 lg:bottom-auto lg:h-dvh lg:self-start lg:translate-x-0 ${
           abierto ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -49,7 +58,7 @@ export default function PanelLayout({ menu, titulo }: Props) {
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
                   isActive
-                    ? 'bg-white/15 font-semibold text-white'
+                    ? 'bg-blue-700 font-semibold text-white'
                     : 'text-white/70 hover:bg-white/10 hover:text-white'
                 }`
               }
@@ -61,25 +70,57 @@ export default function PanelLayout({ menu, titulo }: Props) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-panel-border bg-panel-card px-4 py-3 sm:px-6">
+        <header className="sticky top-0 z-20 flex items-center gap-4 border-b border-panel-border bg-panel-card px-4 py-3 sm:px-6">
           <button className="lg:hidden" onClick={() => setAbierto(true)} aria-label="Abrir menú">
             <Menu size={22} />
           </button>
+
+          {/* Buscador global: solo interfaz por ahora. */}
+          {/* BACKEND: conectar la búsqueda global cuando exista el endpoint. */}
+          <div className="relative hidden max-w-md flex-1 sm:block">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-panel-text-muted" />
+            <input
+              placeholder="Buscar..."
+              className="w-full rounded-lg border border-panel-border bg-panel-bg py-2 pl-9 pr-3 text-sm outline-none focus:border-panel-primary"
+            />
+          </div>
+
           <div className="ml-auto flex items-center gap-4">
-            <div className="text-right text-sm leading-tight">
-              <p className="font-semibold">{usuario?.nombre}</p>
-              <p className="text-xs capitalize text-panel-text-muted">{usuario?.rol.replace('_', ' ')}</p>
-            </div>
-            <button
-              onClick={salir}
-              className="flex items-center gap-2 rounded-lg border border-panel-border px-3 py-2 text-sm text-panel-text-soft transition hover:bg-panel-bg"
-            >
-              <LogOut size={16} /> <span className="hidden sm:inline">Cerrar sesión</span>
+            <button className="relative text-panel-text-soft hover:text-panel-text" aria-label="Notificaciones">
+              <Bell size={20} />
+              <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-panel-accent" />
             </button>
+
+            {menuUsuario && <div className="fixed inset-0 z-10" onClick={() => setMenuUsuario(false)} />}
+            <div className="relative z-20">
+              <button onClick={() => setMenuUsuario(!menuUsuario)} className="flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-panel-primary text-sm font-bold text-white">
+                  {iniciales}
+                </span>
+                <span className="hidden text-left text-sm leading-tight sm:block">
+                  <span className="block font-semibold">{usuario?.nombre}</span>
+                  <span className="block text-xs capitalize text-panel-text-muted">
+                    {usuario?.rol.replace('_', ' ')}
+                  </span>
+                </span>
+                <ChevronDown size={16} className="text-panel-text-muted" />
+              </button>
+
+              {menuUsuario && (
+                <div className="absolute right-0 mt-2 w-44 rounded-lg border border-panel-border bg-panel-card py-1 shadow-lg">
+                  <button
+                    onClick={salir}
+                    className="flex w-full items-center gap-2 px-4 py-2 text-sm text-panel-text-soft hover:bg-panel-bg"
+                  >
+                    <LogOut size={16} /> Cerrar sesión
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6">
+        <main className="min-w-0 flex-1 p-4 sm:p-6">
           <Outlet />
         </main>
       </div>

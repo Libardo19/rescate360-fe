@@ -52,8 +52,8 @@ export default function AdminDashboard() {
 
       <div className="mt-8 rounded-2xl border border-panel-border bg-panel-card">
         <h2 className="border-b border-panel-border px-5 py-4 font-bold">Actividad reciente</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+        <div className="max-w-full overflow-x-auto">
+          <table className="w-full min-w-[600px] text-left text-sm">
             <thead className="text-xs uppercase text-panel-text-muted">
               <tr>
                 <th className="px-5 py-3">Tipo</th>
