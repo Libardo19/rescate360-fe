@@ -59,3 +59,12 @@ La IA clasifica de forma asíncrona: refrescar los listados unos segundos despu�
 La comprobación de backend está en `scripts/probar_ia_real.py` de rescate360-be:
 valida registro/login/perfil, Gemini en el worker, SOS, idempotencia, prioridad
 manual y los endpoints de listados y mapa. Los casos sintéticos llevan `PRUEBA IA`.
+
+
+## Celular físico contra el backend de tu PC (misma Wi-Fi)
+
+1. Backend arriba: `docker compose up -d` en `rescate360-be`. Si el registro da "error interno", revisar `docker compose logs api`: una columna que falta se arregla con `docker compose exec api alembic upgrade head`.
+2. Una sola vez, en PowerShell **como administrador**: `.\scriptsbrir-puerto-api.ps1`. Abre el puerto 8000 solo para la red local. Sin esto, el celular muestra "No hay conexión".
+3. Conectar el celular por USB (depuración USB activada) y ejecutar: `.\scripts\correr-celular.ps1`. Detecta la IP de la PC y corre `flutter run --dart-define=API_BASE_URL=http://<IP>:8000`.
+
+Si Gradle se cierra solo al compilar, es por falta de memoria: `android/gradle.properties` usa `-Xmx2G` para equipos de 8 a 16 GB de RAM. Conviene cerrar Chrome y los emuladores mientras compila.
