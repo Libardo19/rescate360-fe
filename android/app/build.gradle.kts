@@ -7,7 +7,8 @@ plugins {
 
 android {
     namespace = "com.example.rescate360"
-    compileSdk = flutter.compileSdkVersion
+    // permission_handler_android 14.x exige compilar contra el SDK 37
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../check_in/presentation/widgets/vigilante_check_in.dart';
 import '../../../perfil/presentation/views/mas_screen.dart';
+import '../widgets/barra_voluntario.dart';
 import 'asignaciones_voluntario_screen.dart';
 import 'incidentes_voluntario_screen.dart';
 import 'inicio_voluntario_screen.dart';
 import 'mapa_voluntario_screen.dart';
 
 /// Contenedor principal del voluntario: barra inferior con Inicio,
-/// Incidentes, Mapa, Asignaciones y Más (mockups del voluntario).
+/// Incidentes, Mapa (botón central), Asignaciones y Más (mockups del voluntario).
 class VoluntarioScreen extends StatefulWidget {
   const VoluntarioScreen({super.key});
 
@@ -50,47 +51,7 @@ class _VoluntarioScreenState extends State<VoluntarioScreen> {
                 _visitadas.contains(i) ? _pagina(i) : const SizedBox.shrink(),
           ),
         ),
-        bottomNavigationBar: Container(
-          decoration: const BoxDecoration(
-            border: Border(top: BorderSide(color: AppColors.surfaceBorder)),
-          ),
-          child: BottomNavigationBar(
-            currentIndex: _indice,
-            onTap: _irA,
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: AppColors.surface,
-            selectedItemColor: AppColors.primary,
-            unselectedItemColor: AppColors.textMuted,
-            selectedFontSize: 11,
-            unselectedFontSize: 11,
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.home_outlined),
-                activeIcon: Icon(Icons.home),
-                label: 'Inicio',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.warning_amber_outlined),
-                activeIcon: Icon(Icons.warning_amber_rounded),
-                label: 'Incidentes',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.location_on_outlined),
-                activeIcon: Icon(Icons.location_on),
-                label: 'Mapa',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.assignment_outlined),
-                activeIcon: Icon(Icons.assignment),
-                label: 'Asignaciones',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.more_horiz),
-                label: 'Más',
-              ),
-            ],
-          ),
-        ),
+        bottomNavigationBar: BarraVoluntario(indice: _indice, onTap: _irA),
       ),
     );
   }
