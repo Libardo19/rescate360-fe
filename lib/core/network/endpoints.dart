@@ -42,6 +42,9 @@ class Endpoints {
   // Alertas por zona
   static const alertas = '/alertas';
 
+  // Guía de emergencia
+  static const guia = '/guia-emergencia';
+
   // Mapa en vivo
   static const mapa = '/mapa';
 }
