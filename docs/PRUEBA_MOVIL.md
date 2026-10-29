@@ -57,3 +57,20 @@ La IA clasifica de forma asíncrona: refrescar los listados unos segundos despu�
 La comprobación de backend está en `scripts/probar_ia_real.py` de rescate360-be:
 valida registro/login/perfil, Gemini en el worker, SOS, idempotencia, prioridad
 manual y los endpoints de listados y mapa. Los casos sintéticos llevan `PRUEBA IA`.
+
+## Modo sin conexión: relevo por Bluetooth (prueba de concepto, solo Android)
+
+Hacen falta 3 teléfonos Android con la app instalada y la sesión iniciada **una vez con internet**. En ese momento la app guarda la llave para firmar mensajes.
+
+1. En los 3: **Más → Configuración → Modo sin conexión → "Ayudar a pasar mensajes por Bluetooth"**. Acepta los permisos de Bluetooth, dispositivos cercanos y ubicación.
+2. Pon **A** y **B** en modo avión, pero con el **Bluetooth encendido**. **C** queda con datos.
+3. En **A**: mantén presionado el SOS. Sale "Sin internet: tu SOS se guardó y se está pasando por Bluetooth".
+4. Acerca **A** a **B** (0–10 m), y después **B** a **C**. Cada salto suma 1 y el máximo es 8.
+5. **C** lo sube solo a `POST /offline/relevo`. El backend verifica la firma de A, crea el SOS con `origen = mesh` y manda el SMS a los contactos de emergencia de A.
+
+Para el "¿Estás bien?" el flujo es el mismo: si A responde sin red, la respuesta viaja igual.
+
+**Limitaciones:**
+- solo Android, porque Nearby no habla con iOS;
+- los teléfonos intermedios deben tener la app abierta y el modo activo;
+- gasta batería.
