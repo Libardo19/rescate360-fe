@@ -219,7 +219,9 @@ export default function SolicitudesPage() {
                     <span className={`rounded-full px-3 py-1 text-xs font-medium ${colorPrioridad[prioridad]}`}>
                       {etiquetaPrioridad[prioridad]}
                     </span>
-                    <p className="mt-1 text-[11px] text-panel-text-muted">{s.prioridadManual ? 'Manual' : 'Sugerida por IA'}</p>
+                    <p className="mt-1 text-[11px] text-panel-text-muted">
+                      {s.prioridadManual ? 'Manual' : s.prioridadIA === 'pendiente' ? 'Sin clasificar' : 'Sugerida por IA'}
+                    </p>
                   </td>
                   <td className="px-5 py-3 font-medium">
                     {s.origen === 'sos' ? (

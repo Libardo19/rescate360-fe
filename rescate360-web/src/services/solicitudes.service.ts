@@ -64,7 +64,7 @@ export async function actualizarSolicitud(id: string, cambios: CambiosSolicitud)
   return aSolicitud(respuesta)
 }
 
-// Solo el super admin: mientras no haya IA, así llega el caso a una organización
+// Solo el super admin: si la IA no enrutó el caso, así se asigna a mano a una organización
 export async function asignarOrganizacion(id: string, organizacionId: string): Promise<Solicitud> {
   if (USE_MOCK) {
     mock = mock.map((s) => (s.id === id ? { ...s, organizacionId } : s))

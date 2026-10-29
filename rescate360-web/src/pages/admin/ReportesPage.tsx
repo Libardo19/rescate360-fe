@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Search, X, CheckCircle2, XCircle, Copy, Building2, Image as ImagenIcono } from 'lucide-react'
+import { Search, X, CheckCircle2, XCircle, Copy, Building2, Image as ImagenIcono, Sparkles } from 'lucide-react'
 import {
   listarReportes,
   listarTipos,
@@ -11,8 +11,10 @@ import {
 import { listarOrganizaciones } from '../../services/organizaciones.service'
 import { mensajeDeError } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
+import { prioridadEfectivaReporte } from '../../types/reporte'
 import type { Reporte, EstadoReporte, TipoSugerido } from '../../types/reporte'
 import type { Organizacion } from '../../types/organizacion'
+import type { Prioridad } from '../../types/solicitud'
 
 const etiquetaEstado: Record<EstadoReporte, string> = {
   pendiente: 'Pendiente',
@@ -28,6 +30,22 @@ const colorEstado: Record<EstadoReporte, string> = {
   rechazado: 'bg-red-100 text-red-700',
   duplicado: 'bg-slate-200 text-slate-600',
   no_verificable: 'bg-slate-200 text-slate-600',
+}
+
+const etiquetaPrioridad: Record<Prioridad, string> = {
+  pendiente: 'Sin clasificar',
+  baja: 'Baja',
+  media: 'Media',
+  alta: 'Alta',
+  critica: 'Crítica',
+}
+
+const colorPrioridad: Record<Prioridad, string> = {
+  pendiente: 'bg-slate-200 text-slate-600',
+  baja: 'bg-slate-100 text-slate-600',
+  media: 'bg-amber-100 text-amber-700',
+  alta: 'bg-orange-100 text-orange-700',
+  critica: 'bg-red-100 text-red-700',
 }
 
 // Valor especial del filtro: todo lo que el ciudadano escribió y no está en la lista sugerida
@@ -167,6 +185,7 @@ export default function ReportesPage() {
         <table className="w-full min-w-[740px] text-left text-sm">
           <thead className="text-xs uppercase text-panel-text-muted">
             <tr>
+              <th className="px-5 py-3">Prioridad</th>
               <th className="px-5 py-3">Tipo</th>
               <th className="px-5 py-3">Descripción</th>
               <th className="px-5 py-3">Reportante</th>
@@ -178,39 +197,50 @@ export default function ReportesPage() {
           <tbody>
             {filtrados.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-5 py-10 text-center text-panel-text-soft">
+                <td colSpan={7} className="px-5 py-10 text-center text-panel-text-soft">
                   No hay reportes con esos filtros.
                 </td>
               </tr>
             )}
-            {filtrados.map((r) => (
-              <tr key={r.id} className="border-t border-panel-border">
-                <td className="px-5 py-3 font-medium">
-                  {r.tipoEtiqueta}
-                  {r.evidencias.length > 0 && (
-                    <span className="ml-2 inline-flex items-center gap-0.5 text-xs font-normal text-panel-text-muted">
-                      <ImagenIcono size={12} /> {r.evidencias.length}
+            {filtrados.map((r) => {
+              const prioridad = prioridadEfectivaReporte(r)
+              return (
+                <tr key={r.id} className="border-t border-panel-border">
+                  <td className="px-5 py-3">
+                    <span className={`rounded-full px-3 py-1 text-xs font-medium ${colorPrioridad[prioridad]}`}>
+                      {etiquetaPrioridad[prioridad]}
                     </span>
-                  )}
-                </td>
-                <td className="px-5 py-3">
-                  <p className="max-w-xs truncate">{r.descripcion}</p>
-                  <p className="text-xs text-panel-text-muted">{r.ubicacion}</p>
-                </td>
-                <td className="px-5 py-3 text-panel-text-soft">{r.reportante}</td>
-                <td className="whitespace-nowrap px-5 py-3 text-panel-text-soft">{formatearFecha(r.fecha)}</td>
-                <td className="px-5 py-3">
-                  <span className={`rounded-full px-3 py-1 text-xs font-medium ${colorEstado[r.estado]}`}>
-                    {etiquetaEstado[r.estado]}
-                  </span>
-                </td>
-                <td className="px-5 py-3 text-right">
-                  <button onClick={() => abrir(r)} className="text-sm font-semibold text-panel-primary hover:underline">
-                    Ver detalle
-                  </button>
-                </td>
-              </tr>
-            ))}
+                    <p className="mt-1 text-[11px] text-panel-text-muted">
+                      {r.prioridadManual ? 'Manual' : r.prioridadIA === 'pendiente' ? 'Sin clasificar' : 'Sugerida por IA'}
+                    </p>
+                  </td>
+                  <td className="px-5 py-3 font-medium">
+                    {r.tipoEtiqueta}
+                    {r.evidencias.length > 0 && (
+                      <span className="ml-2 inline-flex items-center gap-0.5 text-xs font-normal text-panel-text-muted">
+                        <ImagenIcono size={12} /> {r.evidencias.length}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-5 py-3">
+                    <p className="max-w-xs truncate">{r.descripcion}</p>
+                    <p className="text-xs text-panel-text-muted">{r.ubicacion}</p>
+                  </td>
+                  <td className="px-5 py-3 text-panel-text-soft">{r.reportante}</td>
+                  <td className="whitespace-nowrap px-5 py-3 text-panel-text-soft">{formatearFecha(r.fecha)}</td>
+                  <td className="px-5 py-3">
+                    <span className={`rounded-full px-3 py-1 text-xs font-medium ${colorEstado[r.estado]}`}>
+                      {etiquetaEstado[r.estado]}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3 text-right">
+                    <button onClick={() => abrir(r)} className="text-sm font-semibold text-panel-primary hover:underline">
+                      Ver detalle
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
@@ -262,6 +292,22 @@ export default function ReportesPage() {
                 </div>
               )}
             </dl>
+
+            <div className="mt-5 rounded-xl bg-panel-bg p-4 text-sm">
+              <p className="flex items-center gap-2 font-semibold">
+                <Sparkles size={16} className="text-panel-info" />
+                Sugerencia de la IA:
+                <span className={`rounded-full px-2 py-0.5 text-xs ${colorPrioridad[seleccionado.prioridadIA]}`}>
+                  {etiquetaPrioridad[seleccionado.prioridadIA]}
+                </span>
+              </p>
+              <p className="mt-1 text-panel-text-soft">{seleccionado.motivoIA}</p>
+              {seleccionado.confianzaIA !== null && (
+                <p className="mt-1 text-xs text-panel-text-muted">
+                  Confianza: {Math.round(seleccionado.confianzaIA * 100)}%
+                </p>
+              )}
+            </div>
 
             {seleccionado.evidencias.length > 0 && (
               <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3">

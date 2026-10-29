@@ -10,12 +10,25 @@ const TIPOS_MOCK: TipoSugerido[] = [
   { valor: 'sismo', etiqueta: 'Sismo' },
 ]
 
+const SIN_IA = 'La IA todavía no ha clasificado este reporte.'
+
 // Datos de prueba, SOLO para desarrollo de la interfaz (VITE_USE_MOCK=true).
-const base = { lat: 10.4631, lng: -73.2532, evidencias: [], motivoRechazo: null, duplicadoDeId: null, organizacionId: null }
+const base = {
+  lat: 10.4631,
+  lng: -73.2532,
+  evidencias: [] as Reporte['evidencias'],
+  prioridadIA: 'pendiente' as Reporte['prioridadIA'],
+  prioridadManual: null as Reporte['prioridadManual'],
+  confianzaIA: null as Reporte['confianzaIA'],
+  motivoIA: SIN_IA,
+  motivoRechazo: null,
+  duplicadoDeId: null,
+  organizacionId: null,
+}
 let mock: Reporte[] = [
-  { ...base, id: '1', tipo: 'accidente', tipoEtiqueta: 'Accidente', descripcion: 'Choque entre moto y carro, hay heridos leves.', ubicacion: 'Calle 10 #5-20', reportante: 'Juan Pérez', fecha: '2026-10-05T09:30:00', estado: 'pendiente' },
-  { ...base, id: '2', tipo: 'inundacion', tipoEtiqueta: 'Inundación', descripcion: 'Se desbordó la quebrada, el agua entra a varias casas.', ubicacion: 'Barrio El Prado', reportante: 'María López', fecha: '2026-10-05T07:10:00', estado: 'verificado' },
-  { ...base, id: '3', tipo: 'fuga de gas', tipoEtiqueta: 'Fuga de gas', descripcion: 'Olor fuerte a gas en la esquina.', ubicacion: 'Parque Central', reportante: 'Carlos Rojas', fecha: '2026-10-04T21:45:00', estado: 'pendiente' },
+  { ...base, id: '1', tipo: 'accidente', tipoEtiqueta: 'Accidente', descripcion: 'Choque entre moto y carro, hay heridos leves.', ubicacion: 'Calle 10 #5-20', reportante: 'Juan Pérez', fecha: '2026-10-05T09:30:00', estado: 'pendiente', prioridadIA: 'media', confianzaIA: 0.62, motivoIA: 'Hay heridos leves; no hay riesgo inmediato para la vida.' },
+  { ...base, id: '2', tipo: 'inundacion', tipoEtiqueta: 'Inundación', descripcion: 'Se desbordó la quebrada, el agua entra a varias casas.', ubicacion: 'Barrio El Prado', reportante: 'María López', fecha: '2026-10-05T07:10:00', estado: 'verificado', prioridadIA: 'alta', confianzaIA: 0.81, motivoIA: 'Inundación en viviendas con riesgo para sus habitantes.' },
+  { ...base, id: '3', tipo: 'fuga de gas', tipoEtiqueta: 'Fuga de gas', descripcion: 'Olor fuerte a gas en la esquina.', ubicacion: 'Parque Central', reportante: 'Carlos Rojas', fecha: '2026-10-04T21:45:00', estado: 'pendiente', prioridadIA: 'alta', confianzaIA: 0.77, motivoIA: 'Fuga de gas en zona pública: riesgo de explosión.' },
 ]
 
 // Del contrato del backend al modelo de la pantalla
@@ -32,6 +45,10 @@ const aReporte = (r: ReporteApi): Reporte => ({
   estado: r.estado,
   // El backend devuelve rutas relativas (/uploads/...): el navegador necesita la URL completa del API
   evidencias: r.evidencias.map((e) => ({ ...e, url: urlArchivo(e.url) })),
+  prioridadIA: r.prioridad_ia,
+  prioridadManual: r.prioridad_manual,
+  confianzaIA: r.confianza_ia,
+  motivoIA: r.razonamiento_ia ?? SIN_IA,
   motivoRechazo: r.motivo_rechazo,
   duplicadoDeId: r.duplicado_de_id,
   organizacionId: r.organizacion_manual_id ?? r.organizacion_objetivo_id,

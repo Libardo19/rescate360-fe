@@ -56,8 +56,9 @@ export default function SuperAdminDashboard() {
       </div>
 
       <p className="mt-6 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-950">
-        Mientras no esté la IA, las solicitudes y los reportes nuevos no tienen organización: asígnalos desde
-        <strong> Solicitudes</strong> y <strong>Reportes</strong> para que los vean sus administradores y voluntarios.
+        La IA sugiere automáticamente la organización de las solicitudes y los reportes nuevos. Si un caso queda sin
+        organización (porque la IA no respondió o no encontró una adecuada), asígnalo desde
+        <strong> Solicitudes</strong> y <strong> Reportes</strong> para que lo vean sus administradores y voluntarios.
       </p>
     </div>
   )
