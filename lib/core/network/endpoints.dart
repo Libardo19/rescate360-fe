@@ -52,6 +52,9 @@ class Endpoints {
   static const offlineSync = '/offline/sync';
   static const offlineRelevo = '/offline/relevo';
 
+  // Guía de emergencia
+  static const guia = '/guia-emergencia';
+
   // Mapa en vivo
   static const mapa = '/mapa';
 }

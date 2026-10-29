@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rescate360/features/alertas/data/models/alerta_model.dart';
 import 'package:rescate360/features/check_in/data/models/check_in_model.dart';
+import 'package:rescate360/features/guia_emergencia/data/models/guia_model.dart';
 import 'package:rescate360/features/mapa/data/models/marcador_mapa_model.dart';
 import 'package:rescate360/features/perfil/data/models/contacto_emergencia_model.dart';
 import 'package:rescate360/features/personas_desaparecidas/data/models/persona_desaparecida.dart';
@@ -194,5 +195,17 @@ void main() {
     });
     expect(check.pendiente, isTrue);
     expect(check.eventoSismicoId, 's1');
+  });
+
+  test('GuiaOut → GuiaModel', () {
+    final guia = GuiaModel.fromJson({
+      'id': 'g1',
+      'titulo': 'Terremoto',
+      'categoria': 'sismo',
+      'contenido': 'Mantén la calma\nAgáchate',
+      'pasos': ['Mantén la calma', 'Agáchate'],
+    });
+    expect(guia.categoria, 'sismo');
+    expect(guia.pasos, hasLength(2));
   });
 }
