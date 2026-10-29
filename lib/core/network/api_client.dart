@@ -43,7 +43,7 @@ class ApiClient {
 
   Future<T> patch<T>(String ruta, {Object? datos}) => _llamar(() => dio.patch(ruta, data: datos));
 
-  Future<T> delete<T>(String ruta) => _llamar(() => dio.delete(ruta));
+  Future<T> delete<T>(String ruta, {Object? datos}) => _llamar(() => dio.delete(ruta, data: datos));
 }
 
 /// Las evidencias llegan como ruta relativa (/uploads/...): la app necesita la URL completa.

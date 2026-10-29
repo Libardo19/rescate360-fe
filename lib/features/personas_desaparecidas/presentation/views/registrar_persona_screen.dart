@@ -22,7 +22,7 @@ class RegistrarPersonaScreen extends ConsumerStatefulWidget {
 
 class _RegistrarPersonaScreenState
     extends ConsumerState<RegistrarPersonaScreen> {
-  static const List<String> _sexos = ['Mujer', 'Hombre', 'Otro'];
+  static final List<String> _sexos = sexosPersona.keys.toList();
 
   final _formKey = GlobalKey<FormState>();
   final _picker = ImagePicker();
@@ -40,7 +40,6 @@ class _RegistrarPersonaScreenState
   Uint8List? _foto;
   String? _sexo;
   DateTime? _fecha;
-  bool _urgente = false;
   bool _acepta = false;
   bool _intentoEnviar = false;
   bool _enviando = false;
@@ -183,27 +182,26 @@ class _RegistrarPersonaScreenState
 
     setState(() => _enviando = true);
 
-    final persona = PersonaDesaparecida(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      nombre: _nombreCtrl.text.trim(),
-      edad: int.parse(_edadCtrl.text.trim()),
-      sexo: _sexo!,
-      estatura: _opcional(_estaturaCtrl),
-      fechaVista: _fecha!,
-      lugar: _lugarCtrl.text.trim(),
-      descripcion: _descripcionCtrl.text.trim(),
-      senasParticulares: _opcional(_senasCtrl),
-      vestimenta: _opcional(_vestimentaCtrl),
-      contactoNombre: _contactoNombreCtrl.text.trim(),
-      contactoTelefono: _contactoTelefonoCtrl.text.trim(),
-      estado: _urgente ? EstadoPersona.urgente : EstadoPersona.enRevision,
-      foto: _foto,
-    );
-
-    // TODO: enviar el reporte (y la foto) a la API de rescate360-be.
-    await Future.delayed(const Duration(milliseconds: 700));
+    final error = await ref.read(personasViewModelProvider.notifier).crear(
+          nombre: _nombreCtrl.text.trim(),
+          edad: int.parse(_edadCtrl.text.trim()),
+          sexo: sexosPersona[_sexo!]!,
+          estatura: _opcional(_estaturaCtrl),
+          fechaVista: _fecha!,
+          lugar: _lugarCtrl.text.trim(),
+          descripcion: _descripcionCtrl.text.trim(),
+          senasParticulares: _opcional(_senasCtrl),
+          vestimenta: _opcional(_vestimentaCtrl),
+          contactoNombre: _contactoNombreCtrl.text.trim(),
+          contactoTelefono: _contactoTelefonoCtrl.text.trim(),
+          foto: _foto,
+        );
     if (!mounted) return;
-    ref.read(personasViewModelProvider.notifier).agregar(persona);
+    if (error != null) {
+      setState(() => _enviando = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
     Navigator.of(context).pop(true);
   }
 
@@ -366,10 +364,6 @@ class _RegistrarPersonaScreenState
                     ),
                   ],
                 ),
-                _TarjetaUrgente(
-                  valor: _urgente,
-                  onChanged: (v) => setState(() => _urgente = v),
-                ),
                 const SizedBox(height: 14),
                 InkWell(
                   onTap: () => setState(() => _acepta = !_acepta),
@@ -385,9 +379,10 @@ class _RegistrarPersonaScreenState
                         child: Padding(
                           padding: EdgeInsets.only(top: 12),
                           child: Text(
-                            'Confirmo que la información es verídica y que '
+                            'Confirmo que la información es verídica, que '
                             'tengo relación con la persona o autorización '
-                            'para reportarla.',
+                            'para reportarla y, si adjunto una foto, autorizo '
+                            'publicarla.',
                             style: AppTextStyles.bodySecondary,
                           ),
                         ),
@@ -739,54 +734,6 @@ class _CampoFecha extends StatelessWidget {
               style: const TextStyle(color: AppColors.danger, fontSize: 12)),
         ],
       ],
-    );
-  }
-}
-
-class _TarjetaUrgente extends StatelessWidget {
-  final bool valor;
-  final ValueChanged<bool> onChanged;
-
-  const _TarjetaUrgente({required this.valor, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color:
-            valor ? AppColors.danger.withOpacity(0.10) : AppColors.background,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: valor ? AppColors.danger : AppColors.surfaceBorder,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.warning_amber_rounded,
-              color: valor ? AppColors.danger : AppColors.textMuted),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Marcar como urgente', style: AppTextStyles.body),
-                SizedBox(height: 2),
-                Text(
-                  'Menor de edad, adulto mayor o persona en riesgo',
-                  style: AppTextStyles.caption,
-                ),
-              ],
-            ),
-          ),
-          Switch(
-            value: valor,
-            activeColor: AppColors.danger,
-            onChanged: onChanged,
-          ),
-        ],
-      ),
     );
   }
 }

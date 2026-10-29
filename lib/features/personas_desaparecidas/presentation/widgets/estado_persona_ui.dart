@@ -6,12 +6,8 @@ import '../../data/models/persona_desaparecida.dart';
 extension EstadoPersonaUi on EstadoPersona {
   String get etiqueta {
     switch (this) {
-      case EstadoPersona.urgente:
-        return 'URGENTE';
-      case EstadoPersona.enInvestigacion:
-        return 'En investigación';
-      case EstadoPersona.enRevision:
-        return 'En revisión';
+      case EstadoPersona.buscando:
+        return 'En búsqueda';
       case EstadoPersona.encontrada:
         return 'Encontrada';
     }
@@ -19,12 +15,8 @@ extension EstadoPersonaUi on EstadoPersona {
 
   Color get color {
     switch (this) {
-      case EstadoPersona.urgente:
+      case EstadoPersona.buscando:
         return AppColors.danger;
-      case EstadoPersona.enInvestigacion:
-        return AppColors.warning;
-      case EstadoPersona.enRevision:
-        return AppColors.info;
       case EstadoPersona.encontrada:
         return AppColors.success;
     }
