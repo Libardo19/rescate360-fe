@@ -11,7 +11,18 @@ const TIPOS_MOCK: TipoSugerido[] = [
 ]
 
 // Datos de prueba, SOLO para desarrollo de la interfaz (VITE_USE_MOCK=true).
-const base = { lat: 10.4631, lng: -73.2532, evidencias: [], motivoRechazo: null, duplicadoDeId: null, organizacionId: null }
+const base = {
+  lat: 10.4631,
+  lng: -73.2532,
+  evidencias: [],
+  motivoRechazo: null,
+  duplicadoDeId: null,
+  organizacionId: null,
+  prioridadIA: 'alta' as const,
+  prioridadManual: null,
+  confianzaIA: 0.9,
+  motivoIA: 'Sugerencia de prueba de la IA.',
+}
 let mock: Reporte[] = [
   { ...base, id: '1', tipo: 'accidente', tipoEtiqueta: 'Accidente', descripcion: 'Choque entre moto y carro, hay heridos leves.', ubicacion: 'Calle 10 #5-20', reportante: 'Juan Pérez', fecha: '2026-10-05T09:30:00', estado: 'pendiente' },
   { ...base, id: '2', tipo: 'inundacion', tipoEtiqueta: 'Inundación', descripcion: 'Se desbordó la quebrada, el agua entra a varias casas.', ubicacion: 'Barrio El Prado', reportante: 'María López', fecha: '2026-10-05T07:10:00', estado: 'verificado' },
@@ -30,6 +41,10 @@ const aReporte = (r: ReporteApi): Reporte => ({
   reportante: r.reportante?.nombre ?? 'Anónimo',
   fecha: r.creado_en,
   estado: r.estado,
+  prioridadIA: r.prioridad_ia,
+  prioridadManual: r.prioridad_manual,
+  confianzaIA: r.confianza_ia,
+  motivoIA: r.razonamiento_ia ?? 'La IA todavía no ha clasificado este reporte.',
   // El backend devuelve rutas relativas (/uploads/...): el navegador necesita la URL completa del API
   evidencias: r.evidencias.map((e) => ({ ...e, url: urlArchivo(e.url) })),
   motivoRechazo: r.motivo_rechazo,
@@ -71,6 +86,12 @@ export async function rechazarReporte(id: string, motivo: string): Promise<Repor
 export async function marcarDuplicado(id: string, duplicadoDeId: string): Promise<Reporte> {
   if (USE_MOCK) return cambiarMock(id, { estado: 'duplicado', duplicadoDeId })
   return patch(`/reportes/${id}/marcar-duplicado`, { duplicado_de_id: duplicadoDeId })
+}
+
+// Administrador de la organización o super admin: prevalece sobre la sugerencia de la IA
+export async function fijarPrioridadReporte(id: string, prioridad: Exclude<Reporte['prioridadIA'], 'pendiente'>): Promise<Reporte> {
+  if (USE_MOCK) return cambiarMock(id, { prioridadManual: prioridad })
+  return patch(`/reportes/${id}/prioridad`, { prioridad_manual: prioridad })
 }
 
 // Solo el super admin

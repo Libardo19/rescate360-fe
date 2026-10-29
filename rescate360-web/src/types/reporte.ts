@@ -1,3 +1,5 @@
+import type { Prioridad } from './solicitud'
+
 // Valores iguales a los del backend
 export type EstadoReporte = 'pendiente' | 'verificado' | 'rechazado' | 'duplicado' | 'no_verificable'
 
@@ -27,6 +29,10 @@ export interface ReporteApi {
   direccion: string | null
   ubicacion: { lat: number; lng: number }
   estado: EstadoReporte
+  prioridad_ia: Prioridad
+  prioridad_manual: Prioridad | null
+  confianza_ia: number | null
+  razonamiento_ia: string | null
   organizacion_objetivo_id: string | null
   organizacion_manual_id: string | null
   verificado_por: string | null
@@ -51,6 +57,10 @@ export interface Reporte {
   reportante: string
   fecha: string // formato ISO
   estado: EstadoReporte
+  prioridadIA: Prioridad
+  prioridadManual: Prioridad | null // prevalece sobre la de la IA
+  confianzaIA: number | null
+  motivoIA: string
   evidencias: Evidencia[]
   motivoRechazo: string | null
   duplicadoDeId: string | null

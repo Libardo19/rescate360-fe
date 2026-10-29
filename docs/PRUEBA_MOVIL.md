@@ -1,5 +1,7 @@
 # Prueba desde teléfonos físicos
 
+> Cómo publicar el API con un túnel y cómo se conectan los compañeros: ver `docs/CONEXION_TUNEL.md`.
+
 La app se conecta al API por HTTPS y el API consulta PostgreSQL. El teléfono nunca
 se conecta directamente a PostgreSQL. `10.0.2.2` solo sirve para el emulador Android;
 `localhost` en un teléfono apunta al propio teléfono.
@@ -74,3 +76,11 @@ Para el "¿Estás bien?" el flujo es el mismo: si A responde sin red, la respues
 - solo Android, porque Nearby no habla con iOS;
 - los teléfonos intermedios deben tener la app abierta y el modo activo;
 - gasta batería.
+
+## Celular físico contra el backend de tu PC (misma Wi-Fi)
+
+1. Backend arriba: `docker compose up -d` en `rescate360-be`. Si el registro da "error interno", revisar `docker compose logs api`: una columna que falta se arregla con `docker compose exec api alembic upgrade head`.
+2. Una sola vez, en PowerShell **como administrador**: `.\scripts\abrir-puerto-api.ps1`. Abre el puerto 8000 solo para la red local. Sin esto, el celular muestra "No hay conexión".
+3. Conectar el celular por USB (depuración USB activada) y ejecutar: `.\scripts\correr-celular.ps1`. Detecta la IP de la PC y corre `flutter run --dart-define=API_BASE_URL=http://<IP>:8000`.
+
+Si Gradle se cierra solo al compilar, es por falta de memoria: `android/gradle.properties` usa `-Xmx2G` para equipos de 8 a 16 GB de RAM. Conviene cerrar Chrome y los emuladores mientras compila.
