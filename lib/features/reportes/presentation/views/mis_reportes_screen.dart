@@ -25,6 +25,8 @@ extension EstadoReporteCiudadanoUi on EstadoReporteCiudadano {
         return 'Duplicado';
       case EstadoReporteCiudadano.noVerificable:
         return 'No verificable';
+      case EstadoReporteCiudadano.atendido:
+        return 'Atendido';
     }
   }
 
@@ -33,6 +35,7 @@ extension EstadoReporteCiudadanoUi on EstadoReporteCiudadano {
       case EstadoReporteCiudadano.pendiente:
         return AppColors.warning;
       case EstadoReporteCiudadano.verificado:
+      case EstadoReporteCiudadano.atendido:
         return AppColors.success;
       case EstadoReporteCiudadano.rechazado:
         return AppColors.danger;

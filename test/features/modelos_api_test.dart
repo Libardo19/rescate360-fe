@@ -227,4 +227,24 @@ void main() {
     expect(caso.cancelable, isTrue);
     expect(caso.estadoEtiqueta, 'Verificado');
   });
+
+  test('Reporte atendido: se cierra para el voluntario y el ciudadano lo ve "Atendido"', () {
+    final json = {
+      'id': 'r2',
+      'tipo': 'incendio',
+      'tipo_etiqueta': 'Incendio',
+      'descripcion': 'Humo en una bodega',
+      'direccion': null,
+      'ubicacion': {'lat': 10.46, 'lng': -73.25},
+      'estado': 'atendido',
+      'prioridad_ia': 'alta',
+      'prioridad_manual': null,
+      'evidencias': [],
+      'creado_en': '2026-10-29T10:00:00Z',
+    };
+    final caso = SolicitudAyudaModel.desdeReporte(json);
+    expect(caso.cancelable, isFalse);
+    expect(caso.estadoEtiqueta, 'Atendido');
+    expect(ReporteCiudadano.fromJson(json).estado, EstadoReporteCiudadano.atendido);
+  });
 }

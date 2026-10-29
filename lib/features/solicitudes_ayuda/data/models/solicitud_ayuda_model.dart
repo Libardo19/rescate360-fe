@@ -71,7 +71,7 @@ class SolicitudAyudaModel {
   bool get esReporte => clase == 'reporte';
 
   /// Sigue abierto: una solicitud mientras no esté atendida ni cancelada; un reporte mientras
-  /// esté pendiente o verificado.
+  /// esté pendiente o verificado (al finalizarlo el voluntario queda `atendido`).
   bool get cancelable => esReporte
       ? estado == 'pendiente' || estado == 'verificado'
       : estado == 'pendiente' || estado == 'en_proceso';
@@ -91,6 +91,7 @@ class SolicitudAyudaModel {
     'atendida': 'Atendida',
     'cancelada': 'Cancelada',
     'verificado': 'Verificado',
+    'atendido': 'Atendido',
   };
 
   String get titulo => esReporte
