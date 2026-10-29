@@ -24,4 +24,5 @@ class AppColors {
   // Estados
   static const Color danger = Color(0xFFE5534B);
   static const Color success = Color(0xFF3FBF7F);
+  static const Color warning = Color(0xFFF0B44C);
 }

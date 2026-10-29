@@ -1,13 +1,14 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:rescate360/features/landing/views/landing_screen.dart';
 import '../features/auth/presentation/views/bienvenida_screen.dart';
 import '../features/auth/presentation/views/login_screen.dart';
 import '../features/auth/presentation/views/registro_screen.dart';
 import '../features/home/presentation/views/home_screen.dart';
 
 /// Rutas nombradas de la app.
-/// Navegación inicial (según lo pedido):
-///   Bienvenida -> Login -> Home
-///   Bienvenida -> Registro -> Home
+///   Móvil: Bienvenida -> Login/Registro -> Home
+///   Web:   Landing (/) -> Login/Registro -> Home
 class AppRouter {
   AppRouter._();
 
@@ -19,16 +20,25 @@ class AppRouter {
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case inicial:
-        return _build(const BienvenidaScreen(), settings);
+        return _build(
+          kIsWeb ? const LandingScreen() : const BienvenidaScreen(),
+          settings,
+        );
       case login:
         return _build(const LoginScreen(), settings);
       case registro:
         return _build(const RegistroScreen(), settings);
       case home:
         return _build(const HomeScreen(), settings);
+      // TODO(landing): descomentar al crear cada página
+      // case '/como-funciona':  return _build(const ComoFuncionaScreen(), settings);
+      // case '/ciudadanos':     return _build(const CiudadanosScreen(), settings);
+      // case '/organizaciones': return _build(const OrganizacionesScreen(), settings);
       default:
         return _build(
-          Scaffold(body: Center(child: Text('Ruta no encontrada: ${settings.name}'))),
+          Scaffold(
+              body:
+                  Center(child: Text('Ruta no encontrada: ${settings.name}'))),
           settings,
         );
     }
