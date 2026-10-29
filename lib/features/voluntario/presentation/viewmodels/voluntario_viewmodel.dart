@@ -43,8 +43,8 @@ class VoluntarioViewModel {
     }
   }
 
-  Future<String?> tomar(String solicitudId) =>
-      _hacer(() => _ref.read(voluntarioRepositoryProvider).tomar(solicitudId));
+  Future<String?> tomar(SolicitudAyudaModel caso) =>
+      _hacer(() => _ref.read(voluntarioRepositoryProvider).tomar(caso));
 
   Future<String?> finalizar(String asignacionId) => _hacer(() => _ref
       .read(voluntarioRepositoryProvider)

@@ -33,6 +33,7 @@ class Endpoints {
   static const misAsignaciones = '/asignaciones/mias';
   static String asignacion(String id) => '/asignaciones/$id';
   static String tomarSolicitud(String id) => '/solicitudes-ayuda/$id/asignar';
+  static String tomarReporte(String id) => '/reportes/$id/asignar';
 
   // Personas desaparecidas
   static const personas = '/personas-desaparecidas';
