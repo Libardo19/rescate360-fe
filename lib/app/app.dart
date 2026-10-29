@@ -1,19 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/services/push_notification_service.dart';
 import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../features/perfil/presentation/viewmodels/ajustes_viewmodel.dart';
 import 'router.dart';
 import 'theme/app_theme.dart';
 import 'theme/modo_oscuro.dart';
 
-/// Widget raíz de la aplicación RESCATE360.
-/// Aplica el idioma y el modo oscuro elegidos en Configuración.
-class RescateApp extends ConsumerWidget {
+/// Widget ra��z de la aplicaci��n RESCATE360.
+/// Aplica el idioma y el modo oscuro elegidos en Configuraci��n.
+class RescateApp extends ConsumerStatefulWidget {
   const RescateApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RescateApp> createState() => _RescateAppState();
+}
+
+class _RescateAppState extends ConsumerState<RescateApp> {
+  @override
+  void initState() {
+    super.initState();
+    PushNotificationService().initialize();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final ajustes = ref.watch(ajustesProvider);
 
     // Al cerrar sesión (o si vence y no se puede renovar) se vuelve a la bienvenida
