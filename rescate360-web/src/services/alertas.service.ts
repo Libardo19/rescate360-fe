@@ -1,7 +1,24 @@
-import { api, USE_MOCK } from './api'
-import type { Alerta, NuevaAlerta } from '../types/alerta'
+import { api, consulta, USE_MOCK, type Pagina } from './api'
+import type { Alerta, AlertaApi, NuevaAlerta, TipoAlerta } from '../types/alerta'
 
-// Datos de prueba, SOLO para desarrollo de la interfaz.
+export const aAlerta = (a: AlertaApi): Alerta => {
+  const radioKm = (a.zona.radio_m / 1000).toFixed(1)
+  return {
+    id: a.id,
+    tipo: (a.tipo as TipoAlerta) ?? 'otro',
+    titulo: a.titulo,
+    descripcion: a.mensaje,
+    zona: `Radio de ${radioKm} km (${a.zona.lat.toFixed(4)}, ${a.zona.lng.toFixed(4)})`,
+    lat: a.zona.lat,
+    lng: a.zona.lng,
+    radio_m: a.zona.radio_m,
+    fecha: a.creado_en,
+    activa: a.estado === 'activa',
+    nivel: a.nivel,
+  }
+}
+
+// Datos de prueba, SOLO para desarrollo de la interfaz (VITE_USE_MOCK=true).
 let mock: Alerta[] = [
   { id: '1', tipo: 'inundacion', titulo: 'Alerta de inundación', descripcion: 'Crecida del río en la zona urbana. Evite acercarse a las orillas.', zona: 'Río y zona urbana', fecha: '2026-10-05T09:00:00', activa: true },
   { id: '2', tipo: 'deslizamiento', titulo: 'Riesgo de deslizamiento', descripcion: 'Terreno inestable en la vía al corregimiento. Se recomienda no transitar.', zona: 'Vía al corregimiento', fecha: '2026-10-05T07:30:00', activa: true },
@@ -13,8 +30,8 @@ let mock: Alerta[] = [
 export async function listarAlertas(): Promise<Alerta[]> {
   if (USE_MOCK) return mock.map((a) => ({ ...a }))
 
-  // BACKEND: confirmar la ruta real y la forma de la respuesta.
-  return api<Alerta[]>('/alertas')
+  const pagina = await api<Pagina<AlertaApi>>(`/alertas${consulta({ por_pagina: 100 })}`)
+  return pagina.items.map(aAlerta)
 }
 
 export async function crearAlerta(datos: NuevaAlerta): Promise<Alerta> {
@@ -24,8 +41,24 @@ export async function crearAlerta(datos: NuevaAlerta): Promise<Alerta> {
     return { ...nueva }
   }
 
-  // BACKEND: endpoint para publicar una alerta.
-  return api<Alerta>('/alertas', { method: 'POST', body: JSON.stringify(datos) })
+  const payload = {
+    titulo: datos.titulo,
+    tipo: datos.tipo,
+    mensaje: datos.descripcion,
+    nivel: 'medio',
+    zona: {
+      lat: datos.lat ?? 10.4631,
+      lng: datos.lng ?? -73.2532,
+      radio_m: datos.radio_m ?? 5000,
+    },
+    horas_vigencia: datos.horas_vigencia ?? 24,
+  }
+
+  const respuesta = await api<AlertaApi>('/alertas', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+  return aAlerta(respuesta)
 }
 
 export async function finalizarAlerta(id: string): Promise<Alerta> {
@@ -36,6 +69,7 @@ export async function finalizarAlerta(id: string): Promise<Alerta> {
     return { ...alerta }
   }
 
-  // BACKEND: endpoint para desactivar o cerrar una alerta.
-  return api<Alerta>(`/alertas/${id}/finalizar`, { method: 'PATCH' })
+  // En el backend el endpoint para desactivar/cerrar una alerta es POST /alertas/{id}/cancelar
+  const respuesta = await api<AlertaApi>(`/alertas/${id}/cancelar`, { method: 'POST' })
+  return aAlerta(respuesta)
 }

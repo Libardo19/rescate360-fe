@@ -1,7 +1,22 @@
-import { api, USE_MOCK } from './api'
-import type { Persona, DatosPersona, EstadoPersona } from '../types/persona'
+import { api, consulta, USE_MOCK, type Pagina } from './api'
+import type { Persona, PersonaApi, DatosPersona, EstadoPersona, Genero } from '../types/persona'
 
-// Datos de prueba inventados, SOLO para desarrollo de la interfaz.
+export const aPersona = (p: PersonaApi): Persona => ({
+  id: p.id,
+  nombre: p.nombre,
+  edad: p.edad ?? 0,
+  genero: (p.sexo as Genero) ?? 'otro',
+  ultimaUbicacion: p.lugar ?? 'Sin ubicación registrada',
+  fechaDesaparicion: p.fecha_vista ? String(p.fecha_vista) : p.creado_en.slice(0, 10),
+  descripcion: p.descripcion,
+  estado: p.estado,
+  actualizado: p.actualizado_en ?? p.creado_en,
+  fotoUrl: p.foto_url,
+  contactoNombre: p.contacto_nombre,
+  contactoTelefono: p.contacto_telefono,
+})
+
+// Datos de prueba, SOLO para desarrollo de la interfaz (VITE_USE_MOCK=true).
 let mock: Persona[] = [
   { id: '1', nombre: 'Mariana Ortiz', edad: 21, genero: 'femenino', ultimaUbicacion: 'Terminal de transporte', fechaDesaparicion: '2026-10-03', descripcion: 'Chaqueta negra, jeans azules y tenis blancos. Cabello largo y oscuro.', estado: 'buscando', actualizado: '2026-10-05T08:00:00' },
   { id: '2', nombre: 'Julián Pardo', edad: 32, genero: 'masculino', ultimaUbicacion: 'Barrio El Prado', fechaDesaparicion: '2026-10-02', descripcion: 'Camisa a cuadros, jeans y gorra gris. Lleva una mochila negra.', estado: 'buscando', actualizado: '2026-10-05T09:30:00' },
@@ -15,8 +30,8 @@ let mock: Persona[] = [
 export async function listarPersonas(): Promise<Persona[]> {
   if (USE_MOCK) return mock.map((p) => ({ ...p }))
 
-  // BACKEND: confirmar la ruta real y la forma de la respuesta.
-  return api<Persona[]>('/personas-desaparecidas')
+  const pagina = await api<Pagina<PersonaApi>>(`/personas-desaparecidas${consulta({ por_pagina: 100 })}`)
+  return pagina.items.map(aPersona)
 }
 
 export async function registrarPersona(datos: DatosPersona): Promise<Persona> {
@@ -31,8 +46,22 @@ export async function registrarPersona(datos: DatosPersona): Promise<Persona> {
     return { ...nueva }
   }
 
-  // BACKEND: endpoint para registrar un caso nuevo (si el módulo lo permite al administrador).
-  return api<Persona>('/personas-desaparecidas', { method: 'POST', body: JSON.stringify(datos) })
+  // El backend exige multipart/form-data en POST /personas-desaparecidas
+  const formData = new FormData()
+  formData.append('nombre', datos.nombre)
+  formData.append('edad', String(datos.edad))
+  formData.append('sexo', datos.genero)
+  formData.append('fecha_vista', datos.fechaDesaparicion)
+  formData.append('lugar', datos.ultimaUbicacion)
+  formData.append('descripcion', datos.descripcion)
+  formData.append('contacto_nombre', 'Administración')
+  formData.append('contacto_telefono', '+573001234567')
+
+  const respuesta = await api<PersonaApi>('/personas-desaparecidas', {
+    method: 'POST',
+    body: formData,
+  })
+  return aPersona(respuesta)
 }
 
 export async function actualizarEstadoPersona(id: string, estado: EstadoPersona): Promise<Persona> {
@@ -43,9 +72,9 @@ export async function actualizarEstadoPersona(id: string, estado: EstadoPersona)
     return { ...persona }
   }
 
-  // BACKEND: endpoint para actualizar el estado (incluye marcar como encontrada).
-  return api<Persona>(`/personas-desaparecidas/${id}/estado`, {
+  const respuesta = await api<PersonaApi>(`/personas-desaparecidas/${id}/estado`, {
     method: 'PATCH',
     body: JSON.stringify({ estado }),
   })
+  return aPersona(respuesta)
 }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Plus, X, Waves, Mountain, ShieldAlert, CloudRain, TriangleAlert, type LucideIcon } from 'lucide-react'
+import { Plus, X, Waves, Mountain, ShieldAlert, CloudRain, TriangleAlert, Activity, type LucideIcon } from 'lucide-react'
 import { listarAlertas, crearAlerta, finalizarAlerta } from '../../services/alertas.service'
 import type { Alerta, NuevaAlerta, TipoAlerta } from '../../types/alerta'
 
@@ -8,6 +8,7 @@ const config: Record<TipoAlerta, { etiqueta: string; icono: LucideIcon; color: s
   deslizamiento: { etiqueta: 'Deslizamiento', icono: Mountain, color: 'bg-amber-100 text-amber-600' },
   seguridad: { etiqueta: 'Seguridad', icono: ShieldAlert, color: 'bg-red-100 text-red-600' },
   clima: { etiqueta: 'Clima', icono: CloudRain, color: 'bg-slate-200 text-slate-600' },
+  sismo: { etiqueta: 'Sismo', icono: Activity, color: 'bg-rose-100 text-rose-600' },
   otro: { etiqueta: 'Otro', icono: TriangleAlert, color: 'bg-violet-100 text-violet-600' },
 }
 

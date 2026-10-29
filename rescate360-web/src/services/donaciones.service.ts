@@ -1,7 +1,29 @@
-import { api, USE_MOCK } from './api'
-import type { Donacion, Campana, DatosCampana } from '../types/donacion'
+import { api, consulta, USE_MOCK, type Pagina } from './api'
+import type { Donacion, DonacionApi, Campana, CampanaApi, DatosCampana, CategoriaDonacion, EstadoDonacion } from '../types/donacion'
 
-// Datos de prueba, SOLO para desarrollo de la interfaz.
+export const aCampana = (c: CampanaApi): Campana => ({
+  id: c.id,
+  titulo: c.titulo,
+  descripcion: c.descripcion,
+  categoria: (c.categoria as CategoriaDonacion) ?? 'otro',
+  meta: c.meta,
+  recaudado: c.recaudado ?? 0,
+  unidad: c.unidad,
+  fechaFin: c.fecha_fin,
+  activa: c.activa,
+})
+
+export const aDonacion = (d: DonacionApi): Donacion => ({
+  id: d.id,
+  fecha: d.creado_en,
+  categoria: (d.categoria as CategoriaDonacion) ?? 'otro',
+  descripcion: d.descripcion ?? 'Sin descripción',
+  cantidad: `${d.cantidad} ${d.unidad}`,
+  monto: d.monto ?? undefined,
+  estado: (d.estado as EstadoDonacion) ?? 'recibida',
+})
+
+// Datos de prueba, SOLO para desarrollo de la interfaz (VITE_USE_MOCK=true).
 let donaciones: Donacion[] = [
   { id: '1', fecha: '2026-10-05T10:00:00', categoria: 'alimentos', descripcion: 'Mercados y víveres', cantidad: '50 und.', estado: 'recibida' },
   { id: '2', fecha: '2026-10-04T15:30:00', categoria: 'ropa', descripcion: 'Ropa para adultos y niños', cantidad: '120 und.', estado: 'recibida' },
@@ -17,30 +39,12 @@ let campanas: Campana[] = [
   { id: '3', titulo: 'Ropa y abrigo', descripcion: 'Ropa en buen estado para todas las edades.', categoria: 'ropa', meta: 400, recaudado: 92, unidad: 'prendas', fechaFin: '2026-10-14T23:59:59', activa: true },
 ]
 
-export async function listarDonaciones(): Promise<Donacion[]> {
-  if (USE_MOCK) return donaciones.map((d) => ({ ...d }))
-
-  // BACKEND: confirmar la ruta real y la forma de la respuesta.
-  return api<Donacion[]>('/donaciones')
-}
-
-export async function marcarDonacionRecibida(id: string): Promise<Donacion> {
-  if (USE_MOCK) {
-    donaciones = donaciones.map((d) => (d.id === id ? { ...d, estado: 'recibida' } : d))
-    const donacion = donaciones.find((d) => d.id === id)
-    if (!donacion) throw new Error('Donación no encontrada')
-    return { ...donacion }
-  }
-
-  // BACKEND: endpoint para confirmar la recepción de una donación.
-  return api<Donacion>(`/donaciones/${id}/recibida`, { method: 'PATCH' })
-}
-
 export async function listarCampanas(): Promise<Campana[]> {
   if (USE_MOCK) return campanas.map((c) => ({ ...c }))
 
-  // BACKEND: confirmar la ruta real. El avance (recaudado) lo debería calcular el backend.
-  return api<Campana[]>('/donaciones/campanas')
+  // En el backend la ruta es GET /campanas (devuelve list[CampanaOut])
+  const lista = await api<CampanaApi[]>('/campanas?todas=true')
+  return lista.map(aCampana)
 }
 
 export async function crearCampana(datos: DatosCampana): Promise<Campana> {
@@ -50,8 +54,20 @@ export async function crearCampana(datos: DatosCampana): Promise<Campana> {
     return { ...nueva }
   }
 
-  // BACKEND: endpoint para crear una campaña de donación.
-  return api<Campana>('/donaciones/campanas', { method: 'POST', body: JSON.stringify(datos) })
+  const payload = {
+    titulo: datos.titulo,
+    descripcion: datos.descripcion,
+    categoria: datos.categoria,
+    meta: Number(datos.meta),
+    unidad: datos.unidad,
+    fecha_fin: datos.fechaFin.slice(0, 10),
+  }
+
+  const respuesta = await api<CampanaApi>('/campanas', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+  return aCampana(respuesta)
 }
 
 export async function finalizarCampana(id: string): Promise<Campana> {
@@ -62,6 +78,33 @@ export async function finalizarCampana(id: string): Promise<Campana> {
     return { ...campana }
   }
 
-  // BACKEND: endpoint para cerrar una campaña.
-  return api<Campana>(`/donaciones/campanas/${id}/finalizar`, { method: 'PATCH' })
+  const respuesta = await api<CampanaApi>(`/campanas/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ activa: false }),
+  })
+  return aCampana(respuesta)
+}
+
+export async function listarDonaciones(): Promise<Donacion[]> {
+  if (USE_MOCK) return donaciones.map((d) => ({ ...d }))
+
+  // En el backend la ruta es GET /donaciones (devuelve Pagina[DonacionOut])
+  const pagina = await api<Pagina<DonacionApi>>(`/donaciones${consulta({ por_pagina: 100 })}`)
+  return pagina.items.map(aDonacion)
+}
+
+export async function marcarDonacionRecibida(id: string): Promise<Donacion> {
+  if (USE_MOCK) {
+    donaciones = donaciones.map((d) => (d.id === id ? { ...d, estado: 'recibida' } : d))
+    const donacion = donaciones.find((d) => d.id === id)
+    if (!donacion) throw new Error('Donación no encontrada')
+    return { ...donacion }
+  }
+
+  // En el backend la ruta es PATCH /donaciones/{id}/estado
+  const respuesta = await api<DonacionApi>(`/donaciones/${id}/estado`, {
+    method: 'PATCH',
+    body: JSON.stringify({ estado: 'recibida' }),
+  })
+  return aDonacion(respuesta)
 }

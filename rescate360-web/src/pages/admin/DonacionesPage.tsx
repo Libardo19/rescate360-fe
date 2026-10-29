@@ -12,6 +12,7 @@ import {
   Shirt,
   Pill,
   Droplets,
+  Package,
   type LucideIcon,
 } from 'lucide-react'
 import {
@@ -29,11 +30,13 @@ const categorias: Record<CategoriaDonacion, { etiqueta: string; icono: LucideIco
   medicamentos: { etiqueta: 'Medicamentos', icono: Pill, clase: 'bg-red-100 text-red-600' },
   agua: { etiqueta: 'Agua', icono: Droplets, clase: 'bg-cyan-100 text-cyan-600' },
   dinero: { etiqueta: 'Dinero', icono: Banknote, clase: 'bg-orange-100 text-orange-600' },
+  otro: { etiqueta: 'Otro', icono: Package, clase: 'bg-slate-200 text-slate-600' },
 }
 
 const estados: Record<EstadoDonacion, { etiqueta: string; clase: string }> = {
   recibida: { etiqueta: 'Recibida', clase: 'bg-green-100 text-green-700' },
   en_proceso: { etiqueta: 'En proceso', clase: 'bg-amber-100 text-amber-700' },
+  entregada: { etiqueta: 'Entregada', clase: 'bg-blue-100 text-blue-700' },
 }
 
 const moneda = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
