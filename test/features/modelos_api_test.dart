@@ -208,4 +208,23 @@ void main() {
     expect(guia.categoria, 'sismo');
     expect(guia.pasos, hasLength(2));
   });
+
+  test('ReporteOut como caso del voluntario (se toma por /reportes/{id}/asignar)', () {
+    final caso = SolicitudAyudaModel.desdeReporte({
+      'id': 'r1',
+      'tipo': 'fuga de gas',
+      'tipo_etiqueta': 'Fuga de gas',
+      'descripcion': 'Huele a gas en la esquina',
+      'direccion': 'Calle 16',
+      'ubicacion': {'lat': 10.46, 'lng': -73.25},
+      'estado': 'verificado',
+      'prioridad_ia': 'alta',
+      'prioridad_manual': null,
+      'creado_en': '2026-10-29T10:00:00Z',
+    });
+    expect(caso.esReporte, isTrue);
+    expect(caso.titulo, 'Reporte: Fuga de gas');
+    expect(caso.cancelable, isTrue);
+    expect(caso.estadoEtiqueta, 'Verificado');
+  });
 }
