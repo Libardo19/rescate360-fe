@@ -18,7 +18,8 @@ class AsignacionModel {
     this.solicitud,
   });
 
-  factory AsignacionModel.fromJson(Map<String, dynamic> json) => AsignacionModel(
+  factory AsignacionModel.fromJson(Map<String, dynamic> json) =>
+      AsignacionModel(
         id: json['id'] as String,
         solicitudId: json['solicitud_id'] as String?,
         reporteId: json['reporte_id'] as String?,

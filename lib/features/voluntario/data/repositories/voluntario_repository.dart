@@ -11,9 +11,10 @@ class VoluntarioRepository {
 
   Future<List<SolicitudAyudaModel>> casosAbiertos() => _remoto.casosAbiertos();
 
-  /// Mis tareas activas con el detalle de cada solicitud.
-  Future<List<AsignacionModel>> misTareas() async {
-    final asignaciones = await _remoto.misAsignaciones();
+  /// Mis tareas con el detalle de cada solicitud. [estado] puede ser
+  /// `activa`, `finalizada` o `cancelada`; null devuelve todas.
+  Future<List<AsignacionModel>> misTareas({String? estado}) async {
+    final asignaciones = await _remoto.misAsignaciones(estado: estado);
     return Future.wait(asignaciones.map((a) async {
       if (a.solicitudId == null) return a; // reportes: solo se muestra la tarea
       try {
@@ -31,5 +32,6 @@ class VoluntarioRepository {
 }
 
 final voluntarioRepositoryProvider = Provider<VoluntarioRepository>((ref) {
-  return VoluntarioRepository(VoluntarioRemoteDatasource(ref.watch(apiClientProvider)));
+  return VoluntarioRepository(
+      VoluntarioRemoteDatasource(ref.watch(apiClientProvider)));
 });

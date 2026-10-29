@@ -19,7 +19,8 @@ class RescateApp extends ConsumerWidget {
     // Al cerrar sesión (o si vence y no se puede renovar) se vuelve a la bienvenida
     ref.listen<AuthState>(authViewModelProvider, (antes, ahora) {
       if ((antes?.autenticado ?? false) && !ahora.autenticado) {
-        AppRouter.navigatorKey.currentState?.pushNamedAndRemoveUntil(AppRouter.inicial, (_) => false);
+        AppRouter.navigatorKey.currentState
+            ?.pushNamedAndRemoveUntil(AppRouter.inicial, (_) => false);
       }
     });
 
