@@ -3,6 +3,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/errors/exceptions.dart';
 import '../../../../shared/widgets/pestanas_segmentadas.dart';
 import '../../data/models/persona_desaparecida.dart';
 import '../viewmodels/personas_desaparecidas_viewmodel.dart';
@@ -59,7 +60,7 @@ class _PersonasDesaparecidasScreenState
       if (_scroll.hasClients) _scroll.jumpTo(0);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Reporte publicado. Quedó en revisión.'),
+          content: Text('Ficha publicada. Ya la ve toda la comunidad.'),
         ),
       );
     }
@@ -75,7 +76,8 @@ class _PersonasDesaparecidasScreenState
 
   @override
   Widget build(BuildContext context) {
-    final personas = ref.watch(personasViewModelProvider);
+    final estado = ref.watch(personasViewModelProvider);
+    final personas = estado.valueOrNull ?? const <PersonaDesaparecida>[];
     final lista = personas.where((p) {
       final encontrada = p.estado == EstadoPersona.encontrada;
       return _pestana == 0 ? !encontrada : encontrada;
@@ -111,7 +113,30 @@ class _PersonasDesaparecidasScreenState
               ),
             ),
             Expanded(
-              child: lista.isEmpty
+              child: estado.isLoading && personas.isEmpty
+                  ? const Center(child: CircularProgressIndicator())
+                  : estado.hasError && personas.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              ApiException.desde(estado.error!).mensaje,
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.bodySecondary,
+                            ),
+                            const SizedBox(height: 12),
+                            TextButton(
+                              onPressed: () => ref.read(personasViewModelProvider.notifier).recargar(),
+                              child: const Text('Reintentar'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : lista.isEmpty
                   ? Center(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -124,8 +149,11 @@ class _PersonasDesaparecidasScreenState
                         ),
                       ),
                     )
-                  : ListView.separated(
+                  : RefreshIndicator(
+                    onRefresh: () => ref.read(personasViewModelProvider.notifier).recargar(),
+                    child: ListView.separated(
                       controller: _scroll,
+                      physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.fromLTRB(20, 4, 20, 96),
                       itemCount: lista.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 12),
@@ -134,6 +162,7 @@ class _PersonasDesaparecidasScreenState
                         onTap: () => _abrirDetalle(lista[i]),
                       ),
                     ),
+                  ),
             ),
           ],
         ),

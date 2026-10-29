@@ -14,7 +14,7 @@ class PersonaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foto = persona.foto;
+    final foto = persona.imagen;
 
     return InkWell(
       onTap: onTap,
@@ -32,7 +32,7 @@ class PersonaCard extends StatelessWidget {
             CircleAvatar(
               radius: 28,
               backgroundColor: AppColors.surface,
-              backgroundImage: foto != null ? MemoryImage(foto) : null,
+              backgroundImage: foto,
               child: foto == null
                   ? Text(persona.iniciales, style: AppTextStyles.h2)
                   : null,

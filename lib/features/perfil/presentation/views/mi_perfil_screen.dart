@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../app/router.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/utils/validators.dart';
@@ -164,6 +165,16 @@ class _MiPerfilScreenState extends ConsumerState<MiPerfilScreen> {
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(height: 24),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.privacy_tip_outlined, color: AppColors.primary),
+                title: const Text('Privacidad y mis datos', style: AppTextStyles.body),
+                subtitle: const Text('Ver lo que guardamos de ti o eliminar tu cuenta (Ley 1581)',
+                    style: AppTextStyles.bodySecondary),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).pushNamed(AppRouter.privacidadDatos),
               ),
             ],
           ),

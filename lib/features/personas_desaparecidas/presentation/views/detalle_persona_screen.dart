@@ -1,18 +1,56 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../shared/widgets/etiqueta_estado.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../data/models/persona_desaparecida.dart';
+import '../viewmodels/personas_desaparecidas_viewmodel.dart';
 import '../widgets/estado_persona_ui.dart';
 
 /// Detalle de una persona desaparecida: foto, datos, última vez que se le
 /// vio, señas particulares y contacto de la familia.
-class DetallePersonaScreen extends StatelessWidget {
+///
+/// Abre con la ficha de la lista y la completa con GET /personas-desaparecidas/{id},
+/// que trae el contacto de la familia y el aviso legal.
+class DetallePersonaScreen extends ConsumerWidget {
   final PersonaDesaparecida persona;
 
   const DetallePersonaScreen({super.key, required this.persona});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final actual = ref.watch(personaDetalleProvider(persona.id)).valueOrNull ?? persona;
+    return _DetallePersona(
+      persona: actual,
+      alCambiarEstado: actual.puedeGestionar
+          ? () async {
+              final nuevo = actual.estado == EstadoPersona.buscando
+                  ? EstadoPersona.encontrada
+                  : EstadoPersona.buscando;
+              final error = await ref
+                  .read(personasViewModelProvider.notifier)
+                  .cambiarEstado(actual.id, nuevo);
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text(error ??
+                    (nuevo == EstadoPersona.encontrada
+                        ? 'Marcada como encontrada'
+                        : 'La ficha volvió a búsqueda')),
+              ));
+            }
+          : null,
+    );
+  }
+}
+
+class _DetallePersona extends StatelessWidget {
+  final PersonaDesaparecida persona;
+  // Solo para quien la reportó o un administrador
+  final Future<void> Function()? alCambiarEstado;
+
+  const _DetallePersona({required this.persona, this.alCambiarEstado});
 
   void _mostrarContacto(BuildContext context) {
     showModalBottomSheet(
@@ -76,10 +114,28 @@ class DetallePersonaScreen extends StatelessWidget {
             color: AppColors.background,
             border: Border(top: BorderSide(color: AppColors.surfaceBorder)),
           ),
-          child: PrimaryButton(
-            label: 'Tengo información',
-            icon: Icons.campaign_outlined,
-            onPressed: () => _mostrarContacto(context),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              PrimaryButton(
+                label: 'Tengo información',
+                icon: Icons.campaign_outlined,
+                onPressed: () => _mostrarContacto(context),
+              ),
+              if (alCambiarEstado != null) ...[
+                const SizedBox(height: 8),
+                PrimaryButton(
+                  label: persona.estado == EstadoPersona.buscando
+                      ? 'Marcar como encontrada'
+                      : 'Volver a búsqueda',
+                  icon: persona.estado == EstadoPersona.buscando
+                      ? Icons.check_circle_outline
+                      : Icons.search,
+                  outlined: true,
+                  onPressed: alCambiarEstado,
+                ),
+              ],
+            ],
           ),
         ),
       ),
@@ -181,16 +237,17 @@ class DetallePersonaScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  const Row(
+                  Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.info_outline,
+                      const Icon(Icons.info_outline,
                           size: 18, color: AppColors.textMuted),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'En una emergencia real, llama primero a la '
-                          'línea 123.',
+                          persona.aviso ??
+                              'En una emergencia real, llama primero a la '
+                                  'línea 123.',
                           style: AppTextStyles.caption,
                         ),
                       ),
@@ -213,13 +270,13 @@ class _FotoCabecera extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foto = persona.foto;
+    final foto = persona.imagen;
 
     return Stack(
       fit: StackFit.expand,
       children: [
         if (foto != null)
-          Image.memory(foto, fit: BoxFit.cover)
+          Image(image: foto, fit: BoxFit.cover)
         else
           Container(
             decoration: const BoxDecoration(
@@ -229,8 +286,19 @@ class _FotoCabecera extends StatelessWidget {
                 colors: [AppColors.primary, AppColors.primaryDark],
               ),
             ),
-            child: const Center(
-              child: Icon(Icons.person, size: 140, color: Colors.white24),
+            child: Center(
+              child: persona.fotoOculta
+                  // Ley 1098: la foto de un menor solo la ven la familia y los administradores
+                  ? const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.shield_outlined, size: 96, color: Colors.white38),
+                        SizedBox(height: 8),
+                        Text('Foto protegida: es menor de edad',
+                            style: TextStyle(color: Colors.white70)),
+                      ],
+                    )
+                  : const Icon(Icons.person, size: 140, color: Colors.white24),
             ),
           ),
         // Degradados para que el botón de volver y el nombre se lean.

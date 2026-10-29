@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rescate360/features/mapa/data/models/marcador_mapa_model.dart';
+import 'package:rescate360/features/perfil/data/models/contacto_emergencia_model.dart';
+import 'package:rescate360/features/personas_desaparecidas/data/models/persona_desaparecida.dart';
 import 'package:rescate360/features/reportes/data/models/reporte_model.dart';
 import 'package:rescate360/features/solicitudes_ayuda/data/models/solicitud_ayuda_model.dart';
 import 'package:rescate360/shared/models/rol.dart';
@@ -96,5 +98,62 @@ void main() {
     expect(punto.aproximada, isTrue);
     expect(punto.radioM, isNull);
     expect(punto.activo, isTrue);
+  });
+
+  test('PersonaOut → PersonaDesaparecida (lista: sin contacto; foto de menor oculta)', () {
+    final persona = PersonaDesaparecida.fromJson({
+      'id': 'p1',
+      'nombre': 'Lucía Herrera',
+      'edad': 8,
+      'sexo': 'femenino',
+      'estatura': null,
+      'fecha_vista': '2026-10-20',
+      'lugar': 'Mercado nuevo',
+      'descripcion': 'Cabello rizado',
+      'senas_particulares': null,
+      'vestimenta': null,
+      'estado': 'buscando',
+      'es_menor': true,
+      'foto_url': null,
+      'foto_oculta': true,
+      'ubicacion': null,
+      'contacto_nombre': null,
+      'contacto_telefono': null,
+      'es_mia': false,
+      'puede_gestionar': false,
+      'aviso': null,
+      'encontrado_en': null,
+      'creado_en': '2026-10-21T10:00:00Z',
+      'actualizado_en': '2026-10-21T10:00:00Z',
+    });
+    expect(persona.sexo, 'Mujer');
+    expect(persona.estado, EstadoPersona.buscando);
+    expect(persona.fechaVista, DateTime(2026, 10, 20));
+    expect(persona.contactoTelefono, '');
+    expect(persona.imagen, isNull);
+    expect(persona.fotoOculta, isTrue);
+    expect(EstadoPersona.desde('encontrado'), EstadoPersona.encontrada);
+    expect(fechaApi(DateTime(2026, 1, 5)), '2026-01-05');
+  });
+
+  test('ContactoOut y resumen de mis datos', () {
+    final contacto = ContactoEmergencia.fromJson(
+        {'id': 'c1', 'nombre': 'Ana', 'telefono': '+573001234567', 'parentesco': null, 'creado_en': '2026-10-28T10:00:00Z'});
+    expect(contacto.telefono, '+573001234567');
+    expect(contacto.parentesco, isNull);
+
+    final resumen = ResumenMisDatos.fromJson({
+      'perfil': {},
+      'ubicacion': {'ubicacion_actual': null, 'ubicacion_actualizada_en': null},
+      'consentimientos': [{}],
+      'contactos_emergencia': [{}, {}],
+      'dispositivos': [],
+      'solicitudes': [{}],
+      'reportes': [],
+      'personas_reportadas': [],
+      'generado_en': '2026-10-28T10:00:00Z',
+    });
+    expect(resumen.contactos, 2);
+    expect(resumen.tieneUbicacion, isFalse);
   });
 }
