@@ -14,6 +14,7 @@ import '../features/perfil/presentation/views/configuracion_screen.dart';
 import '../features/perfil/presentation/views/mi_perfil_screen.dart';
 import '../features/perfil/presentation/views/contactos_emergencia_screen.dart';
 import '../features/perfil/presentation/views/notificaciones_screen.dart';
+import '../features/perfil/presentation/views/privacidad_datos_screen.dart';
 import '../features/personas_desaparecidas/presentation/views/personas_desaparecidas_screen.dart';
 import '../features/reportes/presentation/views/reportar_incidente_screen.dart';
 import '../features/solicitudes_ayuda/presentation/views/mis_solicitudes_screen.dart';
@@ -46,6 +47,7 @@ class AppRouter {
   static const contactosEmergencia = '/contactos-emergencia';
   static const configuracion = '/configuracion';
   static const miPerfil = '/mi-perfil';
+  static const privacidadDatos = '/privacidad-datos';
   static const notificaciones = '/notificaciones';
   static const guiaEmergencia = '/guia-emergencia';
   static const donaciones = '/donaciones';
@@ -85,6 +87,8 @@ class AppRouter {
         return _build(const ConfiguracionScreen(), settings);
       case miPerfil:
         return _build(const MiPerfilScreen(), settings);
+      case privacidadDatos:
+        return _build(const PrivacidadDatosScreen(), settings);
       case notificaciones:
         return _build(const NotificacionesScreen(), settings);
       case guiaEmergencia:
