@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -9,14 +10,15 @@ class PushNotificationService {
   factory PushNotificationService() => _instance;
   PushNotificationService._internal();
 
-  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  // Getter: FirebaseMessaging.instance falla si Firebase no arrancó (sin google-services.json)
+  FirebaseMessaging get _messaging => FirebaseMessaging.instance;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   static const String _tokenKey = 'fcm_token';
 
   Future<void> initialize() async {
-    if (kIsWeb) {
-      return;
+    if (kIsWeb || Firebase.apps.isEmpty) {
+      return; // web o Firebase sin configurar: no hay push
     }
 
     NotificationSettings settings = await _messaging.requestPermission(
