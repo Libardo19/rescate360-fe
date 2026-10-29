@@ -6,8 +6,9 @@ plugins {
 }
 
 android {
-    namespace = "com.example.rescate360"
-    compileSdk = flutter.compileSdkVersion
+    namespace = "com.rescate360.rescate"
+    // permission_handler (modo sin conexión) exige compilar contra la 37; es compatible hacia atrás
+    compileSdk = maxOf(flutter.compileSdkVersion, 37)
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -17,7 +18,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.rescate360"
+        applicationId = "com.rescate360.rescate"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
