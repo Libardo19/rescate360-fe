@@ -7,7 +7,7 @@ class MapaRemoteDatasource {
 
   final ApiClient _api;
 
-  static const _capas = 'solicitudes,reportes,centros,zonas,alertas';
+  static const _capas = 'solicitudes,reportes,centros,zonas,alertas,sismos';
 
   /// Sin [desde]: el mapa completo alrededor de (lat, lng). Con [desde]: solo lo que cambió.
   Future<RespuestaMapa> puntos({
