@@ -1,8 +1,8 @@
 import { api, consulta, USE_MOCK, type Pagina } from './api'
-import type { Solicitud, SolicitudApi, CambiosSolicitud } from '../types/solicitud'
+import { aAtencion, type Solicitud, type SolicitudApi, type CambiosSolicitud } from '../types/solicitud'
 
 // Datos de prueba, SOLO para desarrollo de la interfaz (VITE_USE_MOCK=true).
-const base = { origen: 'manual', lat: 10.4631, lng: -73.2532, organizacionId: null } as const
+const base = { origen: 'manual', lat: 10.4631, lng: -73.2532, organizacionId: null, atencion: null } as const
 let mock: Solicitud[] = [
   { ...base, id: '1', tipo: 'medica', descripcion: 'Adulto mayor con dificultad para respirar, necesita atención.', ubicacion: 'Barrio El Prado', solicitante: 'María López', telefono: '+57 300 111 2233', fecha: '2026-10-05T09:50:00', estado: 'pendiente', prioridadIA: 'alta', motivoIA: 'Posible emergencia respiratoria en persona vulnerable.', prioridadManual: null },
   { ...base, id: '2', tipo: 'refugio', descripcion: 'Familia de cinco personas sin vivienda tras la inundación.', ubicacion: 'Vereda La Esperanza', solicitante: 'Carlos Rojas', telefono: '+57 301 222 3344', fecha: '2026-10-05T08:30:00', estado: 'en_proceso', prioridadIA: 'media', motivoIA: 'Hay menores en el grupo, pero sin riesgo inmediato.', prioridadManual: 'alta' },
@@ -29,6 +29,7 @@ export const aSolicitud = (s: SolicitudApi): Solicitud => ({
   motivoIA: s.razonamiento_ia ?? (s.origen === 'sos' ? 'SOS: nace con prioridad crítica.' : SIN_IA),
   prioridadManual: s.prioridad_manual,
   organizacionId: s.organizacion_manual_id ?? s.organizacion_objetivo_id,
+  atencion: aAtencion(s.atencion),
 })
 
 // El backend pagina; la pantalla filtra y ordena en el navegador, así que trae la página más grande.

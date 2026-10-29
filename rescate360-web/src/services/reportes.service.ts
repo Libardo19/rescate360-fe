@@ -1,5 +1,6 @@
 import { api, consulta, urlArchivo, USE_MOCK, type Pagina } from './api'
 import type { Reporte, ReporteApi, TipoSugerido } from '../types/reporte'
+import { aAtencion } from '../types/solicitud'
 
 const TIPOS_MOCK: TipoSugerido[] = [
   { valor: 'accidente', etiqueta: 'Accidente' },
@@ -24,6 +25,7 @@ const base = {
   motivoRechazo: null,
   duplicadoDeId: null,
   organizacionId: null,
+  atencion: null,
 }
 let mock: Reporte[] = [
   { ...base, id: '1', tipo: 'accidente', tipoEtiqueta: 'Accidente', descripcion: 'Choque entre moto y carro, hay heridos leves.', ubicacion: 'Calle 10 #5-20', reportante: 'Juan Pérez', fecha: '2026-10-05T09:30:00', estado: 'pendiente', prioridadIA: 'media', confianzaIA: 0.62, motivoIA: 'Hay heridos leves; no hay riesgo inmediato para la vida.' },
@@ -52,6 +54,7 @@ const aReporte = (r: ReporteApi): Reporte => ({
   motivoRechazo: r.motivo_rechazo,
   duplicadoDeId: r.duplicado_de_id,
   organizacionId: r.organizacion_manual_id ?? r.organizacion_objetivo_id,
+  atencion: aAtencion(r.atencion),
 })
 
 export async function listarTipos(): Promise<TipoSugerido[]> {
