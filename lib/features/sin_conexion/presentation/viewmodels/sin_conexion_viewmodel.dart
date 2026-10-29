@@ -78,19 +78,33 @@ class SinConexionViewModel extends Notifier<SinConexionState> {
     }
   }
 
-  Future<void> sincronizar() async {
+  /// Sube la cola al backend. Devuelve qué pasó, para mostrarlo cuando la persona lo pide.
+  Future<String> sincronizar() async {
+    String resultado;
     try {
       final entregados = await ref.read(syncWorkerProvider).subir();
-      if (entregados > 0) state = state.copyWith(aviso: 'Se entregaron $entregados mensajes guardados sin conexión.');
+      resultado = entregados > 0
+          ? 'Se entregaron $entregados mensajes guardados sin conexión.'
+          : 'No hay mensajes pendientes por entregar.';
+      if (entregados > 0) state = state.copyWith(aviso: resultado);
     } catch (_) {
-      // Sigue sin llegar al backend: se reintenta cuando cambie la red
+      // Sigue sin llegar al backend: se reintenta cuando cambie la red, y mientras tanto
+      // se le pasa la cola a los teléfonos cercanos ya conectados
+      try {
+        await ref.read(nearbyMeshProvider).compartir();
+      } catch (_) {}
+      resultado = state.relevoActivo
+          ? 'Sin internet: los mensajes siguen guardados y se pasan por Bluetooth a teléfonos cercanos.'
+          : 'Sin internet: los mensajes siguen guardados. Activa el relevo para pasarlos por Bluetooth.';
     }
     await _contar();
+    return resultado;
   }
 
   /// Firma y encola un mensaje propio, y prende el relevo para que salga por Bluetooth.
+  /// Un `reporte` ya trae la ubicación del formulario (`lat`/`lng`); los demás usan el GPS.
   /// Devuelve null si quedó en la cola, o el motivo por el que no se pudo.
-  Future<String?> encolar(String tipo) async {
+  Future<String?> encolar(String tipo, {ReporteOffline? reporte, double? lat, double? lng}) async {
     final usuario = ref.read(authViewModelProvider).usuario;
     final llave = await ref.read(secureStorageProvider).llaveOffline();
     if (usuario == null || llave == null) {
@@ -98,10 +112,14 @@ class SinConexionViewModel extends Notifier<SinConexionState> {
           'abre la app una vez con internet.';
     }
     ({double lat, double lng}) posicion;
-    try {
-      posicion = await ref.read(locationServiceProvider).ubicacionActual();
-    } on UbicacionException catch (e) {
-      return e.mensaje;
+    if (lat != null && lng != null) {
+      posicion = (lat: lat, lng: lng);
+    } else {
+      try {
+        posicion = await ref.read(locationServiceProvider).ubicacionActual();
+      } on UbicacionException catch (e) {
+        return e.mensaje;
+      }
     }
     await ref.read(offlineQueueProvider).agregarPropio(MensajeOffline.firmado(
           llave: llave,
@@ -110,9 +128,14 @@ class SinConexionViewModel extends Notifier<SinConexionState> {
           tipo: tipo,
           lat: posicion.lat,
           lng: posicion.lng,
+          reporte: reporte,
         ));
     await _contar();
     await activarRelevo();
+    // Si ya había teléfonos conectados, el mensaje nuevo sale de una vez
+    try {
+      await ref.read(nearbyMeshProvider).compartir();
+    } catch (_) {}
     return null;
   }
 
