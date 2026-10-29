@@ -33,7 +33,8 @@ class ModoSinConexionScreen extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           children: [
             const Text(
-              'Si no tienes internet, tu SOS o tu respuesta a "¿Estás bien?" se guardan firmados en el teléfono '
+              'Si no tienes internet, tu SOS, tus reportes de incidente (sin fotos) o tu respuesta a '
+              '"¿Estás bien?" se guardan firmados en el teléfono '
               'y pasan por Bluetooth a otros teléfonos cercanos con RESCATE360. El primero que tenga '
               'internet los entrega, aunque no sean suyos.',
               style: AppTextStyles.bodySecondary,
@@ -69,7 +70,12 @@ class ModoSinConexionScreen extends ConsumerWidget {
               label: 'Entregar ahora',
               icon: Icons.sync,
               outlined: true,
-              onPressed: () => ref.read(sinConexionProvider.notifier).sincronizar(),
+              onPressed: () async {
+                final resultado = await ref.read(sinConexionProvider.notifier).sincronizar();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(resultado)));
+                }
+              },
             ),
             const SizedBox(height: 20),
             const Text(

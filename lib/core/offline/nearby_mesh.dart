@@ -12,6 +12,8 @@ import 'offline_queue.dart';
 /// Cada teléfono en modo sin conexión anuncia y busca a la vez (estrategia P2P_CLUSTER). Al
 /// conectarse dos, cada uno le manda al otro los mensajes que lleva (propios y ajenos); el que
 /// recibe guarda los que no conocía con un salto más. El primero que tenga internet los sube.
+/// Mientras sigan conectados, lo nuevo (un reporte recién hecho o lo que llegó de un tercero)
+/// también se les manda, sin esperar a reconectarse.
 class NearbyMesh {
   NearbyMesh(this._cola);
 
@@ -19,6 +21,7 @@ class NearbyMesh {
   final OfflineQueue _cola;
   final _nearby = Nearby();
   final _recibidos = StreamController<int>.broadcast();
+  final _conectados = <String>{};
   String? _miUsuarioId;
   bool _activo = false;
 
@@ -36,7 +39,7 @@ class NearbyMesh {
       serviceId: _servicio,
       onConnectionInitiated: _aceptar,
       onConnectionResult: _alConectar,
-      onDisconnected: (_) {},
+      onDisconnected: _conectados.remove,
     );
     final busca = await _nearby.startDiscovery(
       nombre,
@@ -47,7 +50,7 @@ class NearbyMesh {
         id,
         onConnectionInitiated: _aceptar,
         onConnectionResult: _alConectar,
-        onDisconnected: (_) {},
+        onDisconnected: _conectados.remove,
       ),
       onEndpointLost: (_) {},
     );
@@ -57,6 +60,7 @@ class NearbyMesh {
 
   Future<void> detener() async {
     _activo = false;
+    _conectados.clear();
     await _nearby.stopAdvertising();
     await _nearby.stopDiscovery();
     await _nearby.stopAllEndpoints();
@@ -68,10 +72,28 @@ class NearbyMesh {
 
   Future<void> _alConectar(String endpointId, Status estado) async {
     if (estado != Status.CONNECTED) return;
+    _conectados.add(endpointId);
+    await _enviarCola(endpointId);
+  }
+
+  /// Manda la cola a los teléfonos que ya están conectados (p. ej. tras encolar un mensaje nuevo).
+  /// El que recibe descarta lo que ya conocía.
+  Future<void> compartir({String? excepto}) async {
+    for (final endpointId in _conectados.toList()) {
+      if (endpointId != excepto) await _enviarCola(endpointId);
+    }
+  }
+
+  Future<void> _enviarCola(String endpointId) async {
     final mensajes = (await _cola.todos()).where((m) => m.relevable).toList();
     if (mensajes.isEmpty) return;
     final bytes = utf8.encode(jsonEncode([for (final m in mensajes) m.toJson()]));
-    await _nearby.sendBytesPayload(endpointId, Uint8List.fromList(bytes));
+    try {
+      await _nearby.sendBytesPayload(endpointId, Uint8List.fromList(bytes));
+    } catch (_) {
+      // Se desconectó mientras tanto: recibirá la cola al volver a conectarse
+      _conectados.remove(endpointId);
+    }
   }
 
   Future<void> _alRecibir(String endpointId, Payload payload) async {
@@ -80,7 +102,11 @@ class NearbyMesh {
     try {
       final lista = (jsonDecode(utf8.decode(bytes)) as List).cast<Map<String, dynamic>>();
       final nuevos = await _cola.agregarAjenos(lista.map(MensajeOffline.fromJson), miUsuarioId: _miUsuarioId!);
-      if (nuevos > 0) _recibidos.add(nuevos);
+      if (nuevos > 0) {
+        _recibidos.add(nuevos);
+        // Los pasa a los demás conectados, para que sigan saltando hacia alguien con internet
+        await compartir(excepto: endpointId);
+      }
     } catch (_) {
       // Datos que no son de RESCATE360 o llegaron incompletos: se ignoran
     }

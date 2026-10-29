@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../core/errors/exceptions.dart';
 import '../../../../core/location/location_service.dart';
+import '../../../../core/offline/mensaje_offline.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/campo_texto.dart';
 import '../../../../shared/widgets/campos_reporte.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../../../shared/widgets/selector_tipo.dart';
+import '../../../sin_conexion/presentation/viewmodels/sin_conexion_viewmodel.dart';
 import '../viewmodels/reportes_viewmodel.dart';
 import '../widgets/selector_tipo_incidente.dart';
 
@@ -216,9 +219,34 @@ class _ReportarIncidenteScreenState
       archivos: [for (final a in _adjuntos) a.archivo],
     );
     if (!mounted) return;
+    if (error == ApiException.sinConexion.mensaje) return _guardarSinConexion(tipo);
     setState(() => _enviando = false);
     if (error != null) return _avisar(error);
     _avisar('Reporte enviado. Míralo en la pestaña Reportes.');
+    Navigator.of(context).pop();
+  }
+
+  /// Sin internet: el reporte (sin fotos) se firma, se guarda y sale por Bluetooth hacia
+  /// teléfonos cercanos con RESCATE360; el primero que tenga internet lo sube.
+  Future<void> _guardarSinConexion(String tipo) async {
+    final descripcion = _descripcionCtrl.text.trim();
+    final problema = await ref.read(sinConexionProvider.notifier).encolar(
+          'reporte',
+          reporte: ReporteOffline(
+            tipo: tipo,
+            descripcion: descripcion.length > ReporteOffline.maximoDescripcion
+                ? descripcion.substring(0, ReporteOffline.maximoDescripcion)
+                : descripcion,
+          ),
+          lat: _posicion!.lat,
+          lng: _posicion!.lng,
+        );
+    if (!mounted) return;
+    setState(() => _enviando = false);
+    if (problema != null) return _avisar(problema);
+    _avisar(_adjuntos.isEmpty
+        ? 'Sin internet: tu reporte se guardó y se está pasando por Bluetooth a teléfonos cercanos.'
+        : 'Sin internet: tu reporte se guardó sin las fotos y se está pasando por Bluetooth a teléfonos cercanos.');
     Navigator.of(context).pop();
   }
 
