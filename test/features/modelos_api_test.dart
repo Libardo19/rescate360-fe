@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rescate360/features/alertas/data/models/alerta_model.dart';
 import 'package:rescate360/features/guia_emergencia/data/models/guia_model.dart';
 import 'package:rescate360/features/mapa/data/models/marcador_mapa_model.dart';
 import 'package:rescate360/features/perfil/data/models/contacto_emergencia_model.dart';
@@ -156,6 +157,27 @@ void main() {
     });
     expect(resumen.contactos, 2);
     expect(resumen.tieneUbicacion, isFalse);
+  });
+
+  test('AlertaOut → AlertaModel', () {
+    final alerta = AlertaModel.fromJson({
+      'id': 'a1',
+      'titulo': 'Creciente del río',
+      'tipo': 'inundacion',
+      'mensaje': 'Sube a un lugar alto',
+      'nivel': 'alto',
+      'estado': 'activa',
+      'origen': 'manual',
+      'zona': {'lat': 10.46, 'lng': -73.25, 'radio_m': 2500},
+      'expira_en': '2026-10-30T10:00:00Z',
+      'creado_en': '2026-10-29T10:00:00Z',
+      'actualizado_en': '2026-10-29T10:00:00Z',
+      'organizacion_id': null,
+      'propia': false,
+    });
+    expect(alerta.nivel, NivelAlerta.alto);
+    expect(alerta.radioM, 2500);
+    expect(alerta.radioTexto, '2.5 km');
   });
 
   test('GuiaOut → GuiaModel', () {
