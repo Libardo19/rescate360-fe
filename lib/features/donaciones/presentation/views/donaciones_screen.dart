@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
-import '../../../../shared/widgets/primary_button.dart';
+import '../../../../core/errors/exceptions.dart';
+import '../../data/models/donacion_model.dart';
+import '../viewmodels/donaciones_viewmodel.dart';
 
-/// Donaciones (mockup 18). Solo disponible en casos habilitados.
-class DonacionesScreen extends StatelessWidget {
+/// Donaciones (mockup 18): las campañas vigentes de las organizaciones. La app no recibe pagos:
+/// el aporte se coordina con la organización de cada campaña.
+class DonacionesScreen extends ConsumerWidget {
   const DonacionesScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final campanas = ref.watch(campanasProvider);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(),
@@ -47,15 +52,22 @@ class DonacionesScreen extends StatelessWidget {
                 style: AppTextStyles.bodySecondary,
               ),
               const SizedBox(height: 22),
-              PrimaryButton(
-                label: 'Hacer donación',
-                onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Próximamente')),
-                ),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Campañas activas', style: AppTextStyles.h2),
+              ),
+              const SizedBox(height: 12),
+              campanas.when(
+                loading: () => const LinearProgressIndicator(),
+                error: (e, _) => Text(ApiException.desde(e).mensaje, style: AppTextStyles.bodySecondary),
+                data: (lista) => lista.isEmpty
+                    ? const Text('No hay campañas activas por ahora.', style: AppTextStyles.bodySecondary)
+                    : Column(children: [for (final c in lista) _TarjetaCampana(campana: c)]),
               ),
               const SizedBox(height: 8),
               const Text(
-                'Disponible solo en casos habilitados',
+                'La app no recibe pagos: coordina tu aporte con la organización de la campaña.',
+                textAlign: TextAlign.center,
                 style: AppTextStyles.caption,
               ),
               const SizedBox(height: 28),
@@ -127,6 +139,50 @@ class _UsoDonacion extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: AppTextStyles.body,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TarjetaCampana extends StatelessWidget {
+  final CampanaModel campana;
+
+  const _TarjetaCampana({required this.campana});
+
+  String _numero(double valor) => valor == valor.roundToDouble() ? valor.toInt().toString() : valor.toStringAsFixed(1);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.surfaceBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(campana.titulo, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+          const SizedBox(height: 4),
+          Text(campana.descripcion, style: AppTextStyles.bodySecondary),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: campana.avance,
+              minHeight: 8,
+              color: AppColors.success,
+              backgroundColor: AppColors.surface,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${_numero(campana.recaudado)} de ${_numero(campana.meta)} ${campana.unidad} · cierra el ${campana.fechaFinTexto}',
+            style: AppTextStyles.caption,
           ),
         ],
       ),

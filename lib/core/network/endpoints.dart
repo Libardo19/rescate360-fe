@@ -52,6 +52,9 @@ class Endpoints {
   static const offlineSync = '/offline/sync';
   static const offlineRelevo = '/offline/relevo';
 
+  // Donaciones (la app no recibe pagos: solo muestra las campañas)
+  static const campanas = '/campanas';
+
   // Mapa en vivo
   static const mapa = '/mapa';
 }
