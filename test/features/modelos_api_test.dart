@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rescate360/features/alertas/data/models/alerta_model.dart';
 import 'package:rescate360/features/check_in/data/models/check_in_model.dart';
+import 'package:rescate360/features/donaciones/data/models/donacion_model.dart';
 import 'package:rescate360/features/mapa/data/models/marcador_mapa_model.dart';
 import 'package:rescate360/features/perfil/data/models/contacto_emergencia_model.dart';
 import 'package:rescate360/features/personas_desaparecidas/data/models/persona_desaparecida.dart';
@@ -194,5 +195,24 @@ void main() {
     });
     expect(check.pendiente, isTrue);
     expect(check.eventoSismicoId, 's1');
+  });
+
+  test('CampanaOut → CampanaModel', () {
+    final campana = CampanaModel.fromJson({
+      'id': 'c1',
+      'titulo': 'Mercados',
+      'descripcion': 'Familias afectadas',
+      'categoria': 'alimentos',
+      'meta': 200,
+      'unidad': 'mercados',
+      'fecha_fin': '2026-11-15',
+      'activa': true,
+      'organizacion_id': null,
+      'creado_en': '2026-10-29T10:00:00Z',
+      'recaudado': 50,
+      'propia': false,
+    });
+    expect(campana.avance, 0.25);
+    expect(campana.fechaFinTexto, '15/11/2026');
   });
 }
