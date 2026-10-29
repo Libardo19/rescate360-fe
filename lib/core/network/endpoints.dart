@@ -55,6 +55,9 @@ class Endpoints {
   // Donaciones (la app no recibe pagos: solo muestra las campañas)
   static const campanas = '/campanas';
 
+  // Guía de emergencia
+  static const guia = '/guia-emergencia';
+
   // Mapa en vivo
   static const mapa = '/mapa';
 }
