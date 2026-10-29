@@ -47,6 +47,11 @@ class Endpoints {
   static const checkInPendiente = '/check-ins/pendiente';
   static String responderCheckIn(String id) => '/check-ins/$id/responder';
 
+  // Modo sin conexión
+  static const llaveOffline = '/usuarios/me/llave-offline';
+  static const offlineSync = '/offline/sync';
+  static const offlineRelevo = '/offline/relevo';
+
   // Mapa en vivo
   static const mapa = '/mapa';
 }
