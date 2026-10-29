@@ -55,7 +55,7 @@ extension on TipoPunto {
   }
 }
 
-/// Capa del backend → tipo visual. Las zonas peligrosas se pintan como alertas.
+/// Capa del backend → tipo visual. Las zonas peligrosas y los sismos se pintan como alertas.
 TipoPunto _tipoDe(MarcadorMapaModel p) => switch (p.capa) {
       'reporte' => TipoPunto.incidente,
       'solicitud' => TipoPunto.solicitud,

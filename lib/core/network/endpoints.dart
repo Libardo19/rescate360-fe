@@ -42,6 +42,11 @@ class Endpoints {
   // Alertas por zona
   static const alertas = '/alertas';
 
+  // Sismos y "¿Estás bien?" (check-ins)
+  static const checkIns = '/check-ins';
+  static const checkInPendiente = '/check-ins/pendiente';
+  static String responderCheckIn(String id) => '/check-ins/$id/responder';
+
   // Mapa en vivo
   static const mapa = '/mapa';
 }
