@@ -1,7 +1,19 @@
-import { api, USE_MOCK } from './api'
-import type { Zona, DatosZona } from '../types/zona'
+import { api, consulta, USE_MOCK, type Pagina } from './api'
+import type { Zona, ZonaApi, DatosZona, EstadoZona, NivelRiesgo, TipoRiesgo } from '../types/zona'
 
-// Datos de prueba, SOLO para desarrollo de la interfaz.
+export const aZona = (z: ZonaApi): Zona => ({
+  id: z.id,
+  nombre: z.nombre,
+  tipoRiesgo: (z.tipo_riesgo as TipoRiesgo) ?? 'otro',
+  nivel: (z.nivel as NivelRiesgo) ?? 'medio',
+  estado: (z.estado as EstadoZona) ?? 'activa',
+  descripcion: z.descripcion ?? '',
+  lat: z.zona.lat,
+  lng: z.zona.lng,
+  radio: z.zona.radio_m,
+})
+
+// Datos de prueba, SOLO para desarrollo de la interfaz (VITE_USE_MOCK=true).
 let mock: Zona[] = [
   { id: '1', nombre: 'Ribera del río, sector norte', tipoRiesgo: 'inundacion', nivel: 'alto', estado: 'activa', descripcion: 'Zona baja que se inunda con las crecidas del río.', lat: 10.4792, lng: -73.2561, radio: 700 },
   { id: '2', nombre: 'Ladera La Esperanza', tipoRiesgo: 'deslizamiento', nivel: 'alto', estado: 'activa', descripcion: 'Terreno inestable con antecedentes de derrumbes.', lat: 10.4905, lng: -73.2702, radio: 550 },
@@ -14,9 +26,8 @@ let mock: Zona[] = [
 export async function listarZonas(): Promise<Zona[]> {
   if (USE_MOCK) return mock.map((z) => ({ ...z }))
 
-  // BACKEND: confirmar la ruta real y la forma de la respuesta.
-  // Si las zonas llegan como polígonos y no como círculo, hay que ajustar el tipo y el mapa.
-  return api<Zona[]>('/zonas-peligrosas')
+  const pagina = await api<Pagina<ZonaApi>>(`/zonas-peligrosas${consulta({ por_pagina: 100 })}`)
+  return pagina.items.map(aZona)
 }
 
 export async function crearZona(datos: DatosZona): Promise<Zona> {
@@ -26,8 +37,24 @@ export async function crearZona(datos: DatosZona): Promise<Zona> {
     return { ...nueva }
   }
 
-  // BACKEND: endpoint para crear una zona peligrosa.
-  return api<Zona>('/zonas-peligrosas', { method: 'POST', body: JSON.stringify(datos) })
+  const payload = {
+    nombre: datos.nombre,
+    tipo_riesgo: datos.tipoRiesgo,
+    nivel: datos.nivel,
+    descripcion: datos.descripcion || null,
+    estado: datos.estado,
+    zona: {
+      lat: datos.lat,
+      lng: datos.lng,
+      radio_m: datos.radio,
+    },
+  }
+
+  const respuesta = await api<ZonaApi>('/zonas-peligrosas', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+  return aZona(respuesta)
 }
 
 export async function actualizarZona(id: string, cambios: Partial<DatosZona>): Promise<Zona> {
@@ -38,6 +65,23 @@ export async function actualizarZona(id: string, cambios: Partial<DatosZona>): P
     return { ...actualizada }
   }
 
-  // BACKEND: endpoint para editar una zona (incluye activar o desactivar con el estado).
-  return api<Zona>(`/zonas-peligrosas/${id}`, { method: 'PATCH', body: JSON.stringify(cambios) })
+  const payload: Record<string, unknown> = {}
+  if (cambios.nombre !== undefined) payload.nombre = cambios.nombre
+  if (cambios.tipoRiesgo !== undefined) payload.tipo_riesgo = cambios.tipoRiesgo
+  if (cambios.nivel !== undefined) payload.nivel = cambios.nivel
+  if (cambios.descripcion !== undefined) payload.descripcion = cambios.descripcion || null
+  if (cambios.estado !== undefined) payload.estado = cambios.estado
+  if (cambios.lat !== undefined && cambios.lng !== undefined && cambios.radio !== undefined) {
+    payload.zona = {
+      lat: cambios.lat,
+      lng: cambios.lng,
+      radio_m: cambios.radio,
+    }
+  }
+
+  const respuesta = await api<ZonaApi>(`/zonas-peligrosas/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+  return aZona(respuesta)
 }

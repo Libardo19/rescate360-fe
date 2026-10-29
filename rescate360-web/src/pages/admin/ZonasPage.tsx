@@ -27,6 +27,7 @@ const riesgos: Record<TipoRiesgo, { etiqueta: string; icono: LucideIcon }> = {
   deslizamiento: { etiqueta: 'Deslizamiento', icono: Mountain },
   incendio: { etiqueta: 'Incendio', icono: Flame },
   seguridad: { etiqueta: 'Seguridad', icono: ShieldAlert },
+  otro: { etiqueta: 'Otro', icono: TriangleAlert },
 }
 
 const niveles: Record<NivelRiesgo, { etiqueta: string; clase: string; color: string }> = {
