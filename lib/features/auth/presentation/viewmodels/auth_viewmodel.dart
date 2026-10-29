@@ -3,6 +3,7 @@ import '../../../../core/errors/exceptions.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../shared/models/rol.dart';
 import '../../../../shared/models/usuario_model.dart';
+import '../../../dispositivos/presentation/viewmodels/dispositivos_viewmodel.dart';
 import '../../data/repositories/auth_repository.dart';
 
 /// Estado de autenticación de la app.
