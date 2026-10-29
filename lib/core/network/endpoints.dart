@@ -47,6 +47,9 @@ class Endpoints {
   static const checkInPendiente = '/check-ins/pendiente';
   static String responderCheckIn(String id) => '/check-ins/$id/responder';
 
+  // Guía de emergencia
+  static const guia = '/guia-emergencia';
+
   // Mapa en vivo
   static const mapa = '/mapa';
 }

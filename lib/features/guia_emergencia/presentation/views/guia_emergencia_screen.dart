@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../shared/widgets/fila_opcion.dart';
+import '../../data/models/guia_model.dart';
+import '../viewmodels/guia_emergencia_viewmodel.dart';
 
 class _Guia {
   final String titulo;
@@ -17,6 +20,7 @@ class _Guia {
   });
 }
 
+// Respaldo sin conexión: la misma guía que carga el backend la primera vez
 const List<_Guia> _guias = [
   _Guia(
     titulo: 'Terremoto',
@@ -104,12 +108,33 @@ const List<_Guia> _guias = [
   ),
 ];
 
-/// Guía de emergencia (mockup 17).
-class GuiaEmergenciaScreen extends StatelessWidget {
+/// Ícono y color de cada categoría del backend
+const Map<String, (IconData, Color)> _estilos = {
+  'sismo': (Icons.vibration, AppColors.warning),
+  'inundacion': (Icons.water_drop_outlined, AppColors.info),
+  'incendio': (Icons.local_fire_department_outlined, AppColors.danger),
+  'accidente': (Icons.directions_car_outlined, AppColors.accent),
+  'deslizamiento': (Icons.terrain, AppColors.textSecondary),
+  'robo': (Icons.lock_outline, AppColors.primary),
+  'medica': (Icons.medical_services_outlined, AppColors.danger),
+  'desaparecidos': (Icons.person_search_outlined, AppColors.warning),
+  'general': (Icons.phone_in_talk_outlined, AppColors.primary),
+};
+
+_Guia _desdeApi(GuiaModel g) {
+  final (icono, color) = _estilos[g.categoria] ?? (Icons.info_outline, AppColors.primary);
+  return _Guia(titulo: g.titulo, icono: icono, color: color, pasos: g.pasos);
+}
+
+/// Guía de emergencia (mockup 17). Viene del API (la edita el super admin) y, sin conexión,
+/// se muestra la que trae la app.
+class GuiaEmergenciaScreen extends ConsumerWidget {
   const GuiaEmergenciaScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final remota = ref.watch(guiaEmergenciaProvider).valueOrNull;
+    final guias = remota == null ? _guias : remota.map(_desdeApi).toList();
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -123,7 +148,7 @@ class GuiaEmergenciaScreen extends StatelessWidget {
             const Text('Qué hacer en caso de:', style: AppTextStyles.h2),
             const SizedBox(height: 12),
             GrupoOpciones(
-              filas: _guias
+              filas: guias
                   .map(
                     (g) => FilaOpcion(
                       icono: g.icono,
