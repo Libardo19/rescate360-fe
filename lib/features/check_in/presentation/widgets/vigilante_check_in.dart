@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../sin_conexion/presentation/viewmodels/sin_conexion_viewmodel.dart';
 import '../viewmodels/check_in_viewmodel.dart';
 import '../views/estas_bien_screen.dart';
 
 /// Envuelve la pantalla principal: consulta el "¿Estás bien?" cada minuto mientras la app está
 /// abierta y, si aparece uno pendiente, abre la pantalla completa (una sola vez por check-in).
+/// Al arrancar también inicia el modo sin conexión.
 class VigilanteCheckIn extends ConsumerStatefulWidget {
   final Widget child;
 
@@ -21,7 +23,11 @@ class _VigilanteCheckInState extends ConsumerState<VigilanteCheckIn> with Widget
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    Future.microtask(() => ref.read(checkInProvider.notifier).iniciar());
+    Future.microtask(() {
+      ref.read(checkInProvider.notifier).iniciar();
+      // También arranca el modo sin conexión: guarda la llave offline y entrega lo que haya en cola
+      ref.read(sinConexionProvider.notifier).iniciar();
+    });
   }
 
   @override
