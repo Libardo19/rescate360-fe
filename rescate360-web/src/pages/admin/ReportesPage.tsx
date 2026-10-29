@@ -11,6 +11,8 @@ import {
 import { listarOrganizaciones } from '../../services/organizaciones.service'
 import { mensajeDeError } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
+import { useConsultaPeriodica } from '../../hooks/useConsultaPeriodica'
+import CeldaVoluntario from '../../components/CeldaVoluntario'
 import { prioridadEfectivaReporte } from '../../types/reporte'
 import type { Reporte, EstadoReporte, TipoSugerido } from '../../types/reporte'
 import type { Organizacion } from '../../types/organizacion'
@@ -19,6 +21,7 @@ import type { Prioridad } from '../../types/solicitud'
 const etiquetaEstado: Record<EstadoReporte, string> = {
   pendiente: 'Pendiente',
   verificado: 'Verificado',
+  atendido: 'Atendido',
   rechazado: 'Rechazado',
   duplicado: 'Duplicado',
   no_verificable: 'No verificable',
@@ -27,6 +30,7 @@ const etiquetaEstado: Record<EstadoReporte, string> = {
 const colorEstado: Record<EstadoReporte, string> = {
   pendiente: 'bg-amber-100 text-amber-700',
   verificado: 'bg-green-100 text-green-700',
+  atendido: 'bg-blue-100 text-blue-700',
   rechazado: 'bg-red-100 text-red-700',
   duplicado: 'bg-slate-200 text-slate-600',
   no_verificable: 'bg-slate-200 text-slate-600',
@@ -72,10 +76,17 @@ export default function ReportesPage() {
   const esSuperAdmin = usuario?.rol === 'super_admin'
   const [organizaciones, setOrganizaciones] = useState<Organizacion[]>([])
 
-  useEffect(() => {
+  // Se refresca sola: cuando el voluntario finaliza, el admin lo ve "Atendido" sin recargar
+  useConsultaPeriodica(() => {
     listarReportes()
-      .then(setReportes)
+      .then((lista) => {
+        setReportes(lista)
+        setSeleccionado((actual) => (actual ? (lista.find((r) => r.id === actual.id) ?? actual) : actual))
+      })
       .catch((e) => setError(mensajeDeError(e, 'No se pudieron cargar los reportes.')))
+  })
+
+  useEffect(() => {
     listarTipos().then(setTipos).catch(() => {})
   }, [])
 
@@ -191,13 +202,14 @@ export default function ReportesPage() {
               <th className="px-5 py-3">Reportante</th>
               <th className="px-5 py-3">Fecha</th>
               <th className="px-5 py-3">Estado</th>
+              <th className="px-5 py-3">Voluntario</th>
               <th className="px-5 py-3" />
             </tr>
           </thead>
           <tbody>
             {filtrados.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-5 py-10 text-center text-panel-text-soft">
+                <td colSpan={8} className="px-5 py-10 text-center text-panel-text-soft">
                   No hay reportes con esos filtros.
                 </td>
               </tr>
@@ -232,6 +244,9 @@ export default function ReportesPage() {
                     <span className={`rounded-full px-3 py-1 text-xs font-medium ${colorEstado[r.estado]}`}>
                       {etiquetaEstado[r.estado]}
                     </span>
+                  </td>
+                  <td className="px-5 py-3">
+                    <CeldaVoluntario atencion={r.atencion} />
                   </td>
                   <td className="px-5 py-3 text-right">
                     <button onClick={() => abrir(r)} className="text-sm font-semibold text-panel-primary hover:underline">
