@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.rescate360"
+    namespace = "com.rescate360.rescate"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -17,7 +17,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.rescate360"
+        applicationId = "com.rescate360.rescate"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
