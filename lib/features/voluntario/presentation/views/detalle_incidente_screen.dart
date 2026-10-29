@@ -27,7 +27,7 @@ class DetalleIncidenteScreen extends ConsumerWidget {
   Future<void> _tomar(BuildContext context, WidgetRef ref) async {
     final mensajero = ScaffoldMessenger.of(context);
     final error =
-        await ref.read(voluntarioViewModelProvider).tomar(solicitud.id);
+        await ref.read(voluntarioViewModelProvider).tomar(solicitud);
     if (!context.mounted) return;
 
     if (error != null) {

@@ -1,6 +1,12 @@
 /// SolicitudAyudaOut del backend (lo que la app necesita mostrar).
+/// El voluntario también recibe aquí los reportes de incidentes de su organización
+/// ([esReporte]): se muestran y se toman igual que una solicitud.
 class SolicitudAyudaModel {
   final String id;
+  // solicitud | reporte
+  final String clase;
+  // Etiqueta del tipo de reporte ("Incendio", "Fuga de gas"); null en solicitudes
+  final String? tipoEtiqueta;
   final String tipo; // medica, alimentaria, refugio, rescate, ropa, otro
   final String origen; // manual, sos, acelerometro
   final String descripcion;
@@ -13,6 +19,8 @@ class SolicitudAyudaModel {
 
   const SolicitudAyudaModel({
     required this.id,
+    this.clase = 'solicitud',
+    this.tipoEtiqueta,
     required this.tipo,
     required this.origen,
     required this.descripcion,
@@ -40,10 +48,33 @@ class SolicitudAyudaModel {
     );
   }
 
-  bool get esSos => origen == 'sos';
+  /// ReporteOut del backend, para la lista y el mapa del voluntario.
+  factory SolicitudAyudaModel.desdeReporte(Map<String, dynamic> json) {
+    final ubicacion = json['ubicacion'] as Map<String, dynamic>;
+    return SolicitudAyudaModel(
+      id: json['id'] as String,
+      clase: 'reporte',
+      tipo: json['tipo'] as String,
+      tipoEtiqueta: json['tipo_etiqueta'] as String?,
+      origen: 'reporte',
+      descripcion: json['descripcion'] as String,
+      direccion: json['direccion'] as String?,
+      lat: (ubicacion['lat'] as num).toDouble(),
+      lng: (ubicacion['lng'] as num).toDouble(),
+      estado: json['estado'] as String,
+      prioridad: (json['prioridad_manual'] ?? json['prioridad_ia']) as String,
+      creadoEn: DateTime.parse(json['creado_en'] as String).toLocal(),
+    );
+  }
 
-  /// El dueño puede cancelarla mientras no esté atendida ni cancelada.
-  bool get cancelable => estado == 'pendiente' || estado == 'en_proceso';
+  bool get esSos => origen == 'sos';
+  bool get esReporte => clase == 'reporte';
+
+  /// Sigue abierto: una solicitud mientras no esté atendida ni cancelada; un reporte mientras
+  /// esté pendiente o verificado.
+  bool get cancelable => esReporte
+      ? estado == 'pendiente' || estado == 'verificado'
+      : estado == 'pendiente' || estado == 'en_proceso';
 
   static const etiquetasTipo = {
     'medica': 'Ayuda médica',
@@ -59,8 +90,13 @@ class SolicitudAyudaModel {
     'en_proceso': 'En proceso',
     'atendida': 'Atendida',
     'cancelada': 'Cancelada',
+    'verificado': 'Verificado',
   };
 
-  String get titulo => esSos ? 'SOS' : (etiquetasTipo[tipo] ?? 'Solicitud de ayuda');
+  String get titulo => esReporte
+      ? 'Reporte: ${tipoEtiqueta ?? tipo}'
+      : esSos
+          ? 'SOS'
+          : (etiquetasTipo[tipo] ?? 'Solicitud de ayuda');
   String get estadoEtiqueta => etiquetasEstado[estado] ?? estado;
 }
