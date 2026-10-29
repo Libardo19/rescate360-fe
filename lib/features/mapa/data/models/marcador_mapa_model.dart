@@ -1,7 +1,7 @@
 /// PuntoMapa de GET /mapa (el mismo formato que usa el panel web).
 class MarcadorMapaModel {
   final String id;
-  final String capa; // solicitud | reporte | centro | zona | alerta
+  final String capa; // solicitud | reporte | centro | zona | alerta | sismo
   final String tipo;
   final String titulo;
   final String detalle;

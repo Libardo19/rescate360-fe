@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/errors/exceptions.dart';
+import '../../../check_in/presentation/viewmodels/check_in_viewmodel.dart';
+import '../../../sin_conexion/presentation/viewmodels/sin_conexion_viewmodel.dart';
 import '../../../solicitudes_ayuda/presentation/viewmodels/solicitudes_ayuda_viewmodel.dart';
 
 /// Botón SOS (mockup 16). Se activa manteniendo presionado 3 segundos para
@@ -46,6 +49,15 @@ class _SosScreenState extends ConsumerState<SosScreen>
     if (mounted) setState(() => _activado = true);
     final resultado = await ref.read(solicitudesAyudaViewModelProvider).enviarSos();
     if (!mounted) return;
+    if (resultado.error == ApiException.sinConexion.mensaje) {
+      // Sin internet: se firma, se guarda y sale por Bluetooth hacia quien tenga red
+      final problema = await ref.read(sinConexionProvider.notifier).encolar('sos');
+      if (!mounted) return;
+      if (problema == null) {
+        _avisar('Sin internet: tu SOS se guardó y se está pasando por Bluetooth a teléfonos cercanos.');
+        return;
+      }
+    }
     if (resultado.error != null) {
       // No salió: se vuelve a dejar el botón listo para intentarlo otra vez
       _progreso.reset();
@@ -74,6 +86,15 @@ class _SosScreenState extends ConsumerState<SosScreen>
     _solicitudId = null;
     _progreso.reset();
     setState(() => _activado = false);
+  }
+
+  Future<void> _activarModoEmergencia() async {
+    final error = await ref.read(checkInProvider.notifier).activarModoEmergencia();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(error ??
+          'Modo emergencia activado: si no respondes a tiempo, avisaremos a tus contactos de emergencia.'),
+    ));
   }
 
   @override
@@ -198,6 +219,14 @@ class _SosScreenState extends ConsumerState<SosScreen>
                   ),
                 ],
                 const Spacer(),
+                // Modo emergencia: si no responde el "¿Estás bien?", se avisa a sus contactos
+                TextButton.icon(
+                  style: TextButton.styleFrom(foregroundColor: Colors.white),
+                  onPressed: _activarModoEmergencia,
+                  icon: const Icon(Icons.timer_outlined),
+                  label: const Text('Modo emergencia: pregúntame si estoy bien'),
+                ),
+                const SizedBox(height: 8),
                 const Padding(
                   padding: EdgeInsets.only(bottom: 24),
                   child: Row(

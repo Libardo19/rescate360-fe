@@ -39,6 +39,19 @@ class Endpoints {
   static String persona(String id) => '/personas-desaparecidas/$id';
   static String estadoPersona(String id) => '/personas-desaparecidas/$id/estado';
 
+  // Alertas por zona
+  static const alertas = '/alertas';
+
+  // Sismos y "¿Estás bien?" (check-ins)
+  static const checkIns = '/check-ins';
+  static const checkInPendiente = '/check-ins/pendiente';
+  static String responderCheckIn(String id) => '/check-ins/$id/responder';
+
+  // Modo sin conexión
+  static const llaveOffline = '/usuarios/me/llave-offline';
+  static const offlineSync = '/offline/sync';
+  static const offlineRelevo = '/offline/relevo';
+
   // Guía de emergencia
   static const guia = '/guia-emergencia';
 
