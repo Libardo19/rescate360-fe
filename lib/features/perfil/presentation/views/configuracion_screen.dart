@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../sin_conexion/presentation/views/modo_sin_conexion_screen.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../../../app/i18n/textos.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -124,6 +125,14 @@ class ConfiguracionScreen extends ConsumerWidget {
                   titulo: context.t('cfg_ubicacion'),
                   subtitulo: context.t('cfg_ubicacion_sub'),
                   onTap: () => _abrirAjustesUbicacion(context),
+                ),
+                FilaOpcion(
+                  icono: Icons.bluetooth_searching,
+                  titulo: context.t('cfg_sin_conexion'),
+                  subtitulo: context.t('cfg_sin_conexion_sub'),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ModoSinConexionScreen()),
+                  ),
                 ),
               ],
             ),

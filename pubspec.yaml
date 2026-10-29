@@ -25,6 +25,9 @@ dependencies:
   intl: any
   uuid: ^4.6.0
   shared_preferences: ^2.3.0
+  nearby_connections: ^4.3.0
+  crypto: ^3.0.8
+  permission_handler: ^13.0.2
 
 dev_dependencies:
   flutter_test:

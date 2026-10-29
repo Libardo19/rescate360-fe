@@ -5,6 +5,7 @@ import '../../../../core/errors/exceptions.dart';
 import '../../../../core/location/location_service.dart';
 import '../../data/models/check_in_model.dart';
 import '../../data/repositories/check_in_repository.dart';
+import '../../../sin_conexion/presentation/viewmodels/sin_conexion_viewmodel.dart';
 
 /// Vigila si hay un "¿Estás bien?" pendiente. Todavía no hay push (Firebase es la última
 /// tarea), así que la app pregunta al abrir y cada minuto mientras está abierta.
@@ -57,7 +58,13 @@ class CheckInViewModel extends Notifier<CheckInModel?> {
       state = null;
       return null;
     } catch (e) {
-      return ApiException.desde(e).mensaje;
+      final error = ApiException.desde(e);
+      if (!error.esSinConexion) return error.mensaje;
+      // Sin internet: la respuesta sale firmada por Bluetooth y se entrega cuando alguien tenga red
+      final problema = await ref.read(sinConexionProvider.notifier).encolar(aSalvo ? 'a_salvo' : 'necesito_ayuda');
+      if (problema != null) return problema;
+      state = null;
+      return null;
     }
   }
 

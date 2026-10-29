@@ -15,6 +15,14 @@ class ApiException implements Exception {
     this.errores = const [],
   });
 
+  /// No se llegó al backend (sin red, o la red no llega al servidor).
+  static const sinConexion = ApiException(
+    codigo: 'SIN_CONEXION',
+    detalle: 'No hay conexión con el servidor. Revisa tu internet e intenta de nuevo.',
+  );
+
+  bool get esSinConexion => codigo == sinConexion.codigo;
+
   /// Texto listo para mostrar: el detalle del backend y, si hay, el primer campo con problema.
   String get mensaje =>
       errores.isEmpty ? detalle : '$detalle: ${errores.first.mensaje}';
@@ -40,10 +48,7 @@ class ApiException implements Exception {
       if (error.type == DioExceptionType.connectionError ||
           error.type == DioExceptionType.connectionTimeout ||
           error.type == DioExceptionType.receiveTimeout) {
-        return const ApiException(
-          codigo: 'SIN_CONEXION',
-          detalle: 'No hay conexión con el servidor. Revisa tu internet e intenta de nuevo.',
-        );
+        return sinConexion;
       }
       return ApiException(
         status: error.response?.statusCode,

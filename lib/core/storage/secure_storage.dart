@@ -11,6 +11,8 @@ class SecureStorage {
   static const _access = 'access_token';
   static const _refresh = 'refresh_token';
   static const _usuario = 'usuario';
+  // Llave HMAC para firmar los mensajes sin conexión (GET /usuarios/me/llave-offline)
+  static const _llaveOffline = 'llave_offline';
 
   Future<void> guardarSesion({
     required String accessToken,
@@ -31,7 +33,11 @@ class SecureStorage {
   Future<String?> refreshToken() => _storage.read(key: _refresh);
   Future<String?> usuarioJson() => _storage.read(key: _usuario);
 
+  Future<String?> llaveOffline() => _storage.read(key: _llaveOffline);
+  Future<void> guardarLlaveOffline(String llave) => _storage.write(key: _llaveOffline, value: llave);
+
   Future<void> borrarSesion() async {
+    await _storage.delete(key: _llaveOffline);
     await _storage.delete(key: _access);
     await _storage.delete(key: _refresh);
     await _storage.delete(key: _usuario);
