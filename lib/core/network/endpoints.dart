@@ -39,6 +39,9 @@ class Endpoints {
   static String persona(String id) => '/personas-desaparecidas/$id';
   static String estadoPersona(String id) => '/personas-desaparecidas/$id/estado';
 
+  // Alertas por zona
+  static const alertas = '/alertas';
+
   // Mapa en vivo
   static const mapa = '/mapa';
 }
