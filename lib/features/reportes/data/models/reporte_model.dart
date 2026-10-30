@@ -4,7 +4,9 @@ enum EstadoReporteCiudadano {
   verificado('verificado'),
   rechazado('rechazado'),
   duplicado('duplicado'),
-  noVerificable('no_verificable');
+  noVerificable('no_verificable'),
+  // Un voluntario lo atendió y finalizó su asignación
+  atendido('atendido');
 
   const EstadoReporteCiudadano(this.valor);
 

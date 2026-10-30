@@ -1,7 +1,8 @@
-import type { Prioridad } from './solicitud'
+import type { AtencionApi, Atencion, Prioridad } from './solicitud'
 
 // Valores iguales a los del backend
-export type EstadoReporte = 'pendiente' | 'verificado' | 'rechazado' | 'duplicado' | 'no_verificable'
+// atendido: un voluntario lo tomó y finalizó su asignación
+export type EstadoReporte = 'pendiente' | 'verificado' | 'atendido' | 'rechazado' | 'duplicado' | 'no_verificable'
 
 // El tipo es texto libre: hay una lista sugerida (GET /reportes/tipos), pero el ciudadano
 // puede escribir otro tipo de emergencia ("fuga de gas", "árbol caído"…)
@@ -41,6 +42,7 @@ export interface ReporteApi {
   duplicado_de_id: string | null
   evidencias: Evidencia[]
   reportante: { id: string; nombre: string } | null
+  atencion?: AtencionApi | null
   creado_en: string
   actualizado_en: string
 }
@@ -65,6 +67,7 @@ export interface Reporte {
   motivoRechazo: string | null
   duplicadoDeId: string | null
   organizacionId: string | null // la manual prevalece sobre la sugerida por la IA
+  atencion: Atencion | null // qué voluntario lo tomó y si ya finalizó
 }
 
 // Regla del negocio: la prioridad manual del administrador prevalece sobre la de la IA.

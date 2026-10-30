@@ -1,24 +1,35 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { FileWarning, LifeBuoy, Bell, Building2 } from 'lucide-react'
 import { obtenerDashboardAdmin } from '../../services/dashboard.service'
 import type { DashboardAdmin } from '../../types/dashboard'
+import { useConsultaPeriodica } from '../../hooks/useConsultaPeriodica'
 
-const colorEstado: Record<string, string> = {
-  'En revisión': 'bg-amber-100 text-amber-700',
-  Confirmado: 'bg-green-100 text-green-700',
-  'En proceso': 'bg-blue-100 text-blue-700',
-  Pendiente: 'bg-slate-100 text-slate-600',
+// El backend manda el estado tal cual (de reportes o de solicitudes)
+const estados: Record<string, { etiqueta: string; color: string }> = {
+  pendiente: { etiqueta: 'Pendiente', color: 'bg-amber-100 text-amber-700' },
+  verificado: { etiqueta: 'Verificado', color: 'bg-green-100 text-green-700' },
+  en_proceso: { etiqueta: 'En proceso', color: 'bg-blue-100 text-blue-700' },
+  atendido: { etiqueta: 'Atendido', color: 'bg-blue-100 text-blue-700' },
+  atendida: { etiqueta: 'Atendida', color: 'bg-green-100 text-green-700' },
+  rechazado: { etiqueta: 'Rechazado', color: 'bg-red-100 text-red-700' },
+  cancelada: { etiqueta: 'Cancelada', color: 'bg-slate-200 text-slate-600' },
+  duplicado: { etiqueta: 'Duplicado', color: 'bg-slate-200 text-slate-600' },
+  no_verificable: { etiqueta: 'No verificable', color: 'bg-slate-200 text-slate-600' },
 }
 
 export default function AdminDashboard() {
   const [datos, setDatos] = useState<DashboardAdmin | null>(null)
   const [error, setError] = useState('')
 
-  useEffect(() => {
+  // Los conteos y la actividad se refrescan solos, como las listas
+  useConsultaPeriodica(() => {
     obtenerDashboardAdmin()
-      .then(setDatos)
+      .then((d) => {
+        setDatos(d)
+        setError('')
+      })
       .catch(() => setError('No se pudo cargar el resumen.'))
-  }, [])
+  })
 
   if (error) return <p className="text-panel-accent">{error}</p>
   if (!datos) return <p className="text-panel-text-soft">Cargando…</p>
@@ -71,8 +82,8 @@ export default function AdminDashboard() {
                     <p className="text-xs text-panel-text-muted">{r.detalle}</p>
                   </td>
                   <td className="px-5 py-3">
-                    <span className={`rounded-full px-3 py-1 text-xs font-medium ${colorEstado[r.estado] ?? 'bg-slate-100 text-slate-600'}`}>
-                      {r.estado}
+                    <span className={`rounded-full px-3 py-1 text-xs font-medium ${estados[r.estado]?.color ?? 'bg-slate-100 text-slate-600'}`}>
+                      {estados[r.estado]?.etiqueta ?? r.estado}
                     </span>
                   </td>
                   <td className="px-5 py-3 text-panel-text-soft">{r.hace}</td>

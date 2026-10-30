@@ -4,6 +4,8 @@ import { listarSolicitudes, actualizarSolicitud, asignarOrganizacion } from '../
 import { listarOrganizaciones } from '../../services/organizaciones.service'
 import { mensajeDeError } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
+import { useConsultaPeriodica } from '../../hooks/useConsultaPeriodica'
+import CeldaVoluntario from '../../components/CeldaVoluntario'
 import type { Organizacion } from '../../types/organizacion'
 import { prioridadEfectiva } from '../../types/solicitud'
 import type { Solicitud, CambiosSolicitud, EstadoSolicitud, Prioridad, TipoAyuda } from '../../types/solicitud'
@@ -69,11 +71,15 @@ export default function SolicitudesPage() {
   const esSuperAdmin = usuario?.rol === 'super_admin'
   const [organizaciones, setOrganizaciones] = useState<Organizacion[]>([])
 
-  useEffect(() => {
+  // Se refresca sola: cuando el voluntario finaliza, el admin la ve "Atendida" sin recargar
+  useConsultaPeriodica(() => {
     listarSolicitudes()
-      .then(setSolicitudes)
+      .then((lista) => {
+        setSolicitudes(lista)
+        setSeleccionada((actual) => (actual ? (lista.find((s) => s.id === actual.id) ?? actual) : actual))
+      })
       .catch((e) => setError(mensajeDeError(e, 'No se pudieron cargar las solicitudes.')))
-  }, [])
+  })
 
   useEffect(() => {
     if (esSuperAdmin) listarOrganizaciones().then(setOrganizaciones).catch(() => {})
@@ -199,6 +205,7 @@ export default function SolicitudesPage() {
               <th className="px-5 py-3">Descripción</th>
               <th className="px-5 py-3">Solicitante</th>
               <th className="px-5 py-3">Estado</th>
+              <th className="px-5 py-3">Voluntario</th>
               <th className="px-5 py-3">Fecha</th>
               <th className="px-5 py-3" />
             </tr>
@@ -206,7 +213,7 @@ export default function SolicitudesPage() {
           <tbody>
             {filtradas.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-5 py-10 text-center text-panel-text-soft">
+                <td colSpan={8} className="px-5 py-10 text-center text-panel-text-soft">
                   No hay solicitudes con esos filtros.
                 </td>
               </tr>
@@ -242,6 +249,9 @@ export default function SolicitudesPage() {
                     <span className={`rounded-full px-3 py-1 text-xs font-medium ${colorEstado[s.estado]}`}>
                       {etiquetaEstado[s.estado]}
                     </span>
+                  </td>
+                  <td className="px-5 py-3">
+                    <CeldaVoluntario atencion={s.atencion} />
                   </td>
                   <td className="whitespace-nowrap px-5 py-3 text-panel-text-soft">{formatearFecha(s.fecha)}</td>
                   <td className="px-5 py-3 text-right">
