@@ -15,15 +15,21 @@ const anchos = { md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl' }
 export default function Modal({ titulo, subtitulo, onCerrar, children, ancho = 'md' }: Props) {
   const idTitulo = useId()
   const ref = useRef<HTMLDivElement>(null)
+  const cerrarRef = useRef(onCerrar)
 
   useEffect(() => {
-    ref.current?.focus()
+    cerrarRef.current = onCerrar
+  })
+
+  // Solo al montar: enfocar el diálogo (si nada dentro pidió el foco) y escuchar Esc.
+  useEffect(() => {
+    if (!ref.current?.contains(document.activeElement)) ref.current?.focus()
     const alPulsar = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCerrar()
+      if (e.key === 'Escape') cerrarRef.current()
     }
     window.addEventListener('keydown', alPulsar)
     return () => window.removeEventListener('keydown', alPulsar)
-  }, [onCerrar])
+  }, [])
 
   return (
     <div
