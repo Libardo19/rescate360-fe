@@ -7,7 +7,6 @@ import LandingPage from './pages/landing/LandingPage'
 import LoginPage from './pages/login/LoginPage'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import SuperAdminDashboard from './pages/superadmin/SuperAdminDashboard'
-import PaginaEnConstruccion from './pages/shared/PaginaEnConstruccion'
 import ReportesPage from './pages/admin/ReportesPage'
 import SolicitudesPage from './pages/admin/SolicitudesPage'
 import MapaPage from './pages/admin/MapaPage'
@@ -17,6 +16,7 @@ import ZonasPage from './pages/admin/ZonasPage'
 import DonacionesPage from './pages/admin/DonacionesPage'
 import DesaparecidosPage from './pages/admin/DesaparecidosPage'
 import UsuariosPage from './pages/admin/UsuariosPage'
+import AuditoriaPage from './pages/admin/AuditoriaPage'
 
 export default function App() {
   return (
@@ -44,7 +44,7 @@ export default function App() {
             <Route path="donaciones" element={<DonacionesPage />} />
             <Route path="desaparecidos" element={<DesaparecidosPage />} />
             <Route path="usuarios" element={<UsuariosPage />} />
-            <Route path="auditoria" element={<PaginaEnConstruccion titulo="Auditoría" />} />
+            <Route path="auditoria" element={<AuditoriaPage />} />
           </Route>
 
           <Route
