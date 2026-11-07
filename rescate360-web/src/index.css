@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* El modo oscuro solo se activa dentro de un contenedor con data-tema="oscuro" (la landing). */
+@custom-variant dark (&:where([data-tema=oscuro], [data-tema=oscuro] *));
+
 @theme {
     /* Landing */
       /* Panel (misma paleta que la app móvil, tema claro) */
@@ -33,6 +36,8 @@
   --color-success: #3fbf7f;
   --color-warning: #f0b44c;
   --font-sans: "Roboto", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
 :root {
@@ -2376,4 +2381,150 @@ a:focus-visible {
   .panel-modal-enter {
     animation: none;
   }
+}
+
+/* Panel: entrada suave al cambiar de sección. */
+.panel-page-enter {
+  animation: panel-page-in 220ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+@keyframes panel-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-page-enter {
+    animation: none;
+  }
+}
+
+/* Desplazamiento sin barra visible (menú lateral del panel). */
+.sin-barra-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sin-barra-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* ============ Panel: animaciones y modo oscuro ============ */
+
+/* Filas de tablas: entrada escalonada y realce al pasar el cursor. */
+.panel-raiz tbody tr {
+  animation: panel-fila 380ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  transition: background-color 150ms ease;
+}
+
+.panel-raiz tbody tr:hover {
+  background-color: rgb(15 42 92 / 0.035);
+}
+
+.panel-raiz tbody tr:nth-child(2) { animation-delay: 30ms; }
+.panel-raiz tbody tr:nth-child(3) { animation-delay: 60ms; }
+.panel-raiz tbody tr:nth-child(4) { animation-delay: 90ms; }
+.panel-raiz tbody tr:nth-child(5) { animation-delay: 120ms; }
+.panel-raiz tbody tr:nth-child(6) { animation-delay: 150ms; }
+.panel-raiz tbody tr:nth-child(7) { animation-delay: 180ms; }
+.panel-raiz tbody tr:nth-child(8) { animation-delay: 210ms; }
+.panel-raiz tbody tr:nth-child(n + 9) { animation-delay: 240ms; }
+
+@keyframes panel-fila {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* Secciones de cada pantalla: aparecen en cascada (el Inicio usa sus propias animaciones). */
+.panel-page-enter > :not(.sin-cascada) > :not(.fixed) {
+  animation: panel-seccion 480ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+.panel-page-enter > :not(.sin-cascada) > :not(.fixed):nth-child(2) { animation-delay: 70ms; }
+.panel-page-enter > :not(.sin-cascada) > :not(.fixed):nth-child(3) { animation-delay: 140ms; }
+.panel-page-enter > :not(.sin-cascada) > :not(.fixed):nth-child(4) { animation-delay: 200ms; }
+.panel-page-enter > :not(.sin-cascada) > :not(.fixed):nth-child(n + 5) { animation-delay: 260ms; }
+
+@keyframes panel-seccion {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.99);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-raiz tbody tr,
+  .panel-page-enter > :not(.sin-cascada) > :not(.fixed) {
+    animation: none;
+  }
+}
+
+/* Cifras de la cabecera de cada sección: entran una tras otra. */
+.panel-stats > * {
+  animation: panel-seccion 520ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+.panel-stats > :nth-child(1) { animation-delay: 120ms; }
+.panel-stats > :nth-child(2) { animation-delay: 180ms; }
+.panel-stats > :nth-child(3) { animation-delay: 240ms; }
+.panel-stats > :nth-child(4) { animation-delay: 300ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-stats > * {
+    animation: none;
+  }
+}
+
+/* Modo oscuro del panel: los colores del panel cambian solos, así todas las pantallas lo heredan. */
+.panel-raiz[data-tema=oscuro] {
+  --color-panel-bg: #060c19;
+  --color-panel-card: #0c1424;
+  --color-panel-border: #1b2639;
+  --color-panel-primary: #7aa5ff;
+  --color-panel-primary-dark: #5f8ff5;
+  --color-panel-text: #e8edf6;
+  --color-panel-text-soft: #a4aec0;
+  --color-panel-text-muted: #6f7a8f;
+  color-scheme: dark;
+}
+
+/* Insignias y avisos con colores claros fijos: versión translúcida en modo oscuro. */
+.panel-raiz[data-tema=oscuro] :is(.bg-red-50, .bg-red-100) { background-color: rgb(239 68 68 / 0.14); }
+.panel-raiz[data-tema=oscuro] :is(.bg-green-50, .bg-green-100) { background-color: rgb(34 197 94 / 0.14); }
+.panel-raiz[data-tema=oscuro] :is(.bg-amber-50, .bg-amber-100) { background-color: rgb(245 158 11 / 0.15); }
+.panel-raiz[data-tema=oscuro] :is(.bg-blue-50, .bg-blue-100) { background-color: rgb(59 130 246 / 0.15); }
+.panel-raiz[data-tema=oscuro] :is(.bg-violet-50, .bg-violet-100) { background-color: rgb(139 92 246 / 0.16); }
+.panel-raiz[data-tema=oscuro] :is(.bg-orange-50, .bg-orange-100) { background-color: rgb(249 115 22 / 0.15); }
+.panel-raiz[data-tema=oscuro] :is(.bg-teal-50, .bg-teal-100) { background-color: rgb(20 184 166 / 0.15); }
+.panel-raiz[data-tema=oscuro] :is(.bg-pink-100) { background-color: rgb(236 72 153 / 0.15); }
+.panel-raiz[data-tema=oscuro] :is(.bg-slate-100, .bg-slate-200) { background-color: rgb(148 163 184 / 0.14); }
+.panel-raiz[data-tema=oscuro] :is(.text-red-700, .text-red-800, .text-red-600) { color: #fca5a5; }
+.panel-raiz[data-tema=oscuro] :is(.text-green-700, .text-green-600) { color: #86efac; }
+.panel-raiz[data-tema=oscuro] :is(.text-amber-700, .text-amber-800, .text-amber-900, .text-amber-600) { color: #fcd34d; }
+.panel-raiz[data-tema=oscuro] :is(.text-blue-700, .text-blue-600) { color: #93c5fd; }
+.panel-raiz[data-tema=oscuro] :is(.text-violet-700, .text-violet-600) { color: #c4b5fd; }
+.panel-raiz[data-tema=oscuro] :is(.text-orange-600) { color: #fdba74; }
+.panel-raiz[data-tema=oscuro] :is(.text-teal-700, .text-teal-600) { color: #5eead4; }
+.panel-raiz[data-tema=oscuro] :is(.text-pink-600) { color: #f9a8d4; }
+.panel-raiz[data-tema=oscuro] :is(.text-slate-600, .text-slate-700) { color: #cbd5e1; }
+.panel-raiz[data-tema=oscuro] .border-dashed.border-panel-border { border-color: #24324a; }
+.panel-raiz[data-tema=oscuro] .bg-white { background-color: var(--color-panel-card); }
+
+/* Tablas del panel: celdas más compactas e insignias que no se parten en dos líneas. */
+.panel-raiz table :is(th, td) {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.panel-raiz td span.rounded-full {
+  white-space: nowrap;
+}
+
+/* Modo oscuro: los botones con fondo "panel-primary" (azul claro) llevan texto oscuro para leerse bien. */
+.panel-raiz[data-tema=oscuro] .bg-panel-primary.text-white {
+  color: #07122a;
 }
