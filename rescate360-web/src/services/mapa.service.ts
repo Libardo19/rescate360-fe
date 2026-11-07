@@ -9,7 +9,7 @@ const MOCK: PuntoMapa[] = [
   { id: 'r4', tipo: 'reporte', titulo: 'Deslizamiento', detalle: 'Vereda La Esperanza', estado: 'Pendiente', lat: 10.4905, lng: -73.2702 },
   { id: 'r5', tipo: 'reporte', titulo: 'Incendio en vivienda', detalle: 'Cra. 19 #12-45', estado: 'Verificado', lat: 10.4627, lng: -73.2385 },
   { id: 's1', tipo: 'solicitud', titulo: 'Ayuda médica', detalle: 'Adulto mayor con dificultad para respirar', estado: 'Pendiente', lat: 10.4574, lng: -73.2587 },
-  { id: 's2', tipo: 'solicitud', titulo: 'Refugio', detalle: 'Familia sin vivienda tras la inundación', estado: 'En proceso', lat: 10.4863, lng: -73.2659 },
+  { id: 's2', tipo: 'solicitud', titulo: 'Refugio', detalle: 'Familia sin vivienda tras la inundación', estado: 'En atención', lat: 10.4863, lng: -73.2659 },
   { id: 's3', tipo: 'solicitud', titulo: 'Rescate', detalle: 'Persona atrapada en un vehículo', estado: 'Pendiente', lat: 10.4421, lng: -73.2294 },
   { id: 'c1', tipo: 'centro', titulo: 'Hospital Municipal', detalle: 'Centro de salud · Cra. 9 #14-30', estado: 'Disponible', lat: 10.4689, lng: -73.2551 },
   { id: 'c2', tipo: 'centro', titulo: 'Refugio Municipal', detalle: 'Albergue · Calle 16 #8-32', estado: 'Disponible', lat: 10.4602, lng: -73.2447 },

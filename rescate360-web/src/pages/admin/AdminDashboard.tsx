@@ -6,7 +6,7 @@ import type { DashboardAdmin } from '../../types/dashboard'
 const colorEstado: Record<string, string> = {
   'En revisión': 'bg-amber-100 text-amber-700',
   Confirmado: 'bg-green-100 text-green-700',
-  'En proceso': 'bg-blue-100 text-blue-700',
+  'En atención': 'bg-blue-100 text-blue-700',
   Pendiente: 'bg-slate-100 text-slate-600',
 }
 

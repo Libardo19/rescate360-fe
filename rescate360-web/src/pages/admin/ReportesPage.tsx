@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Search, X, CheckCircle2, XCircle, Copy } from 'lucide-react'
+import { Search, X, CheckCircle2, XCircle, Copy, HelpCircle } from 'lucide-react'
 import { listarReportes, cambiarEstadoReporte } from '../../services/reportes.service'
 import type { Reporte, EstadoReporte, TipoIncidente } from '../../types/reporte'
 
@@ -17,6 +17,7 @@ const etiquetaEstado: Record<EstadoReporte, string> = {
   verificado: 'Verificado',
   rechazado: 'Rechazado',
   duplicado: 'Duplicado',
+  no_verificable: 'No verificable',
 }
 
 const colorEstado: Record<EstadoReporte, string> = {
@@ -24,6 +25,7 @@ const colorEstado: Record<EstadoReporte, string> = {
   verificado: 'bg-green-100 text-green-700',
   rechazado: 'bg-red-100 text-red-700',
   duplicado: 'bg-slate-200 text-slate-600',
+  no_verificable: 'bg-violet-100 text-violet-700',
 }
 
 const formatearFecha = (iso: string) =>
@@ -216,9 +218,15 @@ export default function ReportesPage() {
                 <dt className="text-xs uppercase text-panel-text-muted">Fecha</dt>
                 <dd>{formatearFecha(seleccionado.fecha)}</dd>
               </div>
+              {seleccionado.verificadoPor && seleccionado.estado !== 'pendiente' && (
+                <div>
+                  <dt className="text-xs uppercase text-panel-text-muted">Revisado por</dt>
+                  <dd>{seleccionado.verificadoPor}</dd>
+                </div>
+              )}
             </dl>
 
-            <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+            <div className="mt-6 grid grid-cols-1 gap-2 sm:grid-cols-2">
               <button
                 disabled={guardando || seleccionado.estado === 'verificado'}
                 onClick={() => cambiarEstado('verificado')}
@@ -239,6 +247,14 @@ export default function ReportesPage() {
                 className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-panel-border px-4 py-2 text-sm font-semibold text-panel-text-soft transition hover:bg-panel-bg disabled:opacity-40"
               >
                 <Copy size={16} /> Duplicado
+              </button>
+              <button
+                disabled={guardando || seleccionado.estado === 'no_verificable'}
+                onClick={() => cambiarEstado('no_verificable')}
+                title="No hay datos suficientes para confirmar ni descartar el reporte"
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-panel-border px-4 py-2 text-sm font-semibold text-panel-text-soft transition hover:bg-panel-bg disabled:opacity-40"
+              >
+                <HelpCircle size={16} /> No verificable
               </button>
             </div>
           </div>
