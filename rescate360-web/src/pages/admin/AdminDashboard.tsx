@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { FileWarning, LifeBuoy, Bell, Building2 } from 'lucide-react'
 import { obtenerDashboardAdmin } from '../../services/dashboard.service'
 import type { DashboardAdmin } from '../../types/dashboard'
+import TarjetaResumen from '../../components/panel/TarjetaResumen'
 
 const colorEstado: Record<string, string> = {
   'En revisión': 'bg-amber-100 text-amber-700',
@@ -37,16 +38,8 @@ export default function AdminDashboard() {
       <p className="mt-1 text-sm text-panel-text-soft">Resumen operativo de tu organización.</p>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {tarjetas.map(({ titulo, valor, icono: Icono, color }) => (
-          <div key={titulo} className="flex items-center gap-4 rounded-2xl border border-panel-border bg-panel-card p-5">
-            <div className={`flex h-12 w-12 items-center justify-center rounded-full text-white ${color}`}>
-              <Icono size={22} />
-            </div>
-            <div>
-              <p className="text-2xl font-extrabold">{valor}</p>
-              <p className="text-sm text-panel-text-soft">{titulo}</p>
-            </div>
-          </div>
+        {tarjetas.map((t) => (
+          <TarjetaResumen key={t.titulo} {...t} />
         ))}
       </div>
 

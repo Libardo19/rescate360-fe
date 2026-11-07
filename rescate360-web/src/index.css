@@ -2348,3 +2348,32 @@ a:focus-visible {
     animation: none !important;
   }
 }
+
+/* Panel: entrada de modales. Corta y con ease-out para que se sienta inmediata. */
+.panel-overlay-enter {
+  animation: panel-fade 160ms ease-out both;
+}
+
+.panel-modal-enter {
+  animation: panel-modal-in 180ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+@keyframes panel-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes panel-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-overlay-enter,
+  .panel-modal-enter {
+    animation: none;
+  }
+}
