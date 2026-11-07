@@ -57,7 +57,7 @@ const formatearFecha = (iso: string) =>
   new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
 
 const campo =
-  'rounded-lg border border-panel-border bg-panel-card px-3 py-2 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
+  'rounded-xl border border-panel-border bg-panel-card px-3.5 py-2.5 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
 
 export default function SolicitudesPage() {
   const { usuario } = useAuth()
@@ -180,9 +180,9 @@ export default function SolicitudesPage() {
         ]}
       />
 
-      {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       {aviso && (
-        <p className="mb-3 flex items-center justify-between gap-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
+        <p className="mb-3 flex items-center justify-between gap-3 rounded-2xl bg-green-50 px-3 py-2 text-sm text-green-700">
           {aviso}
           <button onClick={() => setAviso('')} aria-label="Cerrar aviso">
             <X size={14} />
@@ -242,13 +242,13 @@ export default function SolicitudesPage() {
         Mostrando {filtradas.length} de {solicitudes.length} solicitudes
       </p>
 
-      <div className="mt-2 max-w-full overflow-x-auto rounded-2xl border border-panel-border bg-panel-card">
+      <div className="mt-2 max-w-full overflow-x-auto rounded-3xl border border-panel-border bg-panel-card">
         <table className="w-full min-w-[850px] text-left text-sm">
-          <thead className="text-xs uppercase text-panel-text-muted">
+          <thead className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">
             <tr>
               <th className="px-5 py-3">Prioridad</th>
               <th className="px-5 py-3">Descripción</th>
-              <th className="px-5 py-3">Origen</th>
+              <th className="hidden px-5 py-3 2xl:table-cell">Origen</th>
               <th className="px-5 py-3">Solicitante</th>
               <th className="px-5 py-3">Estado</th>
               <th className="px-5 py-3">Fecha</th>
@@ -280,7 +280,7 @@ export default function SolicitudesPage() {
                     <p className="max-w-xs truncate">{s.descripcion}</p>
                     <p className="text-xs text-panel-text-muted">{s.ubicacion}</p>
                   </td>
-                  <td className="px-5 py-3 text-panel-text-soft">
+                  <td className="hidden px-5 py-3 text-panel-text-soft 2xl:table-cell">
                     <span className="flex items-center gap-1.5 whitespace-nowrap">
                       <IconoOrigen size={14} /> {etiqueta}
                     </span>
@@ -310,12 +310,12 @@ export default function SolicitudesPage() {
           onClick={() => setSeleccionada(null)}
         >
           <div
-            className="w-full max-w-lg rounded-2xl bg-panel-card p-6 shadow-2xl"
+            className="w-full max-w-lg rounded-[28px] border border-panel-border bg-panel-card p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-xl font-extrabold text-panel-primary">Solicitud de ayuda</h2>
+                <h2 className="text-xl font-semibold tracking-[-0.02em]">Solicitud de ayuda</h2>
                 <p className="mt-1 text-xs text-panel-text-muted">
                   {formatearFecha(seleccionada.fecha)} · {origen[seleccionada.origen].etiqueta}
                 </p>
@@ -327,15 +327,15 @@ export default function SolicitudesPage() {
 
             <dl className="mt-5 space-y-3 text-sm">
               <div>
-                <dt className="text-xs uppercase text-panel-text-muted">Descripción</dt>
+                <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">Descripción</dt>
                 <dd>{seleccionada.descripcion}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase text-panel-text-muted">Ubicación</dt>
+                <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">Ubicación</dt>
                 <dd>{seleccionada.ubicacion}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase text-panel-text-muted">Solicitante</dt>
+                <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">Solicitante</dt>
                 <dd>
                   {seleccionada.solicitante} · {seleccionada.telefono}
                 </dd>

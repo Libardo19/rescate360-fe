@@ -16,7 +16,7 @@ const formatearFecha = (iso: string) =>
   new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
 
 const campo =
-  'w-full rounded-lg border border-panel-border bg-panel-card px-3 py-2 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
+  'w-full rounded-xl border border-panel-border bg-panel-card px-3.5 py-2.5 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
 
 const formularioVacio: NuevaAlerta = { tipo: 'inundacion', titulo: '', descripcion: '', zona: '' }
 
@@ -112,14 +112,14 @@ export default function AlertasPage() {
         ]}
       />
 
-      {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-      <div className="inline-flex rounded-lg border border-panel-border bg-panel-card p-1 text-sm">
+      <div className="inline-flex rounded-full border border-panel-border bg-panel-card p-1 text-sm">
         {(['activas', 'historial'] as const).map((p) => (
           <button
             key={p}
             onClick={() => setPestana(p)}
-            className={`rounded-md px-4 py-1.5 font-medium capitalize transition ${
+            className={`rounded-full px-4 py-1.5 font-medium capitalize transition ${
               pestana === p ? 'bg-panel-primary text-white' : 'text-panel-text-soft hover:text-panel-text'
             }`}
           >
@@ -138,13 +138,13 @@ export default function AlertasPage() {
         {visibles.map((a) => {
           const { etiqueta, icono: Icono, color } = config[a.tipo]
           return (
-            <article key={a.id} className="flex gap-4 rounded-2xl border border-panel-border bg-panel-card p-5">
+            <article key={a.id} className="flex gap-4 rounded-3xl border border-panel-border bg-panel-card p-5">
               <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${color}`}>
                 <Icono size={22} />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="font-bold">{a.titulo}</h2>
+                  <h2 className="text-lg font-semibold tracking-[-0.02em]">{a.titulo}</h2>
                   <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${color}`}>{etiqueta}</span>
                 </div>
                 <p className="mt-1 text-sm text-panel-text-soft">{a.descripcion}</p>
@@ -172,11 +172,11 @@ export default function AlertasPage() {
         >
           <form
             onSubmit={publicar}
-            className="w-full max-w-lg rounded-2xl bg-panel-card p-6 shadow-2xl"
+            className="w-full max-w-lg rounded-[28px] border border-panel-border bg-panel-card p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between">
-              <h2 className="text-xl font-extrabold text-panel-primary">Nueva alerta</h2>
+              <h2 className="text-xl font-semibold tracking-[-0.02em]">Nueva alerta</h2>
               <button type="button" onClick={() => setModalAbierto(false)} aria-label="Cerrar">
                 <X size={20} />
               </button>
@@ -239,20 +239,20 @@ export default function AlertasPage() {
               </div>
             </div>
 
-            {errorForm && <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{errorForm}</p>}
+            {errorForm && <p className="mt-4 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{errorForm}</p>}
 
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setModalAbierto(false)}
-                className="rounded-lg border border-panel-border px-4 py-2 text-sm text-panel-text-soft transition hover:bg-panel-bg"
+                className="rounded-full border border-panel-border px-4 py-2 text-sm text-panel-text-soft transition hover:bg-panel-bg"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={guardando}
-                className="rounded-lg bg-panel-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark disabled:opacity-60"
+                className="rounded-full bg-panel-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark disabled:opacity-60"
               >
                 {guardando ? 'Publicando…' : 'Publicar alerta'}
               </button>

@@ -26,7 +26,7 @@ const formatearFecha = (iso: string) =>
   new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
 
 const campo =
-  'rounded-lg border border-panel-border bg-panel-card px-3 py-2 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
+  'rounded-xl border border-panel-border bg-panel-card px-3.5 py-2.5 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
 
 const mostrarValor = (v: unknown) => {
   if (v === null || v === undefined) return <span className="italic text-panel-text-muted">vacío</span>
@@ -184,9 +184,9 @@ export default function AuditoriaPage() {
         )}
       </div>
 
-      <div className="mt-2 max-w-full overflow-x-auto rounded-2xl border border-panel-border bg-panel-card">
+      <div className="mt-2 max-w-full overflow-x-auto rounded-3xl border border-panel-border bg-panel-card">
         <table className="w-full min-w-[860px] text-left text-sm">
-          <thead className="text-xs uppercase text-panel-text-muted">
+          <thead className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">
             <tr>
               <th className="px-5 py-3">Fecha</th>
               <th className="px-5 py-3">Usuario</th>

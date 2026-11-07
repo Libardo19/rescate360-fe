@@ -134,7 +134,7 @@ export default function DesaparecidosPage() {
         ]}
       />
 
-      {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="inline-flex w-fit rounded-lg border border-panel-border bg-panel-card p-1 text-sm">
@@ -142,7 +142,7 @@ export default function DesaparecidosPage() {
             <button
               key={p}
               onClick={() => setPestana(p)}
-              className={`rounded-md px-4 py-1.5 font-medium transition ${
+              className={`rounded-full px-4 py-1.5 font-medium transition ${
                 pestana === p ? 'bg-panel-primary text-white' : 'text-panel-text-soft hover:text-panel-text'
               }`}
             >
@@ -175,12 +175,12 @@ export default function DesaparecidosPage() {
           <button
             key={p.id}
             onClick={() => setSeleccionada(p)}
-            className="flex gap-4 rounded-2xl border border-panel-border bg-panel-card p-5 text-left transition hover:border-panel-primary/40 hover:shadow-md active:scale-[0.99]"
+            className="flex gap-4 rounded-3xl border border-panel-border bg-panel-card p-5 text-left transition hover:border-panel-primary/40 hover:shadow-md active:scale-[0.99]"
           >
             <Foto persona={p} tamano="sm" />
             <div className="min-w-0 flex-1">
               <div className="flex items-start justify-between gap-2">
-                <h2 className="font-bold leading-tight">{p.nombre}</h2>
+                <h2 className="font-semibold leading-tight tracking-[-0.01em]">{p.nombre}</h2>
                 {p.estadoCaso === 'buscando' ? (
                   <span className="shrink-0 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
                     En búsqueda
@@ -213,11 +213,11 @@ export default function DesaparecidosPage() {
             <Foto persona={seleccionada} tamano="lg" />
             <dl className="min-w-0 flex-1 space-y-3 text-sm">
               <div>
-                <dt className="text-xs uppercase text-panel-text-muted">Características</dt>
+                <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">Características</dt>
                 <dd>{seleccionada.caracteristicas}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase text-panel-text-muted">Reportado por</dt>
+                <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">Reportado por</dt>
                 <dd className="flex flex-wrap items-center gap-x-2">
                   {seleccionada.reportadoPor}
                   {seleccionada.telefonoContacto && (
@@ -231,7 +231,7 @@ export default function DesaparecidosPage() {
                 </dd>
               </div>
               <div>
-                <dt className="text-xs uppercase text-panel-text-muted">Última ubicación conocida</dt>
+                <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">Última ubicación conocida</dt>
                 <dd>
                   {seleccionada.referenciaUbicacion ?? 'Sin referencia'}{' '}
                   <span className="text-xs tabular-nums text-panel-text-muted">

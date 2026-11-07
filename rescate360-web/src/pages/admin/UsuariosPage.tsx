@@ -17,7 +17,7 @@ type FiltroRol = 'todos' | 'voluntario' | 'administrador'
 const formatearFecha = (iso: string) => new Date(iso).toLocaleDateString('es-CO', { dateStyle: 'medium' })
 
 const campo =
-  'w-full rounded-lg border border-panel-border bg-panel-card px-3 py-2 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
+  'w-full rounded-xl border border-panel-border bg-panel-card px-3.5 py-2.5 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
 
 // Un voluntario sin perfil se considera activo (perfiles_voluntario.activo tiene DEFAULT TRUE).
 const estaActivo = (m: MiembroOrganizacion) => m.perfil?.activo ?? true
@@ -182,9 +182,9 @@ export default function UsuariosPage() {
         ]}
       />
 
-      {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       {aviso && (
-        <p className="mb-3 flex items-center justify-between gap-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
+        <p className="mb-3 flex items-center justify-between gap-3 rounded-2xl bg-green-50 px-3 py-2 text-sm text-green-700">
           {aviso}
           <button onClick={() => setAviso('')} className="text-xs font-semibold hover:underline">
             Cerrar
@@ -213,7 +213,7 @@ export default function UsuariosPage() {
             <button
               key={valor}
               onClick={() => setFiltroRol(valor)}
-              className={`rounded-md px-3 py-1.5 font-medium transition ${
+              className={`rounded-full px-3 py-1.5 font-medium transition ${
                 filtroRol === valor ? 'bg-panel-primary text-white' : 'text-panel-text-soft hover:text-panel-text'
               }`}
             >
@@ -223,9 +223,9 @@ export default function UsuariosPage() {
         </div>
       </div>
 
-      <div className="mt-4 max-w-full overflow-x-auto rounded-2xl border border-panel-border bg-panel-card">
+      <div className="mt-4 max-w-full overflow-x-auto rounded-3xl border border-panel-border bg-panel-card">
         <table className="w-full min-w-[820px] text-left text-sm">
-          <thead className="text-xs uppercase text-panel-text-muted">
+          <thead className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">
             <tr>
               <th className="px-5 py-3">Usuario</th>
               <th className="px-5 py-3">Rol</th>
@@ -409,13 +409,13 @@ export default function UsuariosPage() {
             </div>
           )}
 
-          {errorForm && <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{errorForm}</p>}
+          {errorForm && <p className="mt-4 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{errorForm}</p>}
 
           <div className="mt-6 flex justify-end gap-3">
             <button
               type="button"
               onClick={() => setModalAbierto(false)}
-              className="rounded-lg border border-panel-border px-4 py-2 text-sm text-panel-text-soft transition hover:bg-panel-bg"
+              className="rounded-full border border-panel-border px-4 py-2 text-sm text-panel-text-soft transition hover:bg-panel-bg"
             >
               Cancelar
             </button>
@@ -423,7 +423,7 @@ export default function UsuariosPage() {
               type="button"
               onClick={confirmarAsignacion}
               disabled={ocupado || !encontrado || !!motivoNoAsignable}
-              className="rounded-lg bg-panel-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark active:scale-[0.98] disabled:opacity-40"
+              className="rounded-full bg-panel-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark active:scale-[0.98] disabled:opacity-40"
             >
               {ocupado && encontrado ? 'Asignando…' : 'Hacer voluntario'}
             </button>

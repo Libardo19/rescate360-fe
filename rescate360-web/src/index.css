@@ -2524,7 +2524,12 @@ a:focus-visible {
   white-space: nowrap;
 }
 
-/* Modo oscuro: los botones con fondo "panel-primary" (azul claro) llevan texto oscuro para leerse bien. */
+/* Modo oscuro: botones, pestañas y filtros activos en blanco con texto navy (como la píldora del menú). */
 .panel-raiz[data-tema=oscuro] .bg-panel-primary.text-white {
+  background-color: #ffffff;
   color: #07122a;
+}
+
+.panel-raiz[data-tema=oscuro] .bg-panel-primary.text-white:hover {
+  background-color: rgb(255 255 255 / 0.9);
 }

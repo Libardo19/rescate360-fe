@@ -33,7 +33,7 @@ const formatearFecha = (iso: string) =>
   new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
 
 const campo =
-  'rounded-lg border border-panel-border bg-panel-card px-3 py-2 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
+  'rounded-xl border border-panel-border bg-panel-card px-3.5 py-2.5 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
 
 export default function ReportesPage() {
   const [reportes, setReportes] = useState<Reporte[] | null>(null)
@@ -103,7 +103,7 @@ export default function ReportesPage() {
         ]}
       />
 
-      {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
@@ -145,9 +145,9 @@ export default function ReportesPage() {
         Mostrando {filtrados.length} de {reportes.length} reportes
       </p>
 
-      <div className="mt-2 max-w-full overflow-x-auto rounded-2xl border border-panel-border bg-panel-card">
+      <div className="mt-2 max-w-full overflow-x-auto rounded-3xl border border-panel-border bg-panel-card">
         <table className="w-full min-w-[740px] text-left text-sm">
-          <thead className="text-xs uppercase text-panel-text-muted">
+          <thead className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">
             <tr>
               <th className="px-5 py-3">Tipo</th>
               <th className="px-5 py-3">Descripción</th>
@@ -199,12 +199,12 @@ export default function ReportesPage() {
           onClick={() => setSeleccionado(null)}
         >
           <div
-            className="w-full max-w-lg rounded-2xl bg-panel-card p-6 shadow-2xl"
+            className="w-full max-w-lg rounded-[28px] border border-panel-border bg-panel-card p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-xl font-extrabold text-panel-primary">{etiquetaTipo[seleccionado.tipo]}</h2>
+                <h2 className="text-xl font-semibold tracking-[-0.02em]">{etiquetaTipo[seleccionado.tipo]}</h2>
                 <span
                   className={`mt-2 inline-block rounded-full px-3 py-1 text-xs font-medium ${colorEstado[seleccionado.estado]}`}
                 >
@@ -218,24 +218,24 @@ export default function ReportesPage() {
 
             <dl className="mt-5 space-y-3 text-sm">
               <div>
-                <dt className="text-xs uppercase text-panel-text-muted">Descripción</dt>
+                <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">Descripción</dt>
                 <dd>{seleccionado.descripcion}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase text-panel-text-muted">Ubicación</dt>
+                <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">Ubicación</dt>
                 <dd>{seleccionado.ubicacion}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase text-panel-text-muted">Reportado por</dt>
+                <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">Reportado por</dt>
                 <dd>{seleccionado.reportante}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase text-panel-text-muted">Fecha</dt>
+                <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">Fecha</dt>
                 <dd>{formatearFecha(seleccionado.fecha)}</dd>
               </div>
               {seleccionado.verificadoPor && seleccionado.estado !== 'pendiente' && (
                 <div>
-                  <dt className="text-xs uppercase text-panel-text-muted">Revisado por</dt>
+                  <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">Revisado por</dt>
                   <dd>{seleccionado.verificadoPor}</dd>
                 </div>
               )}
@@ -259,7 +259,7 @@ export default function ReportesPage() {
               <button
                 disabled={guardando || seleccionado.estado === 'duplicado'}
                 onClick={() => cambiarEstado('duplicado')}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-panel-border px-4 py-2 text-sm font-semibold text-panel-text-soft transition hover:bg-panel-bg disabled:opacity-40"
+                className="flex flex-1 items-center justify-center gap-2 rounded-full border border-panel-border px-4 py-2 text-sm font-semibold text-panel-text-soft transition hover:bg-panel-bg disabled:opacity-40"
               >
                 <Copy size={16} /> Duplicado
               </button>
@@ -267,7 +267,7 @@ export default function ReportesPage() {
                 disabled={guardando || seleccionado.estado === 'no_verificable'}
                 onClick={() => cambiarEstado('no_verificable')}
                 title="No hay datos suficientes para confirmar ni descartar el reporte"
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-panel-border px-4 py-2 text-sm font-semibold text-panel-text-soft transition hover:bg-panel-bg disabled:opacity-40"
+                className="flex flex-1 items-center justify-center gap-2 rounded-full border border-panel-border px-4 py-2 text-sm font-semibold text-panel-text-soft transition hover:bg-panel-bg disabled:opacity-40"
               >
                 <HelpCircle size={16} /> No verificable
               </button>

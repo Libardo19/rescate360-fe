@@ -42,12 +42,12 @@ export default function Modal({ titulo, subtitulo, onCerrar, children, ancho = '
         aria-modal="true"
         aria-labelledby={idTitulo}
         tabIndex={-1}
-        className={`panel-modal-enter w-full ${anchos[ancho]} rounded-2xl bg-panel-card p-6 shadow-2xl outline-none`}
+        className={`panel-modal-enter w-full ${anchos[ancho]} rounded-[28px] border border-panel-border bg-panel-card p-6 shadow-2xl outline-none`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h2 id={idTitulo} className="text-xl font-extrabold text-panel-primary">
+            <h2 id={idTitulo} className="text-xl font-semibold tracking-[-0.02em]">
               {titulo}
             </h2>
             {subtitulo && <div className="mt-1 text-xs text-panel-text-muted">{subtitulo}</div>}

@@ -37,7 +37,7 @@ const formatearFecha = (iso: string) =>
 const formatearHa = (ha: number) => `${ha.toLocaleString('es-CO', { maximumFractionDigits: 1 })} ha`
 
 const campo =
-  'w-full rounded-lg border border-panel-border bg-panel-card px-3 py-2 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
+  'w-full rounded-xl border border-panel-border bg-panel-card px-3.5 py-2.5 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
 
 // Mientras se dibuja, cada clic en el mapa agrega un vértice.
 function CapturarClics({ activo, onPunto }: { activo: boolean; onPunto: (p: Coordenada) => void }) {
@@ -166,13 +166,13 @@ export default function ZonasPage() {
         ]}
       />
 
-      {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-        <section className="min-w-0 rounded-2xl border border-panel-border bg-panel-card p-5">
+        <section className="min-w-0 rounded-3xl border border-panel-border bg-panel-card p-5">
           {dibujando ? (
             <div>
-              <h2 className="font-bold">Nueva zona peligrosa</h2>
+              <h2 className="text-lg font-semibold tracking-[-0.02em]">Nueva zona peligrosa</h2>
               <ol className="mt-3 space-y-2 text-sm text-panel-text-soft">
                 <li className="flex gap-2">
                   <MousePointerClick size={16} className="mt-0.5 shrink-0 text-panel-info" />
@@ -223,7 +223,7 @@ export default function ZonasPage() {
                 <button
                   onClick={guardarZona}
                   disabled={puntos.length < 3 || guardando}
-                  className="ml-auto rounded-lg bg-panel-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark active:scale-[0.98] disabled:opacity-40"
+                  className="ml-auto rounded-full bg-panel-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark active:scale-[0.98] disabled:opacity-40"
                 >
                   {guardando ? 'Guardando…' : 'Guardar zona'}
                 </button>
@@ -231,12 +231,12 @@ export default function ZonasPage() {
             </div>
           ) : (
             <div>
-              <div className="inline-flex rounded-lg border border-panel-border bg-panel-bg p-1 text-sm">
+              <div className="inline-flex rounded-full border border-panel-border bg-panel-bg p-1 text-sm">
                 {(['activa', 'resuelta'] as const).map((p) => (
                   <button
                     key={p}
                     onClick={() => setPestana(p)}
-                    className={`rounded-md px-4 py-1.5 font-medium transition ${
+                    className={`rounded-full px-4 py-1.5 font-medium transition ${
                       pestana === p ? 'bg-panel-primary text-white' : 'text-panel-text-soft hover:text-panel-text'
                     }`}
                   >
@@ -292,9 +292,9 @@ export default function ZonasPage() {
           )}
         </section>
 
-        <section className="min-w-0 rounded-2xl border border-panel-border bg-panel-card p-5">
+        <section className="min-w-0 rounded-3xl border border-panel-border bg-panel-card p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="font-bold">Mapa de zonas</h2>
+            <h2 className="text-lg font-semibold tracking-[-0.02em]">Mapa de zonas</h2>
             {dibujando && (
               <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
                 Modo dibujo: haz clic en el mapa

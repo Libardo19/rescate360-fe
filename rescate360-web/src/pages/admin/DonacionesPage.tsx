@@ -40,7 +40,7 @@ const formatearFecha = (iso: string) =>
 const formatearNumero = (n: number) => n.toLocaleString('es-CO')
 
 const campo =
-  'w-full rounded-lg border border-panel-border bg-panel-card px-3 py-2 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
+  'w-full rounded-xl border border-panel-border bg-panel-card px-3.5 py-2.5 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
 
 interface FormNueva {
   centroId: string
@@ -206,10 +206,10 @@ export default function DonacionesPage() {
         ]}
       />
 
-      {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
       <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
-        <nav aria-label="Centros" className="h-fit rounded-2xl border border-panel-border bg-panel-card p-3">
+        <nav aria-label="Centros" className="h-fit rounded-3xl border border-panel-border bg-panel-card p-3">
           <p className="px-3 pb-2 pt-1 text-xs uppercase tracking-wide text-panel-text-muted">Centros</p>
           <button onClick={() => setCentroSel('todos')} className={botonCentro(centroSel === 'todos')}>
             Todos los centros
@@ -225,9 +225,9 @@ export default function DonacionesPage() {
             ))}
         </nav>
 
-        <section className="min-w-0 rounded-2xl border border-panel-border bg-panel-card">
+        <section className="min-w-0 rounded-3xl border border-panel-border bg-panel-card">
           <div className="flex flex-col gap-3 px-5 pt-5 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="font-bold">{centroSel === 'todos' ? 'Inventario completo' : nombreCentro(centroSel)}</h2>
+            <h2 className="text-lg font-semibold tracking-[-0.02em]">{centroSel === 'todos' ? 'Inventario completo' : nombreCentro(centroSel)}</h2>
             <select
               aria-label="Filtrar por tipo"
               value={filtroTipo}
@@ -245,7 +245,7 @@ export default function DonacionesPage() {
 
           <div className="mt-4 max-w-full overflow-x-auto">
             <table className="w-full min-w-[620px] text-left text-sm">
-              <thead className="text-xs uppercase text-panel-text-muted">
+              <thead className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">
                 <tr>
                   <th className="px-5 py-3">Tipo</th>
                   {centroSel === 'todos' && <th className="px-5 py-3">Centro</th>}
@@ -387,20 +387,20 @@ export default function DonacionesPage() {
               )}
             </div>
 
-            {errorForm && <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{errorForm}</p>}
+            {errorForm && <p className="mt-4 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{errorForm}</p>}
 
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setNuevaAbierta(false)}
-                className="rounded-lg border border-panel-border px-4 py-2 text-sm text-panel-text-soft transition hover:bg-panel-bg"
+                className="rounded-full border border-panel-border px-4 py-2 text-sm text-panel-text-soft transition hover:bg-panel-bg"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={guardando}
-                className="rounded-lg bg-panel-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark active:scale-[0.98] disabled:opacity-60"
+                className="rounded-full bg-panel-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark active:scale-[0.98] disabled:opacity-60"
               >
                 {guardando ? 'Guardando…' : 'Registrar'}
               </button>
@@ -467,20 +467,20 @@ export default function DonacionesPage() {
               </span>
             </div>
 
-            {errorForm && <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{errorForm}</p>}
+            {errorForm && <p className="mt-4 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{errorForm}</p>}
 
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setAjuste(null)}
-                className="rounded-lg border border-panel-border px-4 py-2 text-sm text-panel-text-soft transition hover:bg-panel-bg"
+                className="rounded-full border border-panel-border px-4 py-2 text-sm text-panel-text-soft transition hover:bg-panel-bg"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={guardando || !ajusteValido || cantidadResultante < 0}
-                className="rounded-lg bg-panel-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark active:scale-[0.98] disabled:opacity-40"
+                className="rounded-full bg-panel-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark active:scale-[0.98] disabled:opacity-40"
               >
                 {guardando ? 'Guardando…' : 'Guardar ajuste'}
               </button>

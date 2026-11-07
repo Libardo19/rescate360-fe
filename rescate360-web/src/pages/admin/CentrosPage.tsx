@@ -35,7 +35,7 @@ const estados: Record<EstadoCentro, { etiqueta: string; clase: string }> = {
 }
 
 const campo =
-  'w-full rounded-lg border border-panel-border bg-panel-card px-3 py-2 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
+  'w-full rounded-xl border border-panel-border bg-panel-card px-3.5 py-2.5 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
 
 interface FormCentro {
   nombre: string
@@ -207,11 +207,11 @@ export default function CentrosPage() {
         ]}
       />
 
-      {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <section className="min-w-0 rounded-2xl border border-panel-border bg-panel-card">
-          <h2 className="px-5 pt-5 font-bold">Lista de centros de ayuda</h2>
+      <div className="grid gap-6 2xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <section className="min-w-0 rounded-3xl border border-panel-border bg-panel-card">
+          <h2 className="px-5 pt-5 text-lg font-semibold tracking-[-0.02em]">Lista de centros de ayuda</h2>
 
           <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row">
             <div className="relative flex-1">
@@ -239,7 +239,7 @@ export default function CentrosPage() {
 
           <div className="max-w-full overflow-x-auto">
             <table className="w-full min-w-[560px] text-left text-sm md:min-w-[700px]">
-              <thead className="text-xs uppercase text-panel-text-muted">
+              <thead className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">
                 <tr>
                   <th className="px-5 py-3">Nombre</th>
                   <th className="px-5 py-3">Tipo</th>
@@ -311,8 +311,8 @@ export default function CentrosPage() {
           </div>
         </section>
 
-        <section className="min-w-0 rounded-2xl border border-panel-border bg-panel-card p-5">
-          <h2 className="font-bold">Ubicación en el mapa</h2>
+        <section className="min-w-0 rounded-3xl border border-panel-border bg-panel-card p-5">
+          <h2 className="text-lg font-semibold tracking-[-0.02em]">Ubicación en el mapa</h2>
           <div className="relative z-0 mt-4 overflow-hidden rounded-xl border border-panel-border">
             <MapContainer center={CENTRO_MAPA} zoom={13} scrollWheelZoom className="h-[420px] w-full">
               <TileLayer
@@ -358,11 +358,11 @@ export default function CentrosPage() {
         >
           <form
             onSubmit={guardar}
-            className="w-full max-w-lg rounded-2xl bg-panel-card p-6 shadow-2xl"
+            className="w-full max-w-lg rounded-[28px] border border-panel-border bg-panel-card p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between">
-              <h2 className="text-xl font-extrabold text-panel-primary">
+              <h2 className="text-xl font-semibold tracking-[-0.02em]">
                 {modal.modo === 'crear' ? 'Nuevo centro de ayuda' : 'Detalles del centro'}
               </h2>
               <button type="button" onClick={() => setModal(null)} aria-label="Cerrar">
@@ -467,20 +467,20 @@ export default function CentrosPage() {
               </p>
             </div>
 
-            {errorForm && <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{errorForm}</p>}
+            {errorForm && <p className="mt-4 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{errorForm}</p>}
 
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setModal(null)}
-                className="rounded-lg border border-panel-border px-4 py-2 text-sm text-panel-text-soft transition hover:bg-panel-bg"
+                className="rounded-full border border-panel-border px-4 py-2 text-sm text-panel-text-soft transition hover:bg-panel-bg"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={guardando}
-                className="rounded-lg bg-panel-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark disabled:opacity-60"
+                className="rounded-full bg-panel-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark disabled:opacity-60"
               >
                 {guardando ? 'Guardando…' : 'Guardar'}
               </button>
