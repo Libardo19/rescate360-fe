@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
+import { FileWarning, LifeBuoy, Building2 } from 'lucide-react'
 import { listarPuntosMapa } from '../../services/mapa.service'
+import CabeceraPanel from '../../components/panel/CabeceraPanel'
 import type { PuntoMapa, TipoPunto } from '../../types/mapa'
 
 const CENTRO_INICIAL: [number, number] = [10.4631, -73.2532]
@@ -42,12 +44,18 @@ export default function MapaPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold text-panel-primary">Mapa operativo</h1>
-      <p className="mt-1 text-sm text-panel-text-soft">
-        Ubicación de reportes, solicitudes y centros de ayuda. Pulsa un punto para ver sus datos.
-      </p>
+      <CabeceraPanel
+        seccion="Operación"
+        titulo="Mapa operativo"
+        descripcion="Ubicación de reportes, solicitudes y centros de ayuda. Pulsa un punto para ver sus datos."
+        estadisticas={[
+          { titulo: 'Reportes', valor: cantidades.reporte, icono: FileWarning, pie: 'Puntos en el mapa' },
+          { titulo: 'Solicitudes', valor: cantidades.solicitud, icono: LifeBuoy, pie: 'Puntos en el mapa' },
+          { titulo: 'Centros de ayuda', valor: cantidades.centro, icono: Building2, pie: 'Puntos en el mapa' },
+        ]}
+      />
 
-      <div className="mt-5 flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2">
         {tipos.map((tipo) => (
           <button
             key={tipo}

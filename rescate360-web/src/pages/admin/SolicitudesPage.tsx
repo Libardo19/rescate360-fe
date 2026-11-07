@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Search, X, Sparkles, UserCog, Smartphone, Activity, ArrowRightLeft } from 'lucide-react'
+import { Search, X, Sparkles, UserCog, Smartphone, Activity, ArrowRightLeft, LifeBuoy, Siren, CheckCircle2 } from 'lucide-react'
+import CabeceraPanel from '../../components/panel/CabeceraPanel'
 import { listarSolicitudes, actualizarSolicitud } from '../../services/solicitudes.service'
 import { listarOrganizaciones } from '../../services/organizaciones.service'
 import { useAuth } from '../../context/AuthContext'
@@ -149,17 +150,39 @@ export default function SolicitudesPage() {
   if (error && !solicitudes) return <p className="text-panel-accent">{error}</p>
   if (!solicitudes) return <p className="text-panel-text-soft">Cargando…</p>
 
+  const abiertas = solicitudes.filter((s) => s.estado !== 'resuelta')
+  const urgentes = abiertas.filter((s) => ['critica', 'alta'].includes(prioridadEfectiva(s))).length
+  const sinClasificar = abiertas.filter((s) => prioridadEfectiva(s) === 'pendiente').length
+
   return (
     <div>
-      <h1 className="text-2xl font-extrabold text-panel-primary">Solicitudes de ayuda</h1>
-      <p className="mt-1 text-sm text-panel-text-soft">
-        Las solicitudes se ordenan por prioridad. La IA propone una prioridad, pero la que tú definas manualmente
-        prevalece.
-      </p>
+      <CabeceraPanel
+        seccion="Operación"
+        titulo="Solicitudes de ayuda"
+        descripcion="Se ordenan por prioridad. La IA propone una, pero la que tú definas manualmente prevalece."
+        estadisticas={[
+          { titulo: 'Abiertas', valor: abiertas.length, icono: LifeBuoy, pie: 'Pendientes o en atención' },
+          {
+            titulo: 'Urgentes',
+            valor: urgentes,
+            icono: Siren,
+            pie: 'Prioridad crítica o alta',
+            tono: urgentes > 0 ? 'alerta' : 'bien',
+          },
+          {
+            titulo: 'Sin clasificar',
+            valor: sinClasificar,
+            icono: Sparkles,
+            pie: 'La IA aún no las evaluó',
+            tono: sinClasificar > 0 ? 'aviso' : 'neutro',
+          },
+          { titulo: 'Resueltas', valor: solicitudes.length - abiertas.length, icono: CheckCircle2, pie: 'Atención finalizada' },
+        ]}
+      />
 
-      {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       {aviso && (
-        <p className="mt-3 flex items-center justify-between gap-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
+        <p className="mb-3 flex items-center justify-between gap-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
           {aviso}
           <button onClick={() => setAviso('')} aria-label="Cerrar aviso">
             <X size={14} />
@@ -167,7 +190,7 @@ export default function SolicitudesPage() {
         </p>
       )}
 
-      <div className="mt-6 flex flex-col gap-3 lg:flex-row">
+      <div className="flex flex-col gap-3 lg:flex-row">
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-panel-text-muted" />
           <input

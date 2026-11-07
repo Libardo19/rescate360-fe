@@ -20,7 +20,7 @@ import { listarCentros } from '../../services/centros.service'
 import type { Donacion, TipoDonacion } from '../../types/donacion'
 import type { Centro } from '../../types/centro'
 import Modal from '../../components/panel/Modal'
-import TarjetaResumen from '../../components/panel/TarjetaResumen'
+import CabeceraPanel, { botonCabeceraPrincipal } from '../../components/panel/CabeceraPanel'
 
 const tipos: Record<TipoDonacion, { etiqueta: string; icono: LucideIcon; clase: string; unidad: string }> = {
   agua: { etiqueta: 'Agua', icono: Droplets, clase: 'bg-blue-100 text-blue-600', unidad: 'litros' },
@@ -184,37 +184,31 @@ export default function DonacionesPage() {
 
   return (
     <div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold text-panel-primary">Donaciones</h1>
-          <p className="mt-1 text-sm text-panel-text-soft">
-            Inventario de lo que hay disponible en cada centro de ayuda.
-          </p>
-        </div>
-        <button
-          onClick={abrirNueva}
-          className="flex items-center justify-center gap-2 rounded-lg bg-panel-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark active:scale-[0.98]"
-        >
-          <Plus size={16} /> Registrar donación
-        </button>
-      </div>
+      <CabeceraPanel
+        seccion="Recursos"
+        titulo="Donaciones"
+        descripcion="Inventario de lo que hay disponible en cada centro de ayuda."
+        acciones={
+          <button onClick={abrirNueva} className={botonCabeceraPrincipal}>
+            <Plus size={16} /> Registrar donación
+          </button>
+        }
+        estadisticas={[
+          { titulo: 'Registros de inventario', valor: resumen.registros, icono: Boxes, pie: 'Tipos de insumo por centro' },
+          { titulo: 'Centros con donaciones', valor: resumen.centros, icono: Building2, pie: `De ${centros.length} centros` },
+          {
+            titulo: 'Agotados',
+            valor: resumen.agotados,
+            icono: PackageX,
+            pie: resumen.agotados > 0 ? 'Necesitan reposición' : 'Todo con existencias',
+            tono: resumen.agotados > 0 ? 'alerta' : 'bien',
+          },
+        ]}
+      />
 
-      {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-3">
-        <TarjetaResumen titulo="Registros de inventario" valor={resumen.registros} icono={Boxes} color="bg-panel-info" />
-        <TarjetaResumen titulo="Centros con donaciones" valor={resumen.centros} icono={Building2} color="bg-panel-success" />
-        <TarjetaResumen
-          titulo="Agotados"
-          valor={resumen.agotados}
-          icono={PackageX}
-          color={resumen.agotados > 0 ? 'bg-panel-accent' : 'bg-slate-400'}
-          pie={resumen.agotados > 0 ? 'Necesitan reposición' : 'Todo con existencias'}
-          pieColor={resumen.agotados > 0 ? 'text-panel-accent' : undefined}
-        />
-      </div>
-
-      <div className="mt-6 grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
+      <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
         <nav aria-label="Centros" className="h-fit rounded-2xl border border-panel-border bg-panel-card p-3">
           <p className="px-3 pb-2 pt-1 text-xs uppercase tracking-wide text-panel-text-muted">Centros</p>
           <button onClick={() => setCentroSel('todos')} className={botonCentro(centroSel === 'todos')}>

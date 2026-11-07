@@ -10,7 +10,7 @@ import {
 import { listarOrganizaciones } from '../../services/organizaciones.service'
 import type { MiembroOrganizacion, UsuarioEncontrado } from '../../types/usuarioAdmin'
 import Modal from '../../components/panel/Modal'
-import TarjetaResumen from '../../components/panel/TarjetaResumen'
+import CabeceraPanel, { botonCabeceraPrincipal } from '../../components/panel/CabeceraPanel'
 
 type FiltroRol = 'todos' | 'voluntario' | 'administrador'
 
@@ -161,24 +161,30 @@ export default function UsuariosPage() {
 
   return (
     <div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold text-panel-primary">Usuarios</h1>
-          <p className="mt-1 text-sm text-panel-text-soft">
-            Voluntarios y administradores de {nombreOrg || 'tu organización'}.
-          </p>
-        </div>
-        <button
-          onClick={abrirModal}
-          className="flex items-center justify-center gap-2 rounded-lg bg-panel-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark active:scale-[0.98]"
-        >
-          <UserPlus size={16} /> Agregar voluntario
-        </button>
-      </div>
+      <CabeceraPanel
+        seccion="Administración"
+        titulo="Usuarios"
+        descripcion={`Voluntarios y administradores de ${nombreOrg || 'tu organización'}.`}
+        acciones={
+          <button onClick={abrirModal} className={botonCabeceraPrincipal}>
+            <UserPlus size={16} /> Agregar voluntario
+          </button>
+        }
+        estadisticas={[
+          {
+            titulo: 'Voluntarios activos',
+            valor: resumen.voluntariosActivos,
+            icono: HeartHandshake,
+            pie: `De ${resumen.voluntarios} voluntarios`,
+          },
+          { titulo: 'Administradores', valor: resumen.administradores, icono: ShieldCheck, pie: 'Gestionan el panel' },
+          { titulo: 'Miembros en total', valor: miembros.length, icono: Users, pie: 'En tu organización' },
+        ]}
+      />
 
-      {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       {aviso && (
-        <p className="mt-3 flex items-center justify-between gap-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
+        <p className="mb-3 flex items-center justify-between gap-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
           {aviso}
           <button onClick={() => setAviso('')} className="text-xs font-semibold hover:underline">
             Cerrar
@@ -186,19 +192,7 @@ export default function UsuariosPage() {
         </p>
       )}
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-3">
-        <TarjetaResumen
-          titulo="Voluntarios activos"
-          valor={resumen.voluntariosActivos}
-          icono={HeartHandshake}
-          color="bg-panel-success"
-          pie={`de ${resumen.voluntarios} voluntarios`}
-        />
-        <TarjetaResumen titulo="Administradores" valor={resumen.administradores} icono={ShieldCheck} color="bg-panel-primary" />
-        <TarjetaResumen titulo="Miembros en total" valor={miembros.length} icono={Users} color="bg-panel-info" />
-      </div>
-
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+      <div className="flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-panel-text-muted" />
           <input

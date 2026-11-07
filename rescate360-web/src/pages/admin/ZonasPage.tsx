@@ -18,7 +18,7 @@ import {
 } from 'lucide-react'
 import { listarZonas, crearZona, cambiarEstadoZona } from '../../services/zonas.service'
 import { hectareas, type Coordenada, type EstadoZona, type TipoRiesgo, type ZonaPeligrosa } from '../../types/zona'
-import TarjetaResumen from '../../components/panel/TarjetaResumen'
+import CabeceraPanel, { botonCabeceraPrincipal } from '../../components/panel/CabeceraPanel'
 
 const CENTRO_MAPA: Coordenada = [10.4731, -73.2582]
 
@@ -142,38 +142,33 @@ export default function ZonasPage() {
 
   return (
     <div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold text-panel-primary">Zonas peligrosas</h1>
-          <p className="mt-1 text-sm text-panel-text-soft">
-            Delimita en el mapa las áreas de riesgo que verán los ciudadanos en la app.
-          </p>
-        </div>
-        {!dibujando && (
-          <button
-            onClick={empezarDibujo}
-            className="flex items-center justify-center gap-2 rounded-lg bg-panel-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark active:scale-[0.98]"
-          >
-            <Plus size={16} /> Nueva zona
-          </button>
-        )}
-      </div>
+      <CabeceraPanel
+        seccion="Recursos"
+        titulo="Zonas peligrosas"
+        descripcion="Delimita en el mapa las áreas de riesgo que verán los ciudadanos en la app."
+        acciones={
+          !dibujando && (
+            <button onClick={empezarDibujo} className={botonCabeceraPrincipal}>
+              <Plus size={16} /> Nueva zona
+            </button>
+          )
+        }
+        estadisticas={[
+          {
+            titulo: 'Zonas activas',
+            valor: resumen.activas,
+            icono: TriangleAlert,
+            pie: 'Visibles como peligro',
+            tono: resumen.activas > 0 ? 'alerta' : 'bien',
+          },
+          { titulo: 'Zonas resueltas', valor: resumen.resueltas, icono: CheckCircle2, pie: 'Ya sin riesgo' },
+          { titulo: 'Hectáreas en riesgo', valor: resumen.hectareas, icono: Ruler, pie: 'Área aproximada de zonas activas' },
+        ]}
+      />
 
-      {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-3">
-        <TarjetaResumen titulo="Zonas activas" valor={resumen.activas} icono={TriangleAlert} color="bg-panel-accent" />
-        <TarjetaResumen titulo="Zonas resueltas" valor={resumen.resueltas} icono={CheckCircle2} color="bg-panel-success" />
-        <TarjetaResumen
-          titulo="Hectáreas en riesgo"
-          valor={resumen.hectareas}
-          icono={Ruler}
-          color="bg-panel-info"
-          pie="Área aproximada de zonas activas"
-        />
-      </div>
-
-      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
         <section className="min-w-0 rounded-2xl border border-panel-border bg-panel-card p-5">
           {dibujando ? (
             <div>

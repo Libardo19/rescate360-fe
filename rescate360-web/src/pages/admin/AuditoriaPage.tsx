@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from 'react'
-import { Search, Plus, Pencil, Trash2, Bot, ChevronLeft, ChevronRight, type LucideIcon } from 'lucide-react'
+import { Search, Plus, Pencil, Trash2, Bot, ChevronLeft, ChevronRight, ClipboardList, type LucideIcon } from 'lucide-react'
+import CabeceraPanel from '../../components/panel/CabeceraPanel'
 import { listarAuditoria } from '../../services/auditoria.service'
 import type { DatosFila, Operacion, RegistroAuditoria, TablaAuditada } from '../../types/auditoria'
 import Modal from '../../components/panel/Modal'
@@ -110,14 +111,23 @@ export default function AuditoriaPage() {
   if (error) return <p className="text-panel-accent">{error}</p>
   if (!registros) return <p className="text-panel-text-soft">Cargando…</p>
 
+  const porOperacion = (o: Operacion) => registros.filter((r) => r.operacion === o).length
+
   return (
     <div>
-      <h1 className="text-2xl font-extrabold text-panel-primary">Auditoría</h1>
-      <p className="mt-1 text-sm text-panel-text-soft">
-        Historial de cambios sobre usuarios, reportes, solicitudes, desaparecidos, zonas y alertas. Solo lectura.
-      </p>
+      <CabeceraPanel
+        seccion="Administración"
+        titulo="Auditoría"
+        descripcion="Historial de cambios sobre usuarios, reportes, solicitudes, desaparecidos, zonas y alertas. Solo lectura."
+        estadisticas={[
+          { titulo: 'Registros', valor: registros.length, icono: ClipboardList, pie: 'Cambios auditados' },
+          { titulo: 'Creaciones', valor: porOperacion('INSERT'), icono: Plus, pie: 'Registros nuevos' },
+          { titulo: 'Modificaciones', valor: porOperacion('UPDATE'), icono: Pencil, pie: 'Registros editados' },
+          { titulo: 'Eliminaciones', valor: porOperacion('DELETE'), icono: Trash2, pie: 'Registros borrados' },
+        ]}
+      />
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto]">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto]">
         <div className="relative sm:col-span-2 xl:col-span-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-panel-text-muted" />
           <input

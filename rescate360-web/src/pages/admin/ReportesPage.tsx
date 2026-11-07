@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Search, X, CheckCircle2, XCircle, Copy, HelpCircle } from 'lucide-react'
+import { Search, X, CheckCircle2, XCircle, Copy, HelpCircle, FileWarning, Clock } from 'lucide-react'
+import CabeceraPanel from '../../components/panel/CabeceraPanel'
 import { listarReportes, cambiarEstadoReporte } from '../../services/reportes.service'
 import type { Reporte, EstadoReporte, TipoIncidente } from '../../types/reporte'
 
@@ -81,16 +82,30 @@ export default function ReportesPage() {
   if (error && !reportes) return <p className="text-panel-accent">{error}</p>
   if (!reportes) return <p className="text-panel-text-soft">Cargando…</p>
 
+  const cuenta = (estado: EstadoReporte) => reportes.filter((r) => r.estado === estado).length
+
   return (
     <div>
-      <h1 className="text-2xl font-extrabold text-panel-primary">Reportes</h1>
-      <p className="mt-1 text-sm text-panel-text-soft">
-        Revisa los reportes de tu organización y verifícalos, recházalos o márcalos como duplicados.
-      </p>
+      <CabeceraPanel
+        seccion="Operación"
+        titulo="Reportes"
+        descripcion="Revisa los reportes de tu organización y verifícalos, recházalos o márcalos como duplicados."
+        estadisticas={[
+          { titulo: 'Recibidos', valor: reportes.length, icono: FileWarning, pie: 'Dirigidos a tu organización' },
+          { titulo: 'Pendientes', valor: cuenta('pendiente'), icono: Clock, pie: 'Sin revisar', tono: cuenta('pendiente') > 0 ? 'aviso' : 'bien' },
+          { titulo: 'Verificados', valor: cuenta('verificado'), icono: CheckCircle2, pie: 'Confirmados' },
+          {
+            titulo: 'Descartados',
+            valor: cuenta('rechazado') + cuenta('duplicado') + cuenta('no_verificable'),
+            icono: XCircle,
+            pie: 'Rechazados, duplicados o no verificables',
+          },
+        ]}
+      />
 
-      {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+      <div className="flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-panel-text-muted" />
           <input

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { MapContainer, TileLayer, CircleMarker } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { Search, MapPin, Clock, Phone, UserCheck, RotateCcw, Info } from 'lucide-react'
+import CabeceraPanel from '../../components/panel/CabeceraPanel'
 import { listarDesaparecidos, cambiarEstadoCaso } from '../../services/desaparecidos.service'
 import type { EstadoCaso, PersonaDesaparecida } from '../../types/desaparecido'
 import Modal from '../../components/panel/Modal'
@@ -18,6 +19,8 @@ function haceCuanto(iso: string) {
   const dias = Math.round(horas / 24)
   return `hace ${dias} ${dias === 1 ? 'día' : 'días'}`
 }
+
+const esDeLasUltimas24h = (iso: string) => Date.now() - new Date(iso).getTime() < 24 * 60 * 60 * 1000
 
 const iniciales = (nombre: string) =>
   nombre
@@ -103,16 +106,37 @@ export default function DesaparecidosPage() {
   if (error && !personas) return <p className="text-panel-accent">{error}</p>
   if (!personas) return <p className="text-panel-text-soft">Cargando…</p>
 
+  // Casos aún en búsqueda reportados en las últimas 24 horas.
+  const recientes = personas.filter((p) => p.estadoCaso === 'buscando' && esDeLasUltimas24h(p.creadoEn)).length
+
   return (
     <div>
-      <h1 className="text-2xl font-extrabold text-panel-primary">Personas desaparecidas</h1>
-      <p className="mt-1 text-sm text-panel-text-soft">
-        Casos reportados por la comunidad. Son visibles para todas las organizaciones.
-      </p>
+      <CabeceraPanel
+        seccion="Recursos"
+        titulo="Personas desaparecidas"
+        descripcion="Casos reportados por la comunidad. Son visibles para todas las organizaciones."
+        estadisticas={[
+          {
+            titulo: 'En búsqueda',
+            valor: conteo.buscando,
+            icono: Search,
+            pie: 'Casos abiertos',
+            tono: conteo.buscando > 0 ? 'alerta' : 'bien',
+          },
+          {
+            titulo: 'Reportados en 24 h',
+            valor: recientes,
+            icono: Clock,
+            pie: 'Las primeras horas son clave',
+            tono: recientes > 0 ? 'aviso' : 'neutro',
+          },
+          { titulo: 'Encontrados', valor: conteo.encontrado, icono: UserCheck, pie: 'Casos cerrados' },
+        ]}
+      />
 
-      {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="inline-flex w-fit rounded-lg border border-panel-border bg-panel-card p-1 text-sm">
           {(['buscando', 'encontrado'] as const).map((p) => (
             <button

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Plus, X, Waves, Mountain, ShieldAlert, CloudRain, TriangleAlert, type LucideIcon } from 'lucide-react'
+import { Plus, X, Waves, Mountain, ShieldAlert, CloudRain, TriangleAlert, BellRing, History, type LucideIcon } from 'lucide-react'
+import CabeceraPanel, { botonCabeceraPrincipal } from '../../components/panel/CabeceraPanel'
 import { listarAlertas, crearAlerta, finalizarAlerta } from '../../services/alertas.service'
 import type { Alerta, NuevaAlerta, TipoAlerta } from '../../types/alerta'
 
@@ -90,22 +91,30 @@ export default function AlertasPage() {
 
   return (
     <div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold text-panel-primary">Alertas</h1>
-          <p className="mt-1 text-sm text-panel-text-soft">Publica y gestiona las alertas para la comunidad.</p>
-        </div>
-        <button
-          onClick={abrirModal}
-          className="flex items-center justify-center gap-2 rounded-lg bg-panel-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark"
-        >
-          <Plus size={16} /> Nueva alerta
-        </button>
-      </div>
+      <CabeceraPanel
+        seccion="Operación"
+        titulo="Alertas"
+        descripcion="Publica y gestiona las alertas que reciben los ciudadanos en la app."
+        acciones={
+          <button onClick={abrirModal} className={botonCabeceraPrincipal}>
+            <Plus size={16} /> Nueva alerta
+          </button>
+        }
+        estadisticas={[
+          {
+            titulo: 'Activas',
+            valor: cantidadActivas,
+            icono: BellRing,
+            pie: 'Visibles para la comunidad',
+            tono: cantidadActivas > 0 ? 'aviso' : 'neutro',
+          },
+          { titulo: 'En historial', valor: alertas.length - cantidadActivas, icono: History, pie: 'Alertas finalizadas' },
+        ]}
+      />
 
-      {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-      <div className="mt-6 inline-flex rounded-lg border border-panel-border bg-panel-card p-1 text-sm">
+      <div className="inline-flex rounded-lg border border-panel-border bg-panel-card p-1 text-sm">
         {(['activas', 'historial'] as const).map((p) => (
           <button
             key={p}

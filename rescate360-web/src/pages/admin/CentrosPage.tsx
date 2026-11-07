@@ -16,6 +16,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { listarCentros, crearCentro, actualizarCentro } from '../../services/centros.service'
+import CabeceraPanel, { botonCabeceraPrincipal } from '../../components/panel/CabeceraPanel'
 import type { Centro, DatosCentro, EstadoCentro, TipoCentro } from '../../types/centro'
 
 const CENTRO_MAPA: [number, number] = [10.4631, -73.2532]
@@ -187,48 +188,28 @@ export default function CentrosPage() {
   if (error && !centros) return <p className="text-panel-accent">{error}</p>
   if (!centros) return <p className="text-panel-text-soft">Cargando…</p>
 
-  const tarjetas = [
-    { valor: resumen.activos, titulo: 'Centros de ayuda', pie: 'Activos', icono: House, color: 'bg-green-600', pieColor: 'text-green-600' },
-    { valor: resumen.albergues, titulo: 'Albergues', pie: 'Disponibles', icono: Users, color: 'bg-blue-500', pieColor: 'text-blue-600' },
-    { valor: resumen.comedores, titulo: 'Comedores', pie: 'En operación', icono: Utensils, color: 'bg-orange-500', pieColor: 'text-orange-600' },
-    { valor: resumen.medicos, titulo: 'Puestos médicos', pie: 'Disponibles', icono: HeartPulse, color: 'bg-violet-500', pieColor: 'text-violet-600' },
-  ]
-
   return (
     <div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold text-panel-primary">Centros de ayuda</h1>
-          <p className="mt-1 text-sm text-panel-info">
-            Encuentra los centros de ayuda más cercanos o consulta la lista completa.
-          </p>
-        </div>
-        <button
-          onClick={abrirCrear}
-          className="flex items-center justify-center gap-2 rounded-lg bg-panel-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark"
-        >
-          <Plus size={16} /> Nuevo centro
-        </button>
-      </div>
+      <CabeceraPanel
+        seccion="Recursos"
+        titulo="Centros de ayuda"
+        descripcion="Albergues, comedores, puestos médicos y centros de acopio que ven los ciudadanos en la app."
+        acciones={
+          <button onClick={abrirCrear} className={botonCabeceraPrincipal}>
+            <Plus size={16} /> Nuevo centro
+          </button>
+        }
+        estadisticas={[
+          { titulo: 'Centros activos', valor: resumen.activos, icono: House, pie: `De ${centros.length} registrados` },
+          { titulo: 'Albergues', valor: resumen.albergues, icono: Users, pie: 'Disponibles' },
+          { titulo: 'Comedores', valor: resumen.comedores, icono: Utensils, pie: 'Disponibles' },
+          { titulo: 'Puestos médicos', valor: resumen.medicos, icono: HeartPulse, pie: 'Disponibles' },
+        ]}
+      />
 
-      {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {tarjetas.map(({ valor, titulo, pie, icono: Icono, color, pieColor }) => (
-          <div key={titulo} className="flex items-center gap-4 rounded-2xl border border-panel-border bg-panel-card p-5">
-            <div className={`flex h-14 w-14 items-center justify-center rounded-full text-white ${color}`}>
-              <Icono size={24} />
-            </div>
-            <div>
-              <p className="text-2xl font-extrabold">{valor}</p>
-              <p className="text-sm text-panel-text-soft">{titulo}</p>
-              <p className={`text-xs font-medium ${pieColor}`}>{pie}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <section className="min-w-0 rounded-2xl border border-panel-border bg-panel-card">
           <h2 className="px-5 pt-5 font-bold">Lista de centros de ayuda</h2>
 
@@ -332,7 +313,7 @@ export default function CentrosPage() {
 
         <section className="min-w-0 rounded-2xl border border-panel-border bg-panel-card p-5">
           <h2 className="font-bold">Ubicación en el mapa</h2>
-          <div className="mt-4 overflow-hidden rounded-xl border border-panel-border">
+          <div className="relative z-0 mt-4 overflow-hidden rounded-xl border border-panel-border">
             <MapContainer center={CENTRO_MAPA} zoom={13} scrollWheelZoom className="h-[420px] w-full">
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
