@@ -13,6 +13,7 @@ import SolicitudesPage from './pages/admin/SolicitudesPage'
 import MapaPage from './pages/admin/MapaPage'
 import AlertasPage from './pages/admin/AlertasPage'
 import CentrosPage from './pages/admin/CentrosPage'
+import ZonasPage from './pages/admin/ZonasPage'
 
 export default function App() {
   return (
@@ -36,7 +37,7 @@ export default function App() {
             <Route path="mapa" element={<MapaPage />} />
             <Route path="alertas" element={<AlertasPage />} />
             <Route path="centros" element={<CentrosPage />} />
-            <Route path="zonas" element={<PaginaEnConstruccion titulo="Zonas peligrosas" />} />
+            <Route path="zonas" element={<ZonasPage />} />
             <Route path="donaciones" element={<PaginaEnConstruccion titulo="Donaciones" />} />
             <Route path="desaparecidos" element={<PaginaEnConstruccion titulo="Personas desaparecidas" />} />
             <Route path="usuarios" element={<PaginaEnConstruccion titulo="Usuarios" />} />
