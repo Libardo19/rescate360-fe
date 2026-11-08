@@ -1,14 +1,15 @@
 import { api, USE_MOCK } from './api'
+import { desplazarFechas } from './mockTiempo'
 import type { Alerta, NuevaAlerta } from '../types/alerta'
 
 // Datos de prueba, SOLO para desarrollo de la interfaz.
-let mock: Alerta[] = [
+let mock: Alerta[] = desplazarFechas([
   { id: '1', tipo: 'inundacion', titulo: 'Alerta de inundación', descripcion: 'Crecida del río en la zona urbana. Evite acercarse a las orillas.', zona: 'Río y zona urbana', fecha: '2026-10-05T09:00:00', activa: true },
   { id: '2', tipo: 'deslizamiento', titulo: 'Riesgo de deslizamiento', descripcion: 'Terreno inestable en la vía al corregimiento. Se recomienda no transitar.', zona: 'Vía al corregimiento', fecha: '2026-10-05T07:30:00', activa: true },
   { id: '3', tipo: 'seguridad', titulo: 'Alerta de seguridad', descripcion: 'Aumento de robos en el sector centro durante la noche.', zona: 'Sector centro', fecha: '2026-10-04T20:00:00', activa: true },
   { id: '4', tipo: 'clima', titulo: 'Alerta de clima', descripcion: 'Lluvias fuertes previstas para las próximas horas en la región.', zona: 'Toda la región', fecha: '2026-10-03T15:00:00', activa: false },
   { id: '5', tipo: 'inundacion', titulo: 'Alerta de inundación', descripcion: 'Calles anegadas tras la tormenta. Ya fue superada.', zona: 'Barrio El Prado', fecha: '2026-10-01T10:00:00', activa: false },
-]
+], 'fecha')
 
 export async function listarAlertas(): Promise<Alerta[]> {
   if (USE_MOCK) return mock.map((a) => ({ ...a }))

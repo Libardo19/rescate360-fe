@@ -1,8 +1,9 @@
 import { api, USE_MOCK } from './api'
+import { desplazarFechas } from './mockTiempo'
 import type { DatosDonacion, Donacion } from '../types/donacion'
 
 // Datos de prueba, SOLO para desarrollo de la interfaz. Los centroId son los del mock de centros.
-let mock: Donacion[] = [
+let mock: Donacion[] = desplazarFechas([
   { id: '1', centroId: '4', tipo: 'agua', cantidad: 320, unidad: 'litros', actualizadoEn: '2026-10-05T09:10:00' },
   { id: '2', centroId: '4', tipo: 'alimentos', cantidad: 85, unidad: 'kg', actualizadoEn: '2026-10-05T08:45:00' },
   { id: '3', centroId: '4', tipo: 'higiene', cantidad: 40, unidad: 'kits', actualizadoEn: '2026-10-04T17:20:00' },
@@ -12,7 +13,7 @@ let mock: Donacion[] = [
   { id: '7', centroId: '1', tipo: 'cobijas', cantidad: 60, unidad: 'unidades', actualizadoEn: '2026-10-03T19:40:00' },
   { id: '8', centroId: '1', tipo: 'agua', cantidad: 4, unidad: 'litros', actualizadoEn: '2026-10-05T10:00:00' },
   { id: '9', centroId: '8', tipo: 'alimentos', cantidad: 42, unidad: 'kg', actualizadoEn: '2026-10-05T06:50:00' },
-]
+], 'actualizadoEn')
 
 export async function listarDonaciones(): Promise<Donacion[]> {
   if (USE_MOCK) return mock.map((d) => ({ ...d }))

@@ -6,7 +6,6 @@ import {
   LifeBuoy,
   Bell,
   Building2,
-  AlertCircle,
   TriangleAlert,
   PackageX,
   Search,
@@ -35,6 +34,9 @@ import GraficoDona, { type Segmento } from '../../components/panel/graficos/Graf
 import BarrasHorizontales from '../../components/panel/graficos/BarrasHorizontales'
 import { botonCabeceraPrincipal, botonCabeceraSecundario } from '../../components/panel/CabeceraPanel'
 import type { ContextoPanel } from '../../layouts/PanelLayout'
+import Briefing from '../../components/panel/Briefing'
+import Semaforo from '../../components/panel/Semaforo'
+import { useAhora, minutosDesde } from '../../utils/espera'
 
 // Colores validados para daltonismo (orden fijo), sobre fondo claro y sobre la banda azul marino.
 // "Duplicado" va en gris neutro porque no aporta información nueva.
@@ -240,6 +242,7 @@ export default function AdminDashboard() {
   const [error, setError] = useState('')
   const [periodo, setPeriodo] = useState<Periodo>(7)
   const reducir = useReducedMotion()
+  const ahora = useAhora()
   const { tema } = useOutletContext<ContextoPanel>()
   const oscuro = tema === 'oscuro'
 
@@ -377,25 +380,10 @@ export default function AdminDashboard() {
         </div>
       </motion.div>
 
-      {/* Aviso si hay solicitudes que nadie ha evaluado */}
-      {resumen.solicitudesSinClasificar > 0 && (
-        <motion.div variants={aparecer}>
-          <Link
-            to="/admin/solicitudes"
-            className="group mt-6 flex items-center gap-3 rounded-2xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-900 transition hover:border-amber-400"
-          >
-            <AlertCircle size={18} className="shrink-0 text-amber-600" />
-            <span>
-              <strong>
-                {resumen.solicitudesSinClasificar}{' '}
-                {resumen.solicitudesSinClasificar === 1 ? 'solicitud sin clasificar' : 'solicitudes sin clasificar'}
-              </strong>{' '}
-              por la IA. Revísalas y asígnales una prioridad manual.
-            </span>
-            <ChevronRight size={16} className="ml-auto shrink-0 transition-transform group-hover:translate-x-0.5" />
-          </Link>
-        </motion.div>
-      )}
+      {/* Briefing del día: qué pasa y por dónde empezar */}
+      <motion.div variants={aparecer} className="mt-8">
+        <Briefing datos={datos} ahora={ahora} />
+      </motion.div>
 
       {/* Cifras críticas */}
       <motion.div variants={contenedor} className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-[28px] border border-panel-border bg-panel-border xl:grid-cols-4">
@@ -497,6 +485,7 @@ export default function AdminDashboard() {
                         {s.estado === 'en_atencion' && <span className="font-medium text-panel-info">· En atención</span>}
                       </p>
                     </div>
+                    {s.estado === 'pendiente' && <Semaforo minutos={minutosDesde(s.fecha, ahora)} compacto />}
                   </li>
                 )
               })}

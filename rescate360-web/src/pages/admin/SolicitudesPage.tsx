@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Search, X, Sparkles, UserCog, Smartphone, Activity, ArrowRightLeft, LifeBuoy, Siren, CheckCircle2 } from 'lucide-react'
+import { Search, X, Sparkles, UserCog, Smartphone, Activity, ArrowRightLeft, LifeBuoy, Siren, Timer } from 'lucide-react'
 import CabeceraPanel from '../../components/panel/CabeceraPanel'
+import Semaforo from '../../components/panel/Semaforo'
+import { useAhora, minutosDesde, UMBRAL_CRITICO_MIN } from '../../utils/espera'
 import { listarSolicitudes, actualizarSolicitud } from '../../services/solicitudes.service'
 import { listarOrganizaciones } from '../../services/organizaciones.service'
 import { useAuth } from '../../context/AuthContext'
@@ -62,6 +64,8 @@ const campo =
 export default function SolicitudesPage() {
   const { usuario } = useAuth()
   const [solicitudes, setSolicitudes] = useState<Solicitud[] | null>(null)
+  // Reloj del semáforo: se actualiza solo cada 30 s.
+  const ahora = useAhora()
   const [organizaciones, setOrganizaciones] = useState<Organizacion[]>([])
   const [error, setError] = useState('')
   const [aviso, setAviso] = useState('')
@@ -153,6 +157,8 @@ export default function SolicitudesPage() {
   const abiertas = solicitudes.filter((s) => s.estado !== 'resuelta')
   const urgentes = abiertas.filter((s) => ['critica', 'alta'].includes(prioridadEfectiva(s))).length
   const sinClasificar = abiertas.filter((s) => prioridadEfectiva(s) === 'pendiente').length
+  // Pendientes (nadie las ha tomado) que llevan más de 30 min esperando.
+  const demoradas = solicitudes.filter((s) => s.estado === 'pendiente' && minutosDesde(s.fecha, ahora) >= UMBRAL_CRITICO_MIN).length
 
   return (
     <div>
@@ -176,7 +182,13 @@ export default function SolicitudesPage() {
             pie: 'La IA aún no las evaluó',
             tono: sinClasificar > 0 ? 'aviso' : 'neutro',
           },
-          { titulo: 'Resueltas', valor: solicitudes.length - abiertas.length, icono: CheckCircle2, pie: 'Atención finalizada' },
+          {
+            titulo: 'Sin atender +30 min',
+            valor: demoradas,
+            icono: Timer,
+            pie: 'Pendientes que nadie ha tomado',
+            tono: demoradas > 0 ? 'alerta' : 'bien',
+          },
         ]}
       />
 
@@ -251,7 +263,7 @@ export default function SolicitudesPage() {
               <th className="hidden px-5 py-3 2xl:table-cell">Origen</th>
               <th className="px-5 py-3">Solicitante</th>
               <th className="px-5 py-3">Estado</th>
-              <th className="px-5 py-3">Fecha</th>
+              <th className="px-5 py-3">Espera</th>
               <th className="px-5 py-3" />
             </tr>
           </thead>
@@ -291,7 +303,17 @@ export default function SolicitudesPage() {
                       {etiquetaEstado[s.estado]}
                     </span>
                   </td>
-                  <td className="whitespace-nowrap px-5 py-3 text-panel-text-soft">{formatearFecha(s.fecha)}</td>
+                  <td className="whitespace-nowrap px-5 py-3">
+                    {/* Semáforo: solo cuenta mientras nadie ha tomado la solicitud. */}
+                    {s.estado === 'pendiente' ? (
+                      <Semaforo minutos={minutosDesde(s.fecha, ahora)} compacto />
+                    ) : (
+                      <span className="font-mono text-[11px] text-panel-text-muted">
+                        {s.estado === 'en_atencion' ? 'En atención' : 'Cerrada'}
+                      </span>
+                    )}
+                    <p className="mt-1 text-[11px] text-panel-text-muted">{formatearFecha(s.fecha)}</p>
+                  </td>
                   <td className="px-5 py-3 text-right">
                     <button onClick={() => abrir(s)} className="text-sm font-semibold text-panel-primary hover:underline">
                       Gestionar
@@ -318,6 +340,11 @@ export default function SolicitudesPage() {
                 <h2 className="text-xl font-semibold tracking-[-0.02em]">Solicitud de ayuda</h2>
                 <p className="mt-1 text-xs text-panel-text-muted">
                   {formatearFecha(seleccionada.fecha)} · {origen[seleccionada.origen].etiqueta}
+                  {seleccionada.estado === 'pendiente' && (
+                    <span className="ml-2 inline-block align-middle">
+                      <Semaforo minutos={minutosDesde(seleccionada.fecha, ahora)} />
+                    </span>
+                  )}
                 </p>
               </div>
               <button onClick={() => setSeleccionada(null)} aria-label="Cerrar">

@@ -1,13 +1,14 @@
 import { api, USE_MOCK } from './api'
+import { desplazarFechas } from './mockTiempo'
 import type { EstadoZona, NuevaZona, ZonaPeligrosa } from '../types/zona'
 
 // Datos de prueba, SOLO para desarrollo de la interfaz.
-let mock: ZonaPeligrosa[] = [
+let mock: ZonaPeligrosa[] = desplazarFechas([
   { id: '1', tipoRiesgo: 'inundacion', estado: 'activa', gestionadoPor: 'Admin Demo', actualizadoEn: '2026-10-05T08:40:00', area: [[10.48, -73.27], [10.483, -73.262], [10.476, -73.259], [10.473, -73.267]] },
   { id: '2', tipoRiesgo: 'deslizamiento', estado: 'activa', gestionadoPor: 'Admin Demo', actualizadoEn: '2026-10-05T07:15:00', area: [[10.492, -73.274], [10.495, -73.269], [10.49, -73.266], [10.488, -73.272]] },
   { id: '3', tipoRiesgo: 'inseguridad', estado: 'activa', gestionadoPor: 'Admin Demo', actualizadoEn: '2026-10-04T21:00:00', area: [[10.469, -73.253], [10.471, -73.249], [10.467, -73.247], [10.465, -73.251]] },
   { id: '4', tipoRiesgo: 'inundacion', estado: 'resuelta', gestionadoPor: 'Admin Demo', actualizadoEn: '2026-10-02T16:30:00', area: [[10.457, -73.264], [10.459, -73.259], [10.454, -73.258], [10.453, -73.262]] },
-]
+], 'actualizadoEn')
 
 export async function listarZonas(): Promise<ZonaPeligrosa[]> {
   if (USE_MOCK) return mock.map((z) => ({ ...z }))

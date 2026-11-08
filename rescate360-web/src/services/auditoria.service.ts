@@ -1,8 +1,9 @@
 import { api, USE_MOCK } from './api'
+import { desplazarFechas } from './mockTiempo'
 import type { RegistroAuditoria } from '../types/auditoria'
 
 // Datos de prueba, SOLO para desarrollo de la interfaz.
-const MOCK: RegistroAuditoria[] = [
+const MOCK: RegistroAuditoria[] = desplazarFechas([
   {
     id: 'a1', tabla: 'solicitudes_ayuda', registroId: '2', operacion: 'UPDATE', usuarioId: '1', usuarioNombre: 'Admin Demo',
     datosAnteriores: { estado: 'pendiente', prioridad_ia: 'media', prioridad_manual: null, modificado_por: null },
@@ -69,7 +70,7 @@ const MOCK: RegistroAuditoria[] = [
     datosNuevos: { estado: 'rechazado', verificado_por: '1' },
     camposModificados: ['estado', 'verificado_por'], creadoEn: '2026-10-03T18:30:00',
   },
-]
+], 'creadoEn')
 
 export async function listarAuditoria(): Promise<RegistroAuditoria[]> {
   if (USE_MOCK) return MOCK.map((r) => ({ ...r }))

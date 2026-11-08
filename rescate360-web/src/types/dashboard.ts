@@ -31,5 +31,6 @@ export interface DashboardAdmin {
   solicitudesPorPrioridad: Record<PrioridadIA, number> // solo abiertas
   actividad: PuntoActividad[] // 30 días que terminan en el día del registro más reciente
   requierenAtencion: Solicitud[] // abiertas, ordenadas por prioridad
+  pendientes: Solicitud[] // sin tomar por nadie (estado pendiente), para el semáforo y el briefing
   auditoriaReciente: RegistroAuditoria[]
 }

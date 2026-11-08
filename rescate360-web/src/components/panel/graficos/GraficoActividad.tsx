@@ -26,7 +26,8 @@ const etiquetaLarga = (iso: string) =>
 
 // Máximo "redondo" del eje y, con marcas enteras.
 function escalaY(max: number) {
-  const tope = Math.max(2, Math.ceil(max / 2) * 2)
+  // Hasta 4: marcas de 1 en 1; más: múltiplo de 4 para que las 4 divisiones sean enteras.
+  const tope = max <= 4 ? Math.max(2, Math.ceil(max)) : Math.ceil(max / 4) * 4
   const paso = tope <= 4 ? 1 : tope / 4
   const marcas: number[] = []
   for (let v = 0; v <= tope; v += paso) marcas.push(v)

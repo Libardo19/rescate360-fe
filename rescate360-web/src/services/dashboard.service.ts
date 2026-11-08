@@ -100,6 +100,7 @@ export async function obtenerDashboardAdmin(organizacionId: string): Promise<Das
     solicitudesPorPrioridad,
     actividad,
     requierenAtencion,
+    pendientes: solicitudes.filter((x) => x.estado === 'pendiente'),
     auditoriaReciente: [...auditoria].sort((a, b) => b.creadoEn.localeCompare(a.creadoEn)).slice(0, 6),
   }
 }
