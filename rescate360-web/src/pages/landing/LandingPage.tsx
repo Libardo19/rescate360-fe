@@ -3,6 +3,7 @@ import Hero from './components/Hero'
 import QueEs from './components/QueEs'
 import Capacidades from './components/Capacidades'
 import ComoFunciona from './components/ComoFunciona'
+import SinSenal from './components/SinSenal'
 import ParaQuien from './components/ParaQuien'
 import Descarga from './components/Descarga'
 import Footer from './components/Footer'
@@ -28,6 +29,7 @@ export default function LandingPage() {
         <Hero tema={tema} />
         <QueEs />
         <Capacidades />
+        <SinSenal />
         <ComoFunciona />
         <ParaQuien />
         <Descarga />

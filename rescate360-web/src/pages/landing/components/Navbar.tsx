@@ -7,6 +7,7 @@ import type { Tema } from './comunes'
 const enlaces = [
   { href: '#que-es', label: 'Qué es' },
   { href: '#capacidades', label: 'Capacidades' },
+  { href: '#sin-senal', label: 'Sin señal' },
   { href: '#como-funciona', label: 'Cómo funciona' },
   { href: '#para-quien', label: 'Para quién' },
   { href: '#descarga', label: 'Descarga' },
