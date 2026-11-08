@@ -367,7 +367,7 @@ export default function AdminDashboard() {
           <p className="mt-3 text-[15px] text-panel-text-soft">{nombreOrg || 'Tu organización'}</p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
-          <Link to="/admin/alertas" className={botonCabeceraSecundario}>
+          <Link to="/admin/alertas?accion=nueva" className={botonCabeceraSecundario}>
             <Bell size={16} /> Publicar alerta
           </Link>
           <Link to="/admin/solicitudes" className={botonCabeceraPrincipal}>

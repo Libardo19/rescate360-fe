@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { MapContainer, TileLayer, Polygon, Polyline, CircleMarker, Popup, useMap, useMapEvents } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import {
@@ -62,7 +63,16 @@ export default function ZonasPage() {
   const [error, setError] = useState('')
   const [pestana, setPestana] = useState<EstadoZona>('activa')
   const [enfocada, setEnfocada] = useState<ZonaPeligrosa | null>(null)
-  const [dibujando, setDibujando] = useState(false)
+    // ?accion=nueva abre el formulario directamente (desde la paleta de comandos o el Inicio).
+  const [params, setParams] = useSearchParams()
+  const abrirDesdeUrl = params.get('accion') === 'nueva'
+  useEffect(() => {
+    if (abrirDesdeUrl) setParams({}, { replace: true })
+  }, [abrirDesdeUrl, setParams])
+  const [dibujando, setDibujando] = useState(abrirDesdeUrl)
+  const areaDibujo = useRef<HTMLDivElement>(null)
+  const enfocarDibujo = () =>
+    requestAnimationFrame(() => areaDibujo.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   const [puntos, setPuntos] = useState<Coordenada[]>([])
   const [tipoNuevo, setTipoNuevo] = useState<TipoRiesgo>('inundacion')
   const [guardando, setGuardando] = useState(false)
@@ -72,6 +82,13 @@ export default function ZonasPage() {
       .then(setZonas)
       .catch(() => setError('No se pudieron cargar las zonas peligrosas.'))
   }, [])
+
+  const zonasCargadas = zonas !== null
+  useEffect(() => {
+    if (zonasCargadas && dibujando) areaDibujo.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    // Solo al terminar de cargar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zonasCargadas])
 
   const visibles = useMemo(
     () =>
@@ -95,6 +112,7 @@ export default function ZonasPage() {
     setPuntos([])
     setTipoNuevo('inundacion')
     setDibujando(true)
+    enfocarDibujo()
     setError('')
   }
 
@@ -168,7 +186,7 @@ export default function ZonasPage() {
 
       {error && <p className="mb-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+      <div ref={areaDibujo} className="grid scroll-mt-28 gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
         <section className="min-w-0 rounded-3xl border border-panel-border bg-panel-card p-5">
           {dibujando ? (
             <div>

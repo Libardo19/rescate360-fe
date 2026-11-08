@@ -161,7 +161,7 @@ a:focus-visible {
 
 /* Panel: entrada suave al cambiar de sección. */
 .panel-page-enter {
-  animation: panel-page-in 220ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation: panel-page-in 220ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
 }
 
 @keyframes panel-page-in {
@@ -191,7 +191,7 @@ a:focus-visible {
 
 /* Filas de tablas: entrada escalonada y realce al pasar el cursor. */
 .panel-raiz tbody tr {
-  animation: panel-fila 380ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation: panel-fila 380ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
   transition: background-color 150ms ease;
 }
 
@@ -217,7 +217,7 @@ a:focus-visible {
 
 /* Secciones de cada pantalla: aparecen en cascada (el Inicio usa sus propias animaciones). */
 .panel-page-enter > :not(.sin-cascada) > :not(.fixed) {
-  animation: panel-seccion 480ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation: panel-seccion 480ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
 }
 
 .panel-page-enter > :not(.sin-cascada) > :not(.fixed):nth-child(2) { animation-delay: 70ms; }
@@ -241,7 +241,7 @@ a:focus-visible {
 
 /* Cifras de la cabecera de cada sección: entran una tras otra. */
 .panel-stats > * {
-  animation: panel-seccion 520ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation: panel-seccion 520ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
 }
 
 .panel-stats > :nth-child(1) { animation-delay: 120ms; }
@@ -308,4 +308,9 @@ a:focus-visible {
 
 .panel-raiz[data-tema=oscuro] .bg-panel-primary.text-white:hover {
   background-color: rgb(255 255 255 / 0.9);
+}
+
+/* Modo enfoque: mientras un formulario o detalle está abierto, la página de fondo no se desplaza. */
+html:has(.panel-enfoque) {
+  overflow: hidden;
 }

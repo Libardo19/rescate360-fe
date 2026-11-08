@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Droplets,
   Wheat,
@@ -56,7 +57,13 @@ export default function DonacionesPage() {
   const [centroSel, setCentroSel] = useState<'todos' | string>('todos')
   const [filtroTipo, setFiltroTipo] = useState<'todos' | TipoDonacion>('todos')
 
-  const [nuevaAbierta, setNuevaAbierta] = useState(false)
+    // ?accion=nueva abre el formulario directamente (desde la paleta de comandos o el Inicio).
+  const [params, setParams] = useSearchParams()
+  const abrirDesdeUrl = params.get('accion') === 'nueva'
+  useEffect(() => {
+    if (abrirDesdeUrl) setParams({}, { replace: true })
+  }, [abrirDesdeUrl, setParams])
+  const [nuevaAbierta, setNuevaAbierta] = useState(abrirDesdeUrl)
   const [form, setForm] = useState<FormNueva>({ centroId: '', tipo: 'agua', cantidad: '', unidad: 'litros' })
 
   const [ajuste, setAjuste] = useState<Donacion | null>(null)
@@ -311,6 +318,7 @@ export default function DonacionesPage() {
                 </label>
                 <select
                   id="centro"
+                  autoFocus
                   value={form.centroId}
                   onChange={(e) => setForm({ ...form, centroId: e.target.value })}
                   className={`${campo} mt-1`}

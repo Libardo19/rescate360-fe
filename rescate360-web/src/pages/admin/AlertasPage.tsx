@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Plus, X, Waves, Mountain, ShieldAlert, CloudRain, TriangleAlert, BellRing, History, type LucideIcon } from 'lucide-react'
 import CabeceraPanel, { botonCabeceraPrincipal } from '../../components/panel/CabeceraPanel'
 import { listarAlertas, crearAlerta, finalizarAlerta } from '../../services/alertas.service'
@@ -24,7 +25,13 @@ export default function AlertasPage() {
   const [alertas, setAlertas] = useState<Alerta[] | null>(null)
   const [error, setError] = useState('')
   const [pestana, setPestana] = useState<'activas' | 'historial'>('activas')
-  const [modalAbierto, setModalAbierto] = useState(false)
+    // ?accion=nueva abre el formulario directamente (desde la paleta de comandos o el Inicio).
+  const [params, setParams] = useSearchParams()
+  const abrirDesdeUrl = params.get('accion') === 'nueva'
+  useEffect(() => {
+    if (abrirDesdeUrl) setParams({}, { replace: true })
+  }, [abrirDesdeUrl, setParams])
+  const [modalAbierto, setModalAbierto] = useState(abrirDesdeUrl)
   const [form, setForm] = useState<NuevaAlerta>(formularioVacio)
   const [errorForm, setErrorForm] = useState('')
   const [guardando, setGuardando] = useState(false)
@@ -167,12 +174,12 @@ export default function AlertasPage() {
 
       {modalAbierto && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4"
+          className="panel-enfoque fixed inset-0 z-[1100] flex items-start justify-center overflow-y-auto bg-navy-950/35 p-4 backdrop-blur-md sm:p-6"
           onClick={() => setModalAbierto(false)}
         >
           <form
             onSubmit={publicar}
-            className="w-full max-w-lg rounded-[28px] border border-panel-border bg-panel-card p-6 shadow-2xl"
+            className="panel-modal-enter my-auto w-full max-w-lg rounded-[28px] border border-panel-border bg-panel-card p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between">
@@ -206,6 +213,7 @@ export default function AlertasPage() {
                 </label>
                 <input
                   id="titulo"
+                  autoFocus
                   value={form.titulo}
                   onChange={(e) => setForm({ ...form, titulo: e.target.value })}
                   placeholder="Ej: Alerta de inundación"

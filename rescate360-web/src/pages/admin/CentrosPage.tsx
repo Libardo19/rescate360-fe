@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import {
@@ -72,7 +73,13 @@ export default function CentrosPage() {
   const [busqueda, setBusqueda] = useState('')
   const [filtroTipo, setFiltroTipo] = useState<'todos' | TipoCentro>('todos')
   const [enfocado, setEnfocado] = useState<Centro | null>(null)
-  const [modal, setModal] = useState<Modal>(null)
+    // ?accion=nueva abre el formulario directamente (desde la paleta de comandos o el Inicio).
+  const [params, setParams] = useSearchParams()
+  const abrirDesdeUrl = params.get('accion') === 'nueva'
+  useEffect(() => {
+    if (abrirDesdeUrl) setParams({}, { replace: true })
+  }, [abrirDesdeUrl, setParams])
+  const [modal, setModal] = useState<Modal>(abrirDesdeUrl ? { modo: 'crear' } : null)
   const [form, setForm] = useState<FormCentro>(formVacio)
   const [errorForm, setErrorForm] = useState('')
   const [guardando, setGuardando] = useState(false)
@@ -353,12 +360,12 @@ export default function CentrosPage() {
 
       {modal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4"
+          className="panel-enfoque fixed inset-0 z-[1100] flex items-start justify-center overflow-y-auto bg-navy-950/35 p-4 backdrop-blur-md sm:p-6"
           onClick={() => setModal(null)}
         >
           <form
             onSubmit={guardar}
-            className="w-full max-w-lg rounded-[28px] border border-panel-border bg-panel-card p-6 shadow-2xl"
+            className="panel-modal-enter my-auto w-full max-w-lg rounded-[28px] border border-panel-border bg-panel-card p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between">
@@ -377,6 +384,7 @@ export default function CentrosPage() {
                 </label>
                 <input
                   id="nombre"
+                  autoFocus
                   value={form.nombre}
                   onChange={(e) => setForm({ ...form, nombre: e.target.value })}
                   placeholder="Ej: Colegio San José"

@@ -15,11 +15,11 @@ interface Comando {
 
 // Acciones rápidas: llevan a la pantalla donde se hace la acción.
 const ACCIONES: Comando[] = [
-  { id: 'a-alerta', titulo: 'Publicar una alerta', grupo: 'Acciones', icono: BellPlus, ruta: '/admin/alertas' },
-  { id: 'a-centro', titulo: 'Registrar un centro de ayuda', grupo: 'Acciones', icono: Plus, ruta: '/admin/centros' },
-  { id: 'a-zona', titulo: 'Dibujar una zona peligrosa', grupo: 'Acciones', icono: PenTool, ruta: '/admin/zonas' },
-  { id: 'a-donacion', titulo: 'Registrar una donación', grupo: 'Acciones', icono: PackagePlus, ruta: '/admin/donaciones' },
-  { id: 'a-voluntario', titulo: 'Agregar un voluntario', grupo: 'Acciones', icono: UserPlus, ruta: '/admin/usuarios' },
+  { id: 'a-alerta', titulo: 'Publicar una alerta', grupo: 'Acciones', icono: BellPlus, ruta: '/admin/alertas?accion=nueva' },
+  { id: 'a-centro', titulo: 'Registrar un centro de ayuda', grupo: 'Acciones', icono: Plus, ruta: '/admin/centros?accion=nueva' },
+  { id: 'a-zona', titulo: 'Dibujar una zona peligrosa', grupo: 'Acciones', icono: PenTool, ruta: '/admin/zonas?accion=nueva' },
+  { id: 'a-donacion', titulo: 'Registrar una donación', grupo: 'Acciones', icono: PackagePlus, ruta: '/admin/donaciones?accion=nueva' },
+  { id: 'a-voluntario', titulo: 'Agregar un voluntario', grupo: 'Acciones', icono: UserPlus, ruta: '/admin/usuarios?accion=nueva' },
 ]
 
 // Normaliza para buscar sin tildes ni mayúsculas.

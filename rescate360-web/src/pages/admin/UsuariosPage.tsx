@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Search, UserPlus, Users, ShieldCheck, HeartHandshake, Power, Mail, Phone } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import {
@@ -43,7 +44,13 @@ export default function UsuariosPage() {
   const [filtroRol, setFiltroRol] = useState<FiltroRol>('todos')
 
   // Modal "Agregar voluntario"
-  const [modalAbierto, setModalAbierto] = useState(false)
+    // ?accion=nueva abre el formulario directamente (desde la paleta de comandos o el Inicio).
+  const [params, setParams] = useSearchParams()
+  const abrirDesdeUrl = params.get('accion') === 'nueva'
+  useEffect(() => {
+    if (abrirDesdeUrl) setParams({}, { replace: true })
+  }, [abrirDesdeUrl, setParams])
+  const [modalAbierto, setModalAbierto] = useState(abrirDesdeUrl)
   const [correo, setCorreo] = useState('')
   const [encontrado, setEncontrado] = useState<UsuarioEncontrado | null>(null)
   const [noExiste, setNoExiste] = useState(false)

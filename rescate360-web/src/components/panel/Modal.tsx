@@ -33,7 +33,7 @@ export default function Modal({ titulo, subtitulo, onCerrar, children, ancho = '
 
   return (
     <div
-      className="panel-overlay-enter fixed inset-0 z-[1100] flex items-center justify-center overflow-y-auto bg-black/40 p-4"
+      className="panel-overlay-enter panel-enfoque fixed inset-0 z-[1100] flex items-start justify-center overflow-y-auto bg-navy-950/35 p-4 backdrop-blur-md sm:p-6"
       onClick={onCerrar}
     >
       <div
@@ -42,7 +42,7 @@ export default function Modal({ titulo, subtitulo, onCerrar, children, ancho = '
         aria-modal="true"
         aria-labelledby={idTitulo}
         tabIndex={-1}
-        className={`panel-modal-enter w-full ${anchos[ancho]} rounded-[28px] border border-panel-border bg-panel-card p-6 shadow-2xl outline-none`}
+        className={`panel-modal-enter my-auto w-full ${anchos[ancho]} rounded-[28px] border border-panel-border bg-panel-card p-6 shadow-2xl outline-none`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4">
