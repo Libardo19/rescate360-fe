@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { motion } from 'motion/react'
-import { Bell, ChevronDown, LogOut, Menu, Moon, Search, ShieldCheck, Sun, X } from 'lucide-react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { AnimatePresence, motion } from 'motion/react'
+import { Bell, ChevronDown, Command, LayoutGrid, LogOut, Moon, Search, Sun } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { listarOrganizaciones } from '../services/organizaciones.service'
 import { useTema, type Tema } from '../pages/landing/components/comunes'
+import PaletaComandos from '../components/panel/PaletaComandos'
 import type { ItemMenu } from '../routes/menus'
 
 interface Props {
@@ -17,10 +18,13 @@ export interface ContextoPanel {
   tema: Tema
 }
 
-// Agrupa el menú por `grupo`, respetando el orden en que aparecen.
-function agrupar(menu: ItemMenu[]) {
+const vidrio =
+  'border border-panel-border/80 bg-panel-card/75 shadow-[0_10px_30px_-14px_rgba(11,27,54,0.25)] backdrop-blur-xl'
+
+// Agrupa por `grupo`, respetando el orden.
+function agrupar(items: ItemMenu[]) {
   const grupos: { nombre: string; items: ItemMenu[] }[] = []
-  menu.forEach((item) => {
+  items.forEach((item) => {
     const nombre = item.grupo ?? ''
     const actual = grupos.at(-1)
     if (actual && actual.nombre === nombre) actual.items.push(item)
@@ -29,14 +33,38 @@ function agrupar(menu: ItemMenu[]) {
   return grupos
 }
 
+const esRutaActiva = (m: ItemMenu, ruta: string) => (m.fin ? ruta === m.ruta : ruta.startsWith(m.ruta))
+
+// Píldora de una sección; la resaltada se desliza entre ellas (layoutId).
+function Pildora({ activo, children, grupo = 'barra' }: { activo: boolean; children: ReactNode; grupo?: string }) {
+  return (
+    <>
+      {activo && (
+        <motion.span
+          layoutId={`seccion-${grupo}`}
+          transition={{ type: 'spring', stiffness: 420, damping: 36 }}
+          className="absolute inset-0 -z-10 rounded-full bg-navy-950 shadow-[0_8px_18px_-8px_rgba(11,27,54,0.7)] dark:bg-white"
+        />
+      )}
+      {children}
+    </>
+  )
+}
+
 export default function PanelLayout({ menu, titulo }: Props) {
-  const [abierto, setAbierto] = useState(false)
+  const [masAbierto, setMasAbierto] = useState(false)
+  const [paleta, setPaleta] = useState(false)
   const [menuUsuario, setMenuUsuario] = useState(false)
   const [nombreOrg, setNombreOrg] = useState('')
+  const [conScroll, setConScroll] = useState(false)
   const { usuario, cerrarSesion } = useAuth()
   const { tema, alternar } = useTema()
   const navigate = useNavigate()
   const location = useLocation()
+
+  const principales = menu.filter((m) => m.principal)
+  const secundarios = menu.filter((m) => !m.principal)
+  const secundarioActivo = secundarios.find((m) => esRutaActiva(m, location.pathname))
 
   useEffect(() => {
     if (!usuario?.organizacion_id) return
@@ -44,6 +72,24 @@ export default function PanelLayout({ menu, titulo }: Props) {
       .then((orgs) => setNombreOrg(orgs.find((o) => o.id === usuario.organizacion_id)?.nombre ?? ''))
       .catch(() => setNombreOrg(''))
   }, [usuario?.organizacion_id])
+
+  // Atajo Ctrl/⌘ + K para la paleta de comandos.
+  useEffect(() => {
+    const alPulsar = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setPaleta((p) => !p)
+      }
+      if (e.key === 'Escape') setMasAbierto(false)
+    }
+    const alBajar = () => setConScroll(window.scrollY > 12)
+    window.addEventListener('keydown', alPulsar)
+    window.addEventListener('scroll', alBajar, { passive: true })
+    return () => {
+      window.removeEventListener('keydown', alPulsar)
+      window.removeEventListener('scroll', alBajar)
+    }
+  }, [])
 
   const salir = () => {
     cerrarSesion()
@@ -58,181 +104,249 @@ export default function PanelLayout({ menu, titulo }: Props) {
       .join('')
       .toUpperCase() ?? ''
 
-  // Sección actual para la ruta de navegación de la barra superior.
-  const actual = [...menu].reverse().find((m) => (m.fin ? location.pathname === m.ruta : location.pathname.startsWith(m.ruta)))
-
   return (
     <div
       data-tema={tema}
-      className="panel-raiz relative isolate flex min-h-screen bg-panel-bg font-display text-panel-text antialiased transition-colors duration-500"
+      className="panel-raiz relative isolate min-h-screen bg-panel-bg font-display text-panel-text antialiased transition-colors duration-500"
     >
       {/* Fondo: brillos suaves y grilla de puntos (mismo lenguaje que la landing) */}
       <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-48 left-1/2 h-[560px] w-[1000px] -translate-x-1/3 rounded-full bg-[radial-gradient(closest-side,rgba(62,123,250,0.13),transparent)]" />
-        <div className="absolute -right-40 top-1/3 h-[420px] w-[420px] rounded-full bg-[radial-gradient(closest-side,rgba(232,52,63,0.07),transparent)]" />
-        <div className="absolute inset-0 opacity-60 [background-image:radial-gradient(rgba(11,27,54,0.07)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:linear-gradient(to_bottom,black,transparent_70%)] dark:[background-image:radial-gradient(rgba(255,255,255,0.06)_1px,transparent_1px)]" />
+        <div className="absolute -top-56 left-1/2 h-[620px] w-[1100px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(62,123,250,0.14),transparent)]" />
+        <div className="absolute -right-40 top-1/2 h-[460px] w-[460px] rounded-full bg-[radial-gradient(closest-side,rgba(232,52,63,0.07),transparent)]" />
+        <div className="absolute inset-0 opacity-60 [background-image:radial-gradient(rgba(11,27,54,0.07)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:linear-gradient(to_bottom,black,transparent_75%)] dark:[background-image:radial-gradient(rgba(255,255,255,0.06)_1px,transparent_1px)]" />
       </div>
 
-      {abierto && <div className="fixed inset-0 z-40 bg-navy-950/40 backdrop-blur-sm lg:hidden" onClick={() => setAbierto(false)} />}
-
-      {/* Menú lateral: tarjeta flotante fija en PC, desplegable en móvil */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 w-[272px] p-3 transition-transform duration-300 ease-out lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:translate-x-0 ${
-          abierto ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        <div className="flex h-full flex-col rounded-[28px] border border-panel-border bg-panel-card/85 shadow-[0_20px_50px_-30px_rgba(11,27,54,0.35)] backdrop-blur-xl">
-          <div className="flex items-center justify-between px-5 pb-3 pt-5">
-            <NavLink to="/" className="flex items-center gap-2" aria-label="RESCATE360, ir a la página principal">
-              <img src="/logoRescate.png" alt="" className="h-8 w-8" />
-              <span className="text-xl font-bold tracking-[-0.04em]">
+      {/* ===== Barra superior flotante ===== */}
+      <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-4 sm:pt-4">
+        <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-3">
+          {/* Marca + organización */}
+          <Link
+            to="/admin"
+            className={`flex h-12 items-center gap-2.5 rounded-full pl-1.5 pr-4 transition ${vidrio} ${conScroll ? 'bg-panel-card/90' : ''}`}
+            aria-label="Inicio del panel"
+          >
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-navy-950 dark:bg-white">
+              <img src="/logoRescate.png" alt="" className="h-5 w-5" />
+            </span>
+            <span className="hidden leading-tight sm:block">
+              <span className="block text-sm font-semibold tracking-[-0.02em]">
                 RESCATE<span className="text-brand">360</span>
               </span>
-            </NavLink>
-            <button
-              className="rounded-full p-1.5 text-panel-text-soft transition hover:bg-panel-bg lg:hidden"
-              onClick={() => setAbierto(false)}
-              aria-label="Cerrar menú"
-            >
-              <X size={18} />
-            </button>
-          </div>
+              <span className="block max-w-[160px] truncate font-mono text-[9px] uppercase tracking-[0.14em] text-panel-text-muted">
+                {nombreOrg || `Panel ${titulo}`}
+              </span>
+            </span>
+          </Link>
 
-          <p className="mx-5 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-panel-text-muted">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.18)]" />
-            Panel {titulo}
-          </p>
-
-          <nav aria-label="Secciones del panel" className="sin-barra-scroll mt-2 flex-1 overflow-y-auto overscroll-contain px-3 pb-3">
-            {agrupar(menu).map((grupo) => (
-              <div key={grupo.nombre} className="mt-5 first:mt-3">
-                {grupo.nombre && (
-                  <p className="mb-1.5 px-3 font-mono text-[10px] uppercase tracking-[0.16em] text-panel-text-muted">{grupo.nombre}</p>
+          {/* Secciones (pantallas grandes) */}
+          <nav aria-label="Secciones del panel" className={`relative hidden items-center gap-0.5 rounded-full p-1 lg:flex ${vidrio}`}>
+            {principales.map((m) => (
+              <NavLink
+                key={m.ruta}
+                to={m.ruta}
+                end={m.fin}
+                className={({ isActive }) =>
+                  `relative isolate flex items-center gap-2 rounded-full px-3.5 py-2 text-[13px] font-medium transition-colors ${
+                    isActive ? 'text-white dark:text-navy-950' : 'text-panel-text-soft hover:text-panel-text'
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <Pildora activo={isActive}>
+                    <m.icono size={15} strokeWidth={2} />
+                    {m.corta ?? m.etiqueta}
+                  </Pildora>
                 )}
-                <div className="space-y-0.5">
-                  {grupo.items.map(({ ruta, etiqueta, icono: Icono, fin }) => (
-                    <NavLink
-                      key={ruta}
-                      to={ruta}
-                      end={fin}
-                      onClick={() => setAbierto(false)}
-                      className={({ isActive }) =>
-                        `group relative flex items-center gap-3 rounded-full px-3.5 py-2.5 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-panel-primary/30 ${
-                          isActive ? 'font-semibold text-white dark:text-navy-950' : 'text-panel-text-soft hover:bg-panel-bg hover:text-panel-text'
-                        }`
-                      }
-                    >
-                      {({ isActive }) => (
-                        <>
-                          {isActive && (
-                            <motion.span
-                              layoutId="menu-activo"
-                              transition={{ type: 'spring', stiffness: 420, damping: 36 }}
-                              className="absolute inset-0 rounded-full bg-navy-950 shadow-[0_8px_20px_-10px_rgba(11,27,54,0.7)] dark:bg-white"
-                            />
-                          )}
-                          <Icono size={17} strokeWidth={1.9} className="relative shrink-0" />
-                          <span className="relative truncate">{etiqueta}</span>
-                        </>
-                      )}
-                    </NavLink>
-                  ))}
-                </div>
-              </div>
+              </NavLink>
             ))}
+
+            {/* "Más": muestra el nombre de la sección secundaria activa */}
+            <button
+              onClick={() => setMasAbierto((a) => !a)}
+              aria-expanded={masAbierto}
+              aria-haspopup="true"
+              className={`relative isolate flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-medium transition-colors ${
+                secundarioActivo ? 'text-white dark:text-navy-950' : 'text-panel-text-soft hover:text-panel-text'
+              }`}
+            >
+              <Pildora activo={!!secundarioActivo}>
+                <LayoutGrid size={15} strokeWidth={2} />
+                {secundarioActivo?.etiqueta ?? 'Más'}
+                <ChevronDown size={14} className={`transition-transform ${masAbierto ? 'rotate-180' : ''}`} />
+              </Pildora>
+            </button>
+
+            {/* Mega-menú */}
+            <AnimatePresence>
+              {masAbierto && (
+                <>
+                  <div className="fixed inset-0 -z-10" onClick={() => setMasAbierto(false)} />
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                    transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                    className="absolute right-0 top-[calc(100%+10px)] grid w-[560px] grid-cols-2 gap-1 rounded-[28px] border border-panel-border bg-panel-card p-3 shadow-[0_30px_70px_-30px_rgba(11,27,54,0.5)]"
+                  >
+                    {agrupar(secundarios).map((g) => (
+                      <div key={g.nombre}>
+                        <p className="px-3 pb-1.5 pt-2 font-mono text-[10px] uppercase tracking-[0.16em] text-panel-text-muted">{g.nombre}</p>
+                        {g.items.map((m) => {
+                          const activo = esRutaActiva(m, location.pathname)
+                          return (
+                            <Link
+                              key={m.ruta}
+                              to={m.ruta}
+                              onClick={() => setMasAbierto(false)}
+                              className={`group flex items-start gap-3 rounded-2xl p-3 transition-colors hover:bg-panel-bg ${activo ? 'bg-panel-bg' : ''}`}
+                            >
+                              <span
+                                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition ${
+                                  activo
+                                    ? 'border-transparent bg-navy-950 text-white dark:bg-white dark:text-navy-950'
+                                    : 'border-panel-border text-panel-text-soft group-hover:text-panel-text'
+                                }`}
+                              >
+                                <m.icono size={16} strokeWidth={1.9} />
+                              </span>
+                              <span className="min-w-0">
+                                <span className="block text-sm font-medium">{m.etiqueta}</span>
+                                <span className="block text-xs leading-snug text-panel-text-muted">{m.descripcion}</span>
+                              </span>
+                            </Link>
+                          )
+                        })}
+                      </div>
+                    ))}
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
           </nav>
 
-          {/* Organización del usuario */}
-          <div className="m-3 flex items-center gap-3 rounded-2xl border border-panel-border bg-panel-bg/70 p-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand text-white shadow-[0_8px_18px_-8px_rgba(232,52,63,0.8)]">
-              <ShieldCheck size={17} />
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">{nombreOrg || 'RESCATE360'}</p>
-              <p className="truncate font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">Organización</p>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        {/* Barra superior */}
-        <header className="sticky top-0 z-30 flex items-center gap-3 bg-panel-bg/70 px-4 py-3 backdrop-blur-xl sm:px-6 lg:pl-3">
-          <button
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-panel-border bg-panel-card text-panel-text-soft lg:hidden"
-            onClick={() => setAbierto(true)}
-            aria-label="Abrir menú"
-          >
-            <Menu size={18} />
-          </button>
-
-          <p className="hidden font-mono text-[11px] uppercase tracking-[0.16em] text-panel-text-muted md:block">
-            Panel <span className="mx-1 text-panel-border">/</span>
-            <span className="text-panel-text">{actual?.etiqueta ?? 'Inicio'}</span>
-          </p>
-
-          {/* Buscador global: solo interfaz por ahora. */}
-          {/* BACKEND: conectar la búsqueda global cuando exista el endpoint. */}
-          <div className="relative ml-auto hidden w-full max-w-xs sm:block">
-            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-panel-text-muted" />
-            <input
-              placeholder="Buscar…"
-              className="h-10 w-full rounded-full border border-panel-border bg-panel-card pl-9 pr-3 text-sm outline-none transition placeholder:text-panel-text-muted focus:border-panel-primary focus:ring-4 focus:ring-panel-primary/10"
-            />
-          </div>
-
-          <div className="ml-auto flex items-center gap-2 sm:ml-0">
+          {/* Acciones */}
+          <div className={`flex h-12 items-center gap-1 rounded-full p-1 ${vidrio}`}>
+            <button
+              onClick={() => setPaleta(true)}
+              className="flex h-10 items-center gap-2 rounded-full px-3 text-panel-text-soft transition hover:bg-panel-bg hover:text-panel-text"
+              aria-label="Buscar (Ctrl + K)"
+            >
+              <Search size={16} />
+              <kbd className="hidden items-center gap-0.5 rounded-md border border-panel-border px-1.5 py-0.5 font-mono text-[10px] text-panel-text-muted xl:flex">
+                <Command size={10} />K
+              </kbd>
+            </button>
             <button
               onClick={alternar}
               aria-label={tema === 'claro' ? 'Activar modo oscuro' : 'Activar modo claro'}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-panel-border bg-panel-card text-panel-text-soft transition hover:text-panel-text"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-panel-text-soft transition hover:bg-panel-bg hover:text-panel-text"
             >
-              {tema === 'claro' ? <Moon size={16} /> : <Sun size={16} />}
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.span
+                  key={tema}
+                  initial={{ rotate: -90, opacity: 0, scale: 0.6 }}
+                  animate={{ rotate: 0, opacity: 1, scale: 1 }}
+                  exit={{ rotate: 90, opacity: 0, scale: 0.6 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {tema === 'claro' ? <Moon size={16} /> : <Sun size={16} />}
+                </motion.span>
+              </AnimatePresence>
             </button>
             <button
-              className="relative flex h-10 w-10 items-center justify-center rounded-full border border-panel-border bg-panel-card text-panel-text-soft transition hover:text-panel-text"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full text-panel-text-soft transition hover:bg-panel-bg hover:text-panel-text"
               aria-label="Notificaciones"
             >
               <Bell size={16} />
               <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-brand ring-2 ring-panel-card" />
             </button>
 
-            {menuUsuario && <div className="fixed inset-0 z-10" onClick={() => setMenuUsuario(false)} />}
-            <div className="relative z-20">
+            <div className="relative">
+              {menuUsuario && <div className="fixed inset-0 z-10" onClick={() => setMenuUsuario(false)} />}
               <button
                 onClick={() => setMenuUsuario(!menuUsuario)}
-                className="flex h-10 items-center gap-2.5 rounded-full border border-panel-border bg-panel-card py-1 pl-1 pr-3 transition hover:border-panel-text-muted/40"
+                aria-label="Menú de usuario"
+                className="relative z-20 flex h-10 w-10 items-center justify-center rounded-full bg-navy-950 text-xs font-bold text-white transition hover:scale-105 dark:bg-white dark:text-navy-950"
               >
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-navy-950 text-xs font-bold text-white dark:bg-white dark:text-navy-950">
-                  {iniciales}
-                </span>
-                <span className="hidden text-left text-sm leading-tight md:block">
-                  <span className="block font-semibold">{usuario?.nombre}</span>
-                </span>
-                <ChevronDown size={15} className="text-panel-text-muted" />
+                {iniciales}
               </button>
-
-              {menuUsuario && (
-                <div className="panel-modal-enter absolute right-0 mt-2 w-52 overflow-hidden rounded-2xl border border-panel-border bg-panel-card py-1 shadow-xl">
-                  <p className="border-b border-panel-border px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">
-                    {usuario?.rol.replace('_', ' ')}
-                  </p>
-                  <button onClick={salir} className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-panel-text-soft hover:bg-panel-bg hover:text-panel-text">
-                    <LogOut size={15} /> Cerrar sesión
-                  </button>
-                </div>
-              )}
+              <AnimatePresence>
+                {menuUsuario && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                    transition={{ duration: 0.16 }}
+                    className="absolute right-0 top-[calc(100%+10px)] z-20 w-60 overflow-hidden rounded-3xl border border-panel-border bg-panel-card p-2 shadow-[0_30px_60px_-30px_rgba(11,27,54,0.5)]"
+                  >
+                    <div className="px-3 py-2.5">
+                      <p className="truncate text-sm font-semibold">{usuario?.nombre}</p>
+                      <p className="truncate text-xs text-panel-text-muted">{usuario?.email}</p>
+                      <p className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-panel-text-muted">
+                        {usuario?.rol.replace('_', ' ')}
+                      </p>
+                    </div>
+                    <button
+                      onClick={salir}
+                      className="flex w-full items-center gap-2 rounded-2xl px-3 py-2.5 text-sm text-panel-text-soft transition hover:bg-panel-bg hover:text-panel-text"
+                    >
+                      <LogOut size={15} /> Cerrar sesión
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
-        </header>
+        </div>
+      </header>
 
-        <main className="min-w-0 flex-1 px-4 pb-10 pt-2 sm:px-6 lg:pl-3">
-          {/* La key reinicia la animación de entrada en cada cambio de sección. */}
-          <div key={location.pathname} className="panel-page-enter">
-            <Outlet context={{ tema } satisfies ContextoPanel} />
-          </div>
-        </main>
-      </div>
+      {/* ===== Contenido ===== */}
+      <main className="mx-auto max-w-[1200px] px-4 pb-32 pt-24 sm:px-6 sm:pt-28 lg:pb-16">
+        {/* La key reinicia la animación de entrada en cada cambio de sección. */}
+        <div key={location.pathname} className="panel-page-enter">
+          <Outlet context={{ tema } satisfies ContextoPanel} />
+        </div>
+      </main>
+
+      {/* ===== Dock flotante (móvil y tablet) ===== */}
+      <nav
+        aria-label="Navegación rápida"
+        className={`fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-1 rounded-full p-1.5 lg:hidden ${vidrio} bg-panel-card/90`}
+      >
+        {principales.slice(0, 4).map((m) => (
+          <NavLink
+            key={m.ruta}
+            to={m.ruta}
+            end={m.fin}
+            aria-label={m.etiqueta}
+            className={({ isActive }) =>
+              `relative isolate flex h-12 w-12 flex-col items-center justify-center rounded-full transition-colors ${
+                isActive ? 'text-white dark:text-navy-950' : 'text-panel-text-soft'
+              }`
+            }
+          >
+            {({ isActive }) => (
+              <Pildora activo={isActive} grupo="dock">
+                <m.icono size={19} strokeWidth={1.9} />
+              </Pildora>
+            )}
+          </NavLink>
+        ))}
+        <span className="mx-1 h-6 w-px bg-panel-border" />
+        <button
+          onClick={() => setPaleta(true)}
+          aria-label="Todas las secciones"
+          className={`relative isolate flex h-12 w-12 items-center justify-center rounded-full transition-colors ${
+            secundarioActivo || location.pathname.startsWith('/admin/alertas') ? 'text-white dark:text-navy-950' : 'text-panel-text-soft'
+          }`}
+        >
+          <Pildora grupo="dock" activo={!!secundarioActivo || location.pathname.startsWith('/admin/alertas')}>
+            <LayoutGrid size={19} strokeWidth={1.9} />
+          </Pildora>
+        </button>
+      </nav>
+
+      <PaletaComandos abierta={paleta} onCerrar={() => setPaleta(false)} menu={menu} />
     </div>
   )
 }

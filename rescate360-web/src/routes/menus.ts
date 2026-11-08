@@ -18,19 +18,22 @@ export interface ItemMenu {
   etiqueta: string
   icono: LucideIcon
   fin?: boolean
-  grupo?: string // título del bloque en el menú lateral
+  grupo?: string // título del bloque en el menú "Más" y en la paleta de comandos
+  descripcion?: string // texto corto que se muestra en el menú "Más" y en la paleta
+  principal?: boolean // aparece directamente en la barra superior (y en el dock móvil)
+  corta?: string // etiqueta corta para la barra superior
 }
 
 export const menuAdmin: ItemMenu[] = [
-  { ruta: '/admin', etiqueta: 'Inicio', icono: LayoutDashboard, fin: true, grupo: 'General' },
-  { ruta: '/admin/reportes', etiqueta: 'Reportes', icono: FileWarning, grupo: 'Operación' },
-  { ruta: '/admin/solicitudes', etiqueta: 'Solicitudes de ayuda', icono: LifeBuoy, grupo: 'Operación' },
-  { ruta: '/admin/mapa', etiqueta: 'Mapa operativo', icono: MapaIcono, grupo: 'Operación' },
-  { ruta: '/admin/alertas', etiqueta: 'Alertas', icono: Bell, grupo: 'Operación' },
-  { ruta: '/admin/centros', etiqueta: 'Centros de ayuda', icono: Building2, grupo: 'Recursos' },
-  { ruta: '/admin/zonas', etiqueta: 'Zonas peligrosas', icono: TriangleAlert, grupo: 'Recursos' },
-  { ruta: '/admin/donaciones', etiqueta: 'Donaciones', icono: HeartHandshake, grupo: 'Recursos' },
-  { ruta: '/admin/desaparecidos', etiqueta: 'Personas desaparecidas', icono: Search, grupo: 'Recursos' },
-  { ruta: '/admin/usuarios', etiqueta: 'Usuarios', icono: Users, grupo: 'Administración' },
-  { ruta: '/admin/auditoria', etiqueta: 'Auditoría', icono: ClipboardList, grupo: 'Administración' },
+  { ruta: '/admin', etiqueta: 'Inicio', icono: LayoutDashboard, fin: true, grupo: 'General', principal: true, descripcion: 'Resumen operativo de tu organización' },
+  { ruta: '/admin/reportes', etiqueta: 'Reportes', icono: FileWarning, grupo: 'Operación', principal: true, descripcion: 'Verifica, rechaza o marca duplicados' },
+  { ruta: '/admin/solicitudes', etiqueta: 'Solicitudes de ayuda', corta: 'Solicitudes', icono: LifeBuoy, grupo: 'Operación', principal: true, descripcion: 'Prioriza y atiende pedidos de ayuda' },
+  { ruta: '/admin/mapa', etiqueta: 'Mapa operativo', corta: 'Mapa', icono: MapaIcono, grupo: 'Operación', principal: true, descripcion: 'Todo lo que pasa, en un mapa' },
+  { ruta: '/admin/alertas', etiqueta: 'Alertas', icono: Bell, grupo: 'Operación', principal: true, descripcion: 'Avisos oficiales para la comunidad' },
+  { ruta: '/admin/centros', etiqueta: 'Centros de ayuda', icono: Building2, grupo: 'Recursos', descripcion: 'Albergues, comedores y puestos médicos' },
+  { ruta: '/admin/zonas', etiqueta: 'Zonas peligrosas', icono: TriangleAlert, grupo: 'Recursos', descripcion: 'Áreas de riesgo dibujadas en el mapa' },
+  { ruta: '/admin/donaciones', etiqueta: 'Donaciones', icono: HeartHandshake, grupo: 'Recursos', descripcion: 'Inventario de cada centro' },
+  { ruta: '/admin/desaparecidos', etiqueta: 'Personas desaparecidas', icono: Search, grupo: 'Recursos', descripcion: 'Casos en búsqueda y encontrados' },
+  { ruta: '/admin/usuarios', etiqueta: 'Usuarios', icono: Users, grupo: 'Administración', descripcion: 'Voluntarios y administradores' },
+  { ruta: '/admin/auditoria', etiqueta: 'Auditoría', icono: ClipboardList, grupo: 'Administración', descripcion: 'Historial de cada cambio' },
 ]

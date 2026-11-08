@@ -118,7 +118,7 @@ function Panel({
   className?: string
 }) {
   return (
-    <motion.section variants={aparecer} className={`min-w-0 rounded-3xl border border-panel-border bg-panel-card p-6 ${className}`}>
+    <motion.section variants={aparecer} className={`min-w-0 rounded-[28px] border border-panel-border bg-panel-card p-6 sm:p-7 ${className}`}>
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
           <h2 className="text-lg font-semibold tracking-[-0.02em]">{titulo}</h2>
@@ -162,32 +162,28 @@ interface Kpi {
 }
 
 // Tarjeta de cifra: ícono, indicador en mono, número grande y descripción. Lleva a su sección.
+// Celda de cifra dentro de la franja: indicador en mono, número grande y descripción. Lleva a su sección.
 function TarjetaKpi({ titulo, descripcion, valor, icono: Icono, a, pildora }: Kpi) {
   return (
-    <motion.div variants={aparecer}>
+    <motion.div variants={aparecer} className="h-full bg-panel-card">
       <Link
         to={a}
-        className="group flex h-full flex-col rounded-3xl border border-panel-border bg-panel-card p-5 transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-26px_rgba(11,27,54,0.45)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-panel-primary/30 active:translate-y-0"
+        className="group relative flex h-full flex-col p-5 transition-colors hover:bg-panel-bg focus-visible:bg-panel-bg focus-visible:outline-none sm:p-6"
       >
-        <div className="flex items-start justify-between gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-panel-border text-panel-text-soft transition group-hover:text-panel-text">
-            <Icono size={16} strokeWidth={1.9} />
-          </span>
-          {pildora ? (
-            <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">
-              <span className={`h-1.5 w-1.5 rounded-full ${tonos[pildora.tono]}`} />
-              {pildora.texto}
-            </span>
-          ) : (
-            <ArrowUpRight
-              size={15}
-              className="text-panel-text-muted transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-panel-text"
-            />
-          )}
+        <div className="flex items-center justify-between gap-2">
+          <p className="flex min-w-0 items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-panel-text-muted">
+            <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${pildora ? tonos[pildora.tono] : 'bg-panel-text-muted/50'}`} />
+            <span className="truncate">{pildora?.texto ?? 'Total'}</span>
+          </p>
+          <Icono size={15} strokeWidth={1.8} className="shrink-0 text-panel-text-muted transition group-hover:text-panel-text" />
         </div>
-        <CountUp to={valor} duration={0.9} trigger="load" className="mt-4 block text-[32px] font-semibold leading-none tracking-[-0.04em]" />
-        <p className="mt-2 text-sm font-medium">{titulo}</p>
+        <CountUp to={valor} duration={0.9} trigger="load" className="mt-5 block text-[48px] font-semibold leading-none tracking-[-0.05em]" />
+        <p className="mt-3 text-sm font-medium">{titulo}</p>
         <p className="mt-0.5 text-xs text-panel-text-muted">{descripcion}</p>
+        <ArrowUpRight
+          size={16}
+          className="absolute bottom-5 right-5 text-panel-text-muted opacity-0 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-panel-text group-hover:opacity-100"
+        />
       </Link>
     </motion.div>
   )
@@ -350,7 +346,7 @@ export default function AdminDashboard() {
   return (
     <motion.div className="sin-cascada" initial={reducir ? false : 'oculto'} animate="visible" variants={contenedor}>
       {/* ===== Encabezado (mismo lenguaje que la landing) ===== */}
-      <motion.div variants={aparecer} className="flex flex-col gap-5 pt-4 lg:flex-row lg:items-end lg:justify-between">
+      <motion.div variants={aparecer} className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-panel-text-muted">
             <span className="relative flex h-2 w-2">
@@ -359,7 +355,7 @@ export default function AdminDashboard() {
             </span>
             Centro de mando · {hoy}
           </p>
-          <h1 className="mt-4 text-[38px] font-semibold leading-[1] tracking-[-0.045em] sm:text-[52px]">
+          <h1 className="mt-4 text-[40px] font-semibold leading-[0.98] tracking-[-0.05em] sm:text-[52px] xl:text-[60px]">
             {saludo()}, {primerNombre}.
             <br />
             <span className={resumen.solicitudesUrgentes > 0 ? 'text-brand' : 'text-panel-text-muted'}>
@@ -370,7 +366,7 @@ export default function AdminDashboard() {
           </h1>
           <p className="mt-3 text-[15px] text-panel-text-soft">{nombreOrg || 'Tu organización'}</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex shrink-0 flex-wrap gap-2">
           <Link to="/admin/alertas" className={botonCabeceraSecundario}>
             <Bell size={16} /> Publicar alerta
           </Link>
@@ -402,14 +398,14 @@ export default function AdminDashboard() {
       )}
 
       {/* Cifras críticas */}
-      <motion.div variants={contenedor} className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+      <motion.div variants={contenedor} className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-[28px] border border-panel-border bg-panel-border xl:grid-cols-4">
         {kpisPrincipales.map((k) => (
           <TarjetaKpi key={k.titulo} {...k} />
         ))}
       </motion.div>
 
       {/* Gráficos: lado a lado en PC, uno debajo del otro en pantallas pequeñas */}
-      <motion.div variants={contenedor} className="mt-6 grid gap-6 xl:grid-cols-3">
+      <motion.div variants={contenedor} className="mt-8 grid gap-6 xl:grid-cols-3">
         <Panel
           className="xl:col-span-2"
           titulo="Actividad diaria"
@@ -458,7 +454,7 @@ export default function AdminDashboard() {
       </motion.div>
 
       {/* ===== Otras cifras ===== */}
-      <motion.div variants={contenedor} className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+      <motion.div variants={contenedor} className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-[28px] border border-panel-border bg-panel-border xl:grid-cols-4">
         {kpisSecundarios.map((k) => (
           <TarjetaKpi key={k.titulo} {...k} />
         ))}

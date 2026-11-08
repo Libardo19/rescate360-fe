@@ -197,7 +197,9 @@ export default function GraficoActividad({ datos, oscuro = false }: { datos: Pun
         )}
       </div>
 
-      <table className="sr-only">
+      {/* Las tablas ignoran el ancho de sr-only: se envuelve en un div para que no ensanche la página. */}
+      <div className="sr-only">
+      <table>
         <caption>Actividad diaria</caption>
         <thead>
           <tr>
@@ -216,6 +218,7 @@ export default function GraficoActividad({ datos, oscuro = false }: { datos: Pun
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   )
 }
