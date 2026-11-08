@@ -165,11 +165,11 @@ export default function AuditoriaPage() {
         </select>
         <label className="flex items-center gap-2 text-sm text-panel-text-soft">
           Desde
-          <input type="date" value={desde} max={hasta || undefined} onChange={(e) => setDesde(e.target.value)} className={campo} />
+          <input type="date" value={desde} max={hasta || undefined} onChange={(e) => setDesde(e.target.value)} className={`${campo} min-w-0 flex-1`} />
         </label>
         <label className="flex items-center gap-2 text-sm text-panel-text-soft">
           Hasta
-          <input type="date" value={hasta} min={desde || undefined} onChange={(e) => setHasta(e.target.value)} className={campo} />
+          <input type="date" value={hasta} min={desde || undefined} onChange={(e) => setHasta(e.target.value)} className={`${campo} min-w-0 flex-1`} />
         </label>
       </div>
 

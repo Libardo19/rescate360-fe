@@ -71,7 +71,7 @@ export default function CabeceraPanel({ seccion, titulo, descripcion, acciones, 
             <span className="h-1.5 w-1.5 rounded-full bg-brand" />
             {seccion}
           </p>
-          <h1 className="mt-3 text-[40px] font-semibold leading-[0.98] tracking-[-0.05em] sm:text-[56px]">{titulo}</h1>
+          <h1 className="mt-3 break-words text-[34px] font-semibold leading-[1] tracking-[-0.045em] sm:text-[56px] sm:tracking-[-0.05em]">{titulo}</h1>
           {descripcion && <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-panel-text-soft">{descripcion}</p>}
         </div>
         {acciones && <div className="flex shrink-0 flex-wrap gap-2">{acciones}</div>}

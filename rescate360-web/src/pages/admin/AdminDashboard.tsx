@@ -364,7 +364,7 @@ export default function AdminDashboard() {
             </span>
             Centro de mando · {hoy}
           </p>
-          <h1 className="mt-4 text-[40px] font-semibold leading-[0.98] tracking-[-0.05em] sm:text-[52px] xl:text-[60px]">
+          <h1 className="mt-4 text-[34px] font-semibold leading-[1] tracking-[-0.045em] sm:text-[52px] sm:tracking-[-0.05em] xl:text-[60px]">
             {saludo()}, {primerNombre}.
             <br />
             <span className={resumen.solicitudesUrgentes > 0 ? 'text-brand' : 'text-panel-text-muted'}>
@@ -476,12 +476,12 @@ export default function AdminDashboard() {
                 const p = prioridadEfectiva(s)
                 const OrigenIcono = s.origen === 'acelerometro' ? Activity : Smartphone
                 return (
-                  <li key={s.id} className="flex items-start gap-3 py-3">
+                  <li key={s.id} className="flex flex-wrap items-start gap-x-3 gap-y-2 py-3 sm:flex-nowrap">
                     <span className={`mt-0.5 w-[88px] shrink-0 rounded-full px-2 py-0.5 text-center text-[11px] font-semibold ${colorPrioridad[p]}`}>
                       {prioridades.find((x) => x.clave === p)?.etiqueta}
                     </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{s.descripcion}</p>
+                    <div className="order-last min-w-0 basis-full sm:order-none sm:basis-auto sm:flex-1">
+                      <p className="text-sm font-medium sm:truncate">{s.descripcion}</p>
                       <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-panel-text-muted">
                         <span>{s.ubicacion}</span>·<span>{formatearFechaCorta(s.fecha)}</span>·
                         <span className="flex items-center gap-1">
@@ -491,7 +491,11 @@ export default function AdminDashboard() {
                         {s.estado === 'en_atencion' && <span className="font-medium text-panel-info">· En atención</span>}
                       </p>
                     </div>
-                    {s.estado === 'pendiente' && <Semaforo minutos={minutosDesde(s.fecha, ahora)} compacto />}
+                    {s.estado === 'pendiente' && (
+                      <span className="ml-auto shrink-0 sm:ml-0">
+                        <Semaforo minutos={minutosDesde(s.fecha, ahora)} compacto />
+                      </span>
+                    )}
                   </li>
                 )
               })}

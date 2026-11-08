@@ -56,6 +56,8 @@ export default function Navbar({ tema, alternar }: { tema: Tema; alternar: () =>
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       className="fixed inset-x-0 top-0 z-50 px-4 pt-4"
     >
+      {/* Velo para que el texto no se vea cortado detrás de las píldoras al hacer scroll */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-28 bg-linear-to-b from-[#f6f7f9] from-40% via-[#f6f7f9]/85 to-transparent transition-colors duration-500 dark:from-[#060c19] dark:via-[#060c19]/80" />
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
         {/* Marca */}
         <a

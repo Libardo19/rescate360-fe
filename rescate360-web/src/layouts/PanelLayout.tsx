@@ -7,6 +7,7 @@ import { listarOrganizaciones } from '../services/organizaciones.service'
 import { useTema, type Tema } from '../pages/landing/components/comunes'
 import PaletaComandos from '../components/panel/PaletaComandos'
 import { useRevelarAlBajar } from '../components/panel/revelarAlBajar'
+import { useTablasMovil } from '../components/panel/tablasMovil'
 import type { ItemMenu } from '../routes/menus'
 
 interface Props {
@@ -79,6 +80,8 @@ export default function PanelLayout({ menu, titulo }: Props) {
 
   // Los bloques de cada pantalla aparecen al hacer scroll.
   useRevelarAlBajar(principal, location.pathname)
+  // En móvil, las tablas se ven como tarjetas.
+  useTablasMovil(principal, location.pathname)
 
   const principales = menu.filter((m) => m.principal)
   const secundarios = menu.filter((m) => !m.principal)
@@ -147,6 +150,8 @@ export default function PanelLayout({ menu, titulo }: Props) {
 
       {/* ===== Barra superior flotante ===== */}
       <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-4 sm:pt-4">
+        {/* Velo para que el contenido no se vea cortado detrás de las píldoras al hacer scroll */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-28 bg-linear-to-b from-panel-bg from-40% via-panel-bg/85 to-transparent" />
         <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-3">
           {/* Marca + organización */}
           <Link

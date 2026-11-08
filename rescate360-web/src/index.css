@@ -290,3 +290,75 @@ a:focus-visible {
 html:has(.panel-enfoque) {
   overflow: hidden;
 }
+
+/* ============ Tablas en móvil: cada fila se convierte en una tarjeta ============ */
+@media (max-width: 639px) {
+  .panel-raiz table[data-movil='tarjetas'] {
+    display: block;
+    min-width: 0 !important;
+  }
+
+  .panel-raiz table[data-movil='tarjetas'] thead {
+    display: none;
+  }
+
+  .panel-raiz table[data-movil='tarjetas'] tbody {
+    display: block;
+  }
+
+  .panel-raiz table[data-movil='tarjetas'] tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem 1rem;
+    padding: 1.1rem 1.15rem;
+  }
+
+  .panel-raiz table[data-movil='tarjetas'] tbody tr + tr {
+    border-top: 1px solid var(--color-panel-border);
+  }
+
+  .panel-raiz table[data-movil='tarjetas'] td:not(.hidden) {
+    display: block;
+    min-width: 0;
+    padding: 0 !important;
+    text-align: left;
+    white-space: normal;
+  }
+
+  /* Nombre de la columna encima del valor. */
+  .panel-raiz table[data-movil='tarjetas'] td[data-label]:not([data-label=''])::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 0.3rem;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-panel-text-muted);
+  }
+
+  /* Textos largos y mensajes vacíos ocupan toda la tarjeta; el texto ya no se corta. */
+  .panel-raiz table[data-movil='tarjetas'] td[data-completo] {
+    grid-column: 1 / -1;
+  }
+
+  .panel-raiz table[data-movil='tarjetas'] td[data-completo] :is(.truncate, .max-w-xs) {
+    max-width: none;
+    white-space: normal;
+  }
+
+  /* Acciones al final, a todo el ancho y alineadas a la izquierda. */
+  .panel-raiz table[data-movil='tarjetas'] td[data-acciones] {
+    grid-column: 1 / -1;
+    padding-top: 0.75rem !important;
+    border-top: 1px dashed var(--color-panel-border);
+  }
+
+  .panel-raiz table[data-movil='tarjetas'] td[data-acciones]:empty {
+    display: none;
+  }
+
+  .panel-raiz table[data-movil='tarjetas'] td[data-acciones] > div {
+    justify-content: flex-start;
+  }
+}
