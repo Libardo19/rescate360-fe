@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { Bell, ChevronDown, Command, LayoutGrid, LogOut, Moon, Search, Sun } from 'lucide-react'
@@ -53,6 +53,19 @@ function Pildora({ activo, children, grupo = 'barra' }: { activo: boolean; child
 
 export default function PanelLayout({ menu, titulo }: Props) {
   const [masAbierto, setMasAbierto] = useState(false)
+  const zonaMas = useRef<HTMLDivElement>(null)
+  const temporizador = useRef<number | undefined>(undefined)
+  // Con el mouse: abre al entrar y cierra un instante después de salir (deja pasar el cursor hacia el menú).
+  const abrirMas = (e: React.PointerEvent) => {
+    if (e.pointerType !== 'mouse') return
+    window.clearTimeout(temporizador.current)
+    setMasAbierto(true)
+  }
+  const cerrarMas = (e: React.PointerEvent) => {
+    if (e.pointerType !== 'mouse') return
+    window.clearTimeout(temporizador.current)
+    temporizador.current = window.setTimeout(() => setMasAbierto(false), 180)
+  }
   const [paleta, setPaleta] = useState(false)
   const [menuUsuario, setMenuUsuario] = useState(false)
   const [nombreOrg, setNombreOrg] = useState('')
@@ -72,6 +85,17 @@ export default function PanelLayout({ menu, titulo }: Props) {
       .then((orgs) => setNombreOrg(orgs.find((o) => o.id === usuario.organizacion_id)?.nombre ?? ''))
       .catch(() => setNombreOrg(''))
   }, [usuario?.organizacion_id])
+
+  useEffect(() => {
+    if (!masAbierto) return
+    const fuera = (e: PointerEvent) => {
+      if (!zonaMas.current?.contains(e.target as Node)) setMasAbierto(false)
+    }
+    document.addEventListener('pointerdown', fuera)
+    return () => document.removeEventListener('pointerdown', fuera)
+  }, [masAbierto])
+
+  useEffect(() => () => window.clearTimeout(temporizador.current), [])
 
   // Atajo Ctrl/⌘ + K para la paleta de comandos.
   useEffect(() => {
@@ -160,9 +184,14 @@ export default function PanelLayout({ menu, titulo }: Props) {
               </NavLink>
             ))}
 
-            {/* "Más": muestra el nombre de la sección secundaria activa */}
+            {/* "Más": se abre al pasar el cursor; muestra el nombre de la sección secundaria activa */}
+            <div ref={zonaMas} className="relative" onPointerEnter={abrirMas} onPointerLeave={cerrarMas}>
             <button
-              onClick={() => setMasAbierto((a) => !a)}
+              // Con mouse ya se abrió al pasar el cursor: el clic no lo cierra. En pantallas táctiles alterna.
+              onClick={(e) => {
+                const conMouse = (e.nativeEvent as PointerEvent).pointerType === 'mouse'
+                setMasAbierto((a) => (conMouse ? true : !a))
+              }}
               aria-expanded={masAbierto}
               aria-haspopup="true"
               className={`relative isolate flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-medium transition-colors ${
@@ -180,13 +209,12 @@ export default function PanelLayout({ menu, titulo }: Props) {
             <AnimatePresence>
               {masAbierto && (
                 <>
-                  <div className="fixed inset-0 -z-10" onClick={() => setMasAbierto(false)} />
                   <motion.div
                     initial={{ opacity: 0, y: -8, scale: 0.98 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -6, scale: 0.98 }}
                     transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute right-0 top-[calc(100%+10px)] grid w-[560px] grid-cols-2 gap-1 rounded-[28px] border border-panel-border bg-panel-card p-3 shadow-[0_30px_70px_-30px_rgba(11,27,54,0.5)]"
+                    className="absolute right-0 top-full grid w-[560px] grid-cols-2 gap-1 rounded-[28px] border border-panel-border bg-panel-card p-3 shadow-[0_30px_70px_-30px_rgba(11,27,54,0.5)] before:absolute before:inset-x-0 before:-top-3 before:h-3 before:content-['']" style={{ marginTop: 10 }}
                   >
                     {agrupar(secundarios).map((g) => (
                       <div key={g.nombre}>
@@ -222,6 +250,7 @@ export default function PanelLayout({ menu, titulo }: Props) {
                 </>
               )}
             </AnimatePresence>
+            </div>
           </nav>
 
           {/* Acciones */}
