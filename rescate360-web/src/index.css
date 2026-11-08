@@ -189,9 +189,8 @@ a:focus-visible {
 
 /* ============ Panel: animaciones y modo oscuro ============ */
 
-/* Filas de tablas: entrada escalonada y realce al pasar el cursor. */
+/* Filas de tablas: realce al pasar el cursor. */
 .panel-raiz tbody tr {
-  animation: panel-fila 380ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
   transition: background-color 150ms ease;
 }
 
@@ -199,59 +198,36 @@ a:focus-visible {
   background-color: rgb(15 42 92 / 0.035);
 }
 
-.panel-raiz tbody tr:nth-child(2) { animation-delay: 30ms; }
-.panel-raiz tbody tr:nth-child(3) { animation-delay: 60ms; }
-.panel-raiz tbody tr:nth-child(4) { animation-delay: 90ms; }
-.panel-raiz tbody tr:nth-child(5) { animation-delay: 120ms; }
-.panel-raiz tbody tr:nth-child(6) { animation-delay: 150ms; }
-.panel-raiz tbody tr:nth-child(7) { animation-delay: 180ms; }
-.panel-raiz tbody tr:nth-child(8) { animation-delay: 210ms; }
-.panel-raiz tbody tr:nth-child(n + 9) { animation-delay: 240ms; }
-
-@keyframes panel-fila {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
+/* Aparición al hacer scroll (ver components/panel/revelarAlBajar.ts):
+   cada bloque empieza oculto y aparece al entrar en pantalla, en cascada con --retraso. */
+.panel-raiz [data-revelar] {
+  transition:
+    opacity 650ms cubic-bezier(0.22, 1, 0.36, 1) var(--retraso, 0ms),
+    transform 650ms cubic-bezier(0.22, 1, 0.36, 1) var(--retraso, 0ms),
+    filter 650ms cubic-bezier(0.22, 1, 0.36, 1) var(--retraso, 0ms);
 }
 
-/* Secciones de cada pantalla: aparecen en cascada (el Inicio usa sus propias animaciones). */
-.panel-page-enter > :not(.sin-cascada) > :not(.fixed) {
-  animation: panel-seccion 480ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+.panel-raiz [data-revelar='oculto'] {
+  opacity: 0;
+  transform: translateY(22px);
+  filter: blur(6px);
 }
 
-.panel-page-enter > :not(.sin-cascada) > :not(.fixed):nth-child(2) { animation-delay: 70ms; }
-.panel-page-enter > :not(.sin-cascada) > :not(.fixed):nth-child(3) { animation-delay: 140ms; }
-.panel-page-enter > :not(.sin-cascada) > :not(.fixed):nth-child(4) { animation-delay: 200ms; }
-.panel-page-enter > :not(.sin-cascada) > :not(.fixed):nth-child(n + 5) { animation-delay: 260ms; }
-
-@keyframes panel-seccion {
-  from {
-    opacity: 0;
-    transform: translateY(12px) scale(0.99);
-  }
+/* Las filas se mueven menos que los bloques. */
+.panel-raiz tr[data-revelar='oculto'] {
+  transform: translateY(10px);
+  filter: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .panel-raiz tbody tr,
-  .panel-page-enter > :not(.sin-cascada) > :not(.fixed) {
-    animation: none;
+  .panel-raiz [data-revelar] {
+    transition: none;
   }
-}
 
-/* Cifras de la cabecera de cada sección: entran una tras otra. */
-.panel-stats > * {
-  animation: panel-seccion 520ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
-}
-
-.panel-stats > :nth-child(1) { animation-delay: 120ms; }
-.panel-stats > :nth-child(2) { animation-delay: 180ms; }
-.panel-stats > :nth-child(3) { animation-delay: 240ms; }
-.panel-stats > :nth-child(4) { animation-delay: 300ms; }
-
-@media (prefers-reduced-motion: reduce) {
-  .panel-stats > * {
-    animation: none;
+  .panel-raiz [data-revelar='oculto'] {
+    opacity: 1;
+    transform: none;
+    filter: none;
   }
 }
 

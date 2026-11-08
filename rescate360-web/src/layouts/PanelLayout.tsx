@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { listarOrganizaciones } from '../services/organizaciones.service'
 import { useTema, type Tema } from '../pages/landing/components/comunes'
 import PaletaComandos from '../components/panel/PaletaComandos'
+import { useRevelarAlBajar } from '../components/panel/revelarAlBajar'
 import type { ItemMenu } from '../routes/menus'
 
 interface Props {
@@ -54,6 +55,7 @@ function Pildora({ activo, children, grupo = 'barra' }: { activo: boolean; child
 export default function PanelLayout({ menu, titulo }: Props) {
   const [masAbierto, setMasAbierto] = useState(false)
   const zonaMas = useRef<HTMLDivElement>(null)
+  const principal = useRef<HTMLElement>(null)
   const temporizador = useRef<number | undefined>(undefined)
   // Con el mouse: abre al entrar y cierra un instante después de salir (deja pasar el cursor hacia el menú).
   const abrirMas = (e: React.PointerEvent) => {
@@ -74,6 +76,9 @@ export default function PanelLayout({ menu, titulo }: Props) {
   const { tema, alternar } = useTema()
   const navigate = useNavigate()
   const location = useLocation()
+
+  // Los bloques de cada pantalla aparecen al hacer scroll.
+  useRevelarAlBajar(principal, location.pathname)
 
   const principales = menu.filter((m) => m.principal)
   const secundarios = menu.filter((m) => !m.principal)
@@ -330,7 +335,7 @@ export default function PanelLayout({ menu, titulo }: Props) {
       </header>
 
       {/* ===== Contenido ===== */}
-      <main className="mx-auto max-w-[1200px] px-4 pb-32 pt-24 sm:px-6 sm:pt-28 lg:pb-16">
+      <main ref={principal} className="mx-auto max-w-[1200px] px-4 pb-32 pt-24 sm:px-6 sm:pt-28 lg:pb-16">
         {/* La key reinicia la animación de entrada en cada cambio de sección. */}
         <div key={location.pathname} className="panel-page-enter">
           <Outlet context={{ tema } satisfies ContextoPanel} />

@@ -98,10 +98,10 @@ const saludo = () => {
 
 // ---------- Animación ----------
 
-const contenedor: Variants = { oculto: {}, visible: { transition: { staggerChildren: 0.05 } } }
+const contenedor: Variants = { oculto: {}, visible: { transition: { staggerChildren: 0.08 } } }
 const aparecer: Variants = {
-  oculto: { opacity: 0, y: 8 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.23, 1, 0.32, 1] } },
+  oculto: { opacity: 0, y: 22 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
 }
 
 // ---------- Piezas ----------
@@ -242,6 +242,12 @@ export default function AdminDashboard() {
   const [error, setError] = useState('')
   const [periodo, setPeriodo] = useState<Periodo>(7)
   const reducir = useReducedMotion()
+  // Animación al entrar en pantalla (al hacer scroll), una sola vez.
+  const alBajar = {
+    initial: reducir ? false : ('oculto' as const),
+    whileInView: 'visible' as const,
+    viewport: { once: true, margin: '0px 0px -8% 0px' },
+  }
   const ahora = useAhora()
   const { tema } = useOutletContext<ContextoPanel>()
   const oscuro = tema === 'oscuro'
@@ -347,9 +353,9 @@ export default function AdminDashboard() {
   const barrasPrioridad = prioridades.map((p) => ({ ...p, valor: datos.solicitudesPorPrioridad[p.clave] }))
 
   return (
-    <motion.div className="sin-cascada" initial={reducir ? false : 'oculto'} animate="visible" variants={contenedor}>
+    <div className="sin-cascada">
       {/* ===== Encabezado (mismo lenguaje que la landing) ===== */}
-      <motion.div variants={aparecer} className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+      <motion.div variants={aparecer} {...alBajar} className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-panel-text-muted">
             <span className="relative flex h-2 w-2">
@@ -381,19 +387,19 @@ export default function AdminDashboard() {
       </motion.div>
 
       {/* Briefing del día: qué pasa y por dónde empezar */}
-      <motion.div variants={aparecer} className="mt-8">
+      <motion.div variants={aparecer} {...alBajar} className="mt-8">
         <Briefing datos={datos} ahora={ahora} />
       </motion.div>
 
       {/* Cifras críticas */}
-      <motion.div variants={contenedor} className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-[28px] border border-panel-border bg-panel-border xl:grid-cols-4">
+      <motion.div variants={contenedor} {...alBajar} className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-[28px] border border-panel-border bg-panel-border xl:grid-cols-4">
         {kpisPrincipales.map((k) => (
           <TarjetaKpi key={k.titulo} {...k} />
         ))}
       </motion.div>
 
       {/* Gráficos: lado a lado en PC, uno debajo del otro en pantallas pequeñas */}
-      <motion.div variants={contenedor} className="mt-8 grid gap-6 xl:grid-cols-3">
+      <motion.div variants={contenedor} {...alBajar} className="mt-8 grid gap-6 xl:grid-cols-3">
         <Panel
           className="xl:col-span-2"
           titulo="Actividad diaria"
@@ -442,13 +448,13 @@ export default function AdminDashboard() {
       </motion.div>
 
       {/* ===== Otras cifras ===== */}
-      <motion.div variants={contenedor} className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-[28px] border border-panel-border bg-panel-border xl:grid-cols-4">
+      <motion.div variants={contenedor} {...alBajar} className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-[28px] border border-panel-border bg-panel-border xl:grid-cols-4">
         {kpisSecundarios.map((k) => (
           <TarjetaKpi key={k.titulo} {...k} />
         ))}
       </motion.div>
 
-      <motion.div variants={contenedor} className="mt-6 grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
+      <motion.div variants={contenedor} {...alBajar} className="mt-6 grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
         <Panel
           titulo="Solicitudes por prioridad"
           subtitulo="Abiertas · manual si existe, si no la de la IA"
@@ -535,6 +541,6 @@ export default function AdminDashboard() {
           )}
         </Panel>
       </motion.div>
-    </motion.div>
+    </div>
   )
 }
