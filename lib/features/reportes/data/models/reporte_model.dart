@@ -32,6 +32,11 @@ class ReporteCiudadano {
   final List<String> fotos;
   final int videos;
   final String? motivoRechazo;
+  // Dónde pasó (para "Cómo llegar"); null si el dato no vino
+  final double? lat;
+  final double? lng;
+  // Cuándo lo verificó la organización
+  final DateTime? verificadoEn;
 
   const ReporteCiudadano({
     required this.id,
@@ -45,10 +50,13 @@ class ReporteCiudadano {
     this.fotos = const [],
     this.videos = 0,
     this.motivoRechazo,
+    this.lat,
+    this.lng,
+    this.verificadoEn,
   }) : tipoEtiqueta = tipoEtiqueta ?? tipo;
 
-  /// ReporteOut de GET /reportes (los míos)
-  factory ReporteCiudadano.fromJson(Map<String, dynamic> json) {
+  /// ReporteOut de GET /reportes (los míos) o de GET /reportes/{id} ([esMio] lo sabe quien lo pide)
+  factory ReporteCiudadano.fromJson(Map<String, dynamic> json, {bool esMio = true}) {
     final evidencias =
         (json['evidencias'] as List).cast<Map<String, dynamic>>();
     final ubicacion = json['ubicacion'] as Map<String, dynamic>;
@@ -60,7 +68,7 @@ class ReporteCiudadano {
       fecha: DateTime.parse(json['creado_en'] as String).toLocal(),
       lugar: (json['direccion'] as String?) ??
           '${(ubicacion['lat'] as num).toStringAsFixed(4)}, ${(ubicacion['lng'] as num).toStringAsFixed(4)}',
-      esMio: true,
+      esMio: esMio,
       estado: EstadoReporteCiudadano.desde(json['estado'] as String),
       fotos: [
         for (final e in evidencias)
@@ -68,6 +76,11 @@ class ReporteCiudadano {
       ],
       videos: evidencias.where((e) => e['tipo'] == 'video').length,
       motivoRechazo: json['motivo_rechazo'] as String?,
+      lat: (ubicacion['lat'] as num).toDouble(),
+      lng: (ubicacion['lng'] as num).toDouble(),
+      verificadoEn: json['verificado_en'] == null
+          ? null
+          : DateTime.parse(json['verificado_en'] as String).toLocal(),
     );
   }
 
@@ -82,6 +95,8 @@ class ReporteCiudadano {
         lugar: 'Cerca de ti',
         esMio: json['propio'] as bool? ?? false,
         estado: EstadoReporteCiudadano.desde(json['estado'] as String),
+        lat: (json['lat'] as num?)?.toDouble(),
+        lng: (json['lng'] as num?)?.toDouble(),
       );
 
   String get haceCuanto {

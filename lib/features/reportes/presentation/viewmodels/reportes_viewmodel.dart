@@ -47,3 +47,9 @@ final tiposReporteProvider =
     FutureProvider<List<({String valor, String etiqueta})>>((ref) {
   return ref.read(reportesRepositoryProvider).tipos();
 });
+
+/// Detalle completo de un reporte con sus fotos (GET /reportes/{id}). Lo usan el detalle de la
+/// pestaña Reportes y la hoja del mapa. El backend lo da si es tuyo o si ya está verificado.
+final detalleReporteProvider = FutureProvider.autoDispose.family<ReporteCiudadano, String>(
+  (ref, id) => ref.watch(reportesRepositoryProvider).detalle(id),
+);
