@@ -53,11 +53,36 @@ void main() {
       await tester.runAsync(() async {
         await precacheImage(const AssetImage('assets/images/bienvenida.jpg'), tester.element(find.byType(BienvenidaScreen)));
       });
-      await tester.pumpAndSettle();
+      // El logo tiene una animación que se repite: se avanza hasta después de la entrada
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pump(const Duration(seconds: 1));
 
       expect(tester.takeException(), isNull);
       expect(find.text('Iniciar sesión'), findsOneWidget);
       expect(find.text('Crear cuenta'), findsOneWidget);
     });
   }
+
+  testWidgets('bienvenida: con "reducir movimiento" todo queda quieto', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(ProviderScope(
+      overrides: [authRepositoryProvider.overrideWithValue(_RepoSinSesion())],
+      child: MaterialApp(
+        theme: ThemeData(useMaterial3: true, fontFamily: 'Roboto'),
+        home: const MediaQuery(
+          data: MediaQueryData(disableAnimations: true),
+          child: BienvenidaScreen(),
+        ),
+      ),
+    ));
+    // Si el logo siguiera animándose en bucle, esto no terminaría nunca
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Iniciar sesión'), findsOneWidget);
+    expect(tester.binding.hasScheduledFrame, isFalse);
+  });
 }
