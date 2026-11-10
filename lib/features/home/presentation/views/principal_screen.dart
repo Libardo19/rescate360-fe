@@ -6,6 +6,7 @@ import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../../../mapa/presentation/views/mapa_emergencia_screen.dart';
 import '../../../perfil/presentation/views/mas_screen.dart';
 import '../../../reportes/presentation/views/mis_reportes_screen.dart';
+import '../widgets/barra_ciudadano.dart';
 import 'home_screen.dart';
 
 /// Contenedor principal del ciudadano: barra de navegación inferior con
@@ -23,12 +24,20 @@ class _PrincipalScreenState extends ConsumerState<PrincipalScreen> {
   // Las pestañas se construyen la primera vez que se visitan.
   final Set<int> _visitadas = {0};
 
+  void _irA(int i) => setState(() {
+        _indice = i;
+        _visitadas.add(i);
+      });
+
   Widget _construirPagina(int i) {
     switch (i) {
       case 0:
         final nombre =
             ref.watch(authViewModelProvider).usuario?.primerNombre ?? 'Usuario';
-        return HomeScreen(nombreUsuario: nombre);
+        return HomeScreen(
+          nombreUsuario: nombre,
+          onAbrirMapa: () => _irA(BarraCiudadano.indiceMapa),
+        );
       case 1:
         return const MapaEmergenciaScreen();
       case 2:
@@ -52,45 +61,7 @@ class _PrincipalScreenState extends ConsumerState<PrincipalScreen> {
                 : const SizedBox.shrink(),
           ),
         ),
-        bottomNavigationBar: Container(
-          decoration: const BoxDecoration(
-            border: Border(top: BorderSide(color: AppColors.surfaceBorder)),
-          ),
-          child: BottomNavigationBar(
-            currentIndex: _indice,
-            onTap: (i) => setState(() {
-              _indice = i;
-              _visitadas.add(i);
-            }),
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: AppColors.surface,
-            selectedItemColor: AppColors.primary,
-            unselectedItemColor: AppColors.textMuted,
-            selectedFontSize: 12,
-            unselectedFontSize: 12,
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.home_outlined),
-                activeIcon: Icon(Icons.home),
-                label: 'Inicio',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.location_on_outlined),
-                activeIcon: Icon(Icons.location_on),
-                label: 'Mapa',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.assignment_outlined),
-                activeIcon: Icon(Icons.assignment),
-                label: 'Reportes',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.more_horiz),
-                label: 'Más',
-              ),
-            ],
-          ),
-        ),
+        bottomNavigationBar: BarraCiudadano(indice: _indice, onTap: _irA),
       ),
     );
   }

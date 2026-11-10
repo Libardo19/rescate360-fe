@@ -9,59 +9,11 @@ import '../../../../core/config/env.dart';
 import '../../../../shared/widgets/etiqueta_estado.dart';
 import '../../data/models/marcador_mapa_model.dart';
 import '../viewmodels/mapa_viewmodel.dart';
-
-enum TipoPunto { incidente, solicitud, alerta, centro }
+import '../widgets/tipo_punto.dart';
 
 enum FiltroMapa { todos, incidentes, solicitudes, alertas, centros }
 
-extension on TipoPunto {
-  String get etiqueta {
-    switch (this) {
-      case TipoPunto.incidente:
-        return 'Incidente';
-      case TipoPunto.solicitud:
-        return 'Solicitud de ayuda';
-      case TipoPunto.alerta:
-        return 'Alerta';
-      case TipoPunto.centro:
-        return 'Centro de ayuda';
-    }
-  }
-
-  Color get color {
-    switch (this) {
-      case TipoPunto.incidente:
-        return AppColors.danger;
-      case TipoPunto.solicitud:
-        return AppColors.primary;
-      case TipoPunto.alerta:
-        return AppColors.warning;
-      case TipoPunto.centro:
-        return AppColors.info;
-    }
-  }
-
-  IconData get icono {
-    switch (this) {
-      case TipoPunto.incidente:
-        return Icons.report_gmailerrorred_outlined;
-      case TipoPunto.solicitud:
-        return Icons.support_agent;
-      case TipoPunto.alerta:
-        return Icons.warning_amber_rounded;
-      case TipoPunto.centro:
-        return Icons.local_hospital_outlined;
-    }
-  }
-}
-
-/// Capa del backend → tipo visual. Las zonas peligrosas y los sismos se pintan como alertas.
-TipoPunto _tipoDe(MarcadorMapaModel p) => switch (p.capa) {
-      'reporte' => TipoPunto.incidente,
-      'solicitud' => TipoPunto.solicitud,
-      'centro' => TipoPunto.centro,
-      _ => TipoPunto.alerta,
-    };
+const _tipoDe = tipoDePunto;
 
 /// Mapa en vivo (mockup 5): tu ubicación y lo que pasa alrededor (GET /mapa cada 15 s),
 /// con búsqueda y filtros. Mapa de OpenStreetMap con flutter_map (no requiere API key).
@@ -83,7 +35,8 @@ class _MapaEmergenciaScreenState extends ConsumerState<MapaEmergenciaScreen> wit
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    Future.microtask(() => ref.read(mapaViewModelProvider.notifier).iniciar());
+    // Si la vista previa del inicio ya lo arrancó, se reutiliza
+    Future.microtask(() => ref.read(mapaViewModelProvider.notifier).iniciarSiHaceFalta());
   }
 
   @override
