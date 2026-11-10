@@ -25,6 +25,8 @@ class ReportesRepository {
           lng: lng,
           archivos: archivos);
 
+  Future<ReporteCiudadano> detalle(String id) => _remoto.detalle(id);
+
   /// Los míos primero (con todo el detalle) y luego los verificados de la comunidad.
   Future<List<ReporteCiudadano>> todos() async {
     final resultados =

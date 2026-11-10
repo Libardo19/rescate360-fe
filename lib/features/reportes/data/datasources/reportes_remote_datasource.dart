@@ -40,6 +40,10 @@ class ReportesRemoteDatasource {
         .post<Map<String, dynamic>>(Endpoints.reportes, datos: datos));
   }
 
+  /// Detalle completo con sus fotos: el backend lo da si es tuyo o si ya está verificado.
+  Future<ReporteCiudadano> detalle(String id) async =>
+      ReporteCiudadano.fromJson(await _api.get<Map<String, dynamic>>(Endpoints.reporte(id)));
+
   /// Para el ciudadano, GET /reportes devuelve solo los suyos.
   Future<List<ReporteCiudadano>> misReportes() async {
     final pagina = await _api.get<Map<String, dynamic>>(Endpoints.reportes,

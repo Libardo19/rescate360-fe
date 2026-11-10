@@ -6,9 +6,9 @@ import 'package:latlong2/latlong.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/config/env.dart';
-import '../../../../shared/widgets/etiqueta_estado.dart';
 import '../../data/models/marcador_mapa_model.dart';
 import '../viewmodels/mapa_viewmodel.dart';
+import '../widgets/detalle_punto_sheet.dart';
 import '../widgets/tipo_punto.dart';
 
 enum FiltroMapa { todos, incidentes, solicitudes, alertas, centros }
@@ -82,51 +82,15 @@ class _MapaEmergenciaScreenState extends ConsumerState<MapaEmergenciaScreen> wit
     return p.aproximada ? 'A unos $texto de ti (ubicación aproximada)' : 'A $texto de ti';
   }
 
+  /// Información completa del punto; los incidentes traen sus fotos del backend.
   void _verDetalle(MarcadorMapaModel p) {
-    final tipo = _tipoDe(p);
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.background,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: tipo.color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(tipo.icono, color: tipo.color, size: 24),
-                ),
-                const SizedBox(width: 12),
-                Expanded(child: Text(p.titulo, style: AppTextStyles.h2)),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Wrap(
-              spacing: 8,
-              children: [
-                EtiquetaEstado(texto: tipo.etiqueta, color: tipo.color),
-                EtiquetaEstado(texto: p.estado.replaceAll('_', ' '), color: AppColors.textSecondary),
-                if (p.propio) const EtiquetaEstado(texto: 'Tuyo', color: AppColors.primary),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(p.detalle, style: AppTextStyles.body),
-            const SizedBox(height: 6),
-            Text(_distanciaA(p), style: AppTextStyles.caption),
-          ],
-        ),
-      ),
+    mostrarDetallePunto(
+      context,
+      punto: p,
+      distancia: _distanciaA(p),
+      onCentrar: () {
+        if (_mapaListo) _mapa.move(LatLng(p.lat, p.lng), 17);
+      },
     );
   }
 
