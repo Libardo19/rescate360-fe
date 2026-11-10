@@ -1,48 +1,87 @@
-import { api, USE_MOCK } from './api'
-import { desplazarFechas } from './mockTiempo'
-import type { EstadoZona, NuevaZona, ZonaPeligrosa } from '../types/zona'
+import { api, consulta, USE_MOCK, type Pagina } from './api'
+import type { Zona, ZonaApi, DatosZona, EstadoZona, NivelRiesgo, TipoRiesgo } from '../types/zona'
 
-// Datos de prueba, SOLO para desarrollo de la interfaz.
-let mock: ZonaPeligrosa[] = desplazarFechas([
-  { id: '1', tipoRiesgo: 'inundacion', estado: 'activa', gestionadoPor: 'Admin Demo', actualizadoEn: '2026-10-05T08:40:00', area: [[10.48, -73.27], [10.483, -73.262], [10.476, -73.259], [10.473, -73.267]] },
-  { id: '2', tipoRiesgo: 'deslizamiento', estado: 'activa', gestionadoPor: 'Admin Demo', actualizadoEn: '2026-10-05T07:15:00', area: [[10.492, -73.274], [10.495, -73.269], [10.49, -73.266], [10.488, -73.272]] },
-  { id: '3', tipoRiesgo: 'inseguridad', estado: 'activa', gestionadoPor: 'Admin Demo', actualizadoEn: '2026-10-04T21:00:00', area: [[10.469, -73.253], [10.471, -73.249], [10.467, -73.247], [10.465, -73.251]] },
-  { id: '4', tipoRiesgo: 'inundacion', estado: 'resuelta', gestionadoPor: 'Admin Demo', actualizadoEn: '2026-10-02T16:30:00', area: [[10.457, -73.264], [10.459, -73.259], [10.454, -73.258], [10.453, -73.262]] },
-], 'actualizadoEn')
+export const aZona = (z: ZonaApi): Zona => ({
+  id: z.id,
+  nombre: z.nombre,
+  tipoRiesgo: (z.tipo_riesgo as TipoRiesgo) ?? 'otro',
+  nivel: (z.nivel as NivelRiesgo) ?? 'medio',
+  estado: (z.estado as EstadoZona) ?? 'activa',
+  descripcion: z.descripcion ?? '',
+  lat: z.zona.lat,
+  lng: z.zona.lng,
+  radio: z.zona.radio_m,
+})
 
-export async function listarZonas(): Promise<ZonaPeligrosa[]> {
+// Datos de prueba, SOLO para desarrollo de la interfaz (VITE_USE_MOCK=true).
+let mock: Zona[] = [
+  { id: '1', nombre: 'Ribera del río, sector norte', tipoRiesgo: 'inundacion', nivel: 'alto', estado: 'activa', descripcion: 'Zona baja que se inunda con las crecidas del río.', lat: 10.4792, lng: -73.2561, radio: 700 },
+  { id: '2', nombre: 'Ladera La Esperanza', tipoRiesgo: 'deslizamiento', nivel: 'alto', estado: 'activa', descripcion: 'Terreno inestable con antecedentes de derrumbes.', lat: 10.4905, lng: -73.2702, radio: 550 },
+  { id: '3', nombre: 'Barrio El Prado (parte baja)', tipoRiesgo: 'inundacion', nivel: 'medio', estado: 'en_monitoreo', descripcion: 'Acumulación de agua en calles tras lluvias fuertes.', lat: 10.4558, lng: -73.2611, radio: 450 },
+  { id: '4', nombre: 'Zona rural San Cristóbal', tipoRiesgo: 'deslizamiento', nivel: 'medio', estado: 'activa', descripcion: 'Vía con riesgo de caída de rocas en temporada de lluvias.', lat: 10.4421, lng: -73.2294, radio: 800 },
+  { id: '5', nombre: 'Sector centro nocturno', tipoRiesgo: 'seguridad', nivel: 'bajo', estado: 'en_monitoreo', descripcion: 'Aumento de hurtos en horas de la noche.', lat: 10.4701, lng: -73.2488, radio: 350 },
+  { id: '6', nombre: 'Pastizales del borde urbano', tipoRiesgo: 'incendio', nivel: 'medio', estado: 'inactiva', descripcion: 'Riesgo de incendio forestal en temporada seca.', lat: 10.4655, lng: -73.2386, radio: 600 },
+]
+
+export async function listarZonas(): Promise<Zona[]> {
   if (USE_MOCK) return mock.map((z) => ({ ...z }))
 
-  // BACKEND: confirmar la ruta real. `area` llega como lista de [lat, lng]
-  // (o GeoJSON, en cuyo caso hay que convertirlo aquí; ojo: GeoJSON usa [lng, lat]).
-  return api<ZonaPeligrosa[]>('/admin/zonas-peligrosas')
+  const pagina = await api<Pagina<ZonaApi>>(`/zonas-peligrosas${consulta({ por_pagina: 100 })}`)
+  return pagina.items.map(aZona)
 }
 
-export async function crearZona(datos: NuevaZona): Promise<ZonaPeligrosa> {
+export async function crearZona(datos: DatosZona): Promise<Zona> {
   if (USE_MOCK) {
-    const nueva: ZonaPeligrosa = {
-      ...datos,
-      id: String(Date.now()),
-      estado: 'activa',
-      gestionadoPor: 'Admin Demo',
-      actualizadoEn: new Date().toISOString(),
-    }
+    const nueva: Zona = { ...datos, id: String(Date.now()) }
     mock = [nueva, ...mock]
     return { ...nueva }
   }
 
-  // BACKEND: endpoint para crear una zona. gestionado_por lo pone el backend con el usuario del token.
-  return api<ZonaPeligrosa>('/admin/zonas-peligrosas', { method: 'POST', body: JSON.stringify(datos) })
-}
-
-export async function cambiarEstadoZona(id: string, estado: EstadoZona): Promise<ZonaPeligrosa> {
-  if (USE_MOCK) {
-    mock = mock.map((z) => (z.id === id ? { ...z, estado, actualizadoEn: new Date().toISOString() } : z))
-    const zona = mock.find((z) => z.id === id)
-    if (!zona) throw new Error('Zona no encontrada')
-    return { ...zona }
+  const payload = {
+    nombre: datos.nombre,
+    tipo_riesgo: datos.tipoRiesgo,
+    nivel: datos.nivel,
+    descripcion: datos.descripcion || null,
+    estado: datos.estado,
+    zona: {
+      lat: datos.lat,
+      lng: datos.lng,
+      radio_m: datos.radio,
+    },
   }
 
-  // BACKEND: endpoint para marcar una zona como resuelta o volver a activarla.
-  return api<ZonaPeligrosa>(`/admin/zonas-peligrosas/${id}`, { method: 'PATCH', body: JSON.stringify({ estado }) })
+  const respuesta = await api<ZonaApi>('/zonas-peligrosas', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+  return aZona(respuesta)
+}
+
+export async function actualizarZona(id: string, cambios: Partial<DatosZona>): Promise<Zona> {
+  if (USE_MOCK) {
+    mock = mock.map((z) => (z.id === id ? { ...z, ...cambios } : z))
+    const actualizada = mock.find((z) => z.id === id)
+    if (!actualizada) throw new Error('Zona no encontrada')
+    return { ...actualizada }
+  }
+
+  const payload: Record<string, unknown> = {}
+  if (cambios.nombre !== undefined) payload.nombre = cambios.nombre
+  if (cambios.tipoRiesgo !== undefined) payload.tipo_riesgo = cambios.tipoRiesgo
+  if (cambios.nivel !== undefined) payload.nivel = cambios.nivel
+  if (cambios.descripcion !== undefined) payload.descripcion = cambios.descripcion || null
+  if (cambios.estado !== undefined) payload.estado = cambios.estado
+  if (cambios.lat !== undefined && cambios.lng !== undefined && cambios.radio !== undefined) {
+    payload.zona = {
+      lat: cambios.lat,
+      lng: cambios.lng,
+      radio_m: cambios.radio,
+    }
+  }
+
+  const respuesta = await api<ZonaApi>(`/zonas-peligrosas/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+  return aZona(respuesta)
 }

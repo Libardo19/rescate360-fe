@@ -10,14 +10,14 @@ class AppTextStyles {
   static const TextStyle logo = TextStyle(
     fontSize: 30,
     fontWeight: FontWeight.w800,
-    color: AppColors.textPrimary,
+    color: AppColors.primary,
     letterSpacing: 0.5,
   );
 
   static const TextStyle logoAccent = TextStyle(
     fontSize: 30,
     fontWeight: FontWeight.w800,
-    color: AppColors.primary,
+    color: AppColors.accent,
     letterSpacing: 0.5,
   );
 
@@ -54,12 +54,12 @@ class AppTextStyles {
   static const TextStyle button = TextStyle(
     fontSize: 15,
     fontWeight: FontWeight.w600,
-    color: AppColors.textPrimary,
+    color: Colors.white,
   );
 
   static const TextStyle link = TextStyle(
     fontSize: 13,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w700,
     color: AppColors.primary,
   );
 }

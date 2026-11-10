@@ -43,7 +43,9 @@ export function useRevelarAlBajar(contenedor: RefObject<HTMLElement | null>, cla
 
     const preparar = () => {
       raiz.querySelectorAll<HTMLElement>(SELECTOR).forEach((el) => {
-        if (el.dataset.revelar || el.closest(EXCLUIR)) return
+        // Los que ya aparecieron se dejan; los que siguen ocultos se vuelven a observar
+        // (en desarrollo React monta los efectos dos veces y el primer observador se desconecta).
+        if (el.dataset.revelar === 'visible' || el.closest(EXCLUIR)) return
         el.dataset.revelar = 'oculto'
         observador.observe(el)
       })

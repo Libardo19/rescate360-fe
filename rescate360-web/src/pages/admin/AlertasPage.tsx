@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Plus, X, Waves, Mountain, ShieldAlert, CloudRain, TriangleAlert, BellRing, History, type LucideIcon } from 'lucide-react'
-import CabeceraPanel, { botonCabeceraPrincipal } from '../../components/panel/CabeceraPanel'
+import { Plus, X, Waves, Mountain, ShieldAlert, CloudRain, TriangleAlert, Activity, type LucideIcon } from 'lucide-react'
 import { listarAlertas, crearAlerta, finalizarAlerta } from '../../services/alertas.service'
 import type { Alerta, NuevaAlerta, TipoAlerta } from '../../types/alerta'
 
@@ -10,6 +9,7 @@ const config: Record<TipoAlerta, { etiqueta: string; icono: LucideIcon; color: s
   deslizamiento: { etiqueta: 'Deslizamiento', icono: Mountain, color: 'bg-amber-100 text-amber-600' },
   seguridad: { etiqueta: 'Seguridad', icono: ShieldAlert, color: 'bg-red-100 text-red-600' },
   clima: { etiqueta: 'Clima', icono: CloudRain, color: 'bg-slate-200 text-slate-600' },
+  sismo: { etiqueta: 'Sismo', icono: Activity, color: 'bg-rose-100 text-rose-600' },
   otro: { etiqueta: 'Otro', icono: TriangleAlert, color: 'bg-violet-100 text-violet-600' },
 }
 
@@ -98,30 +98,26 @@ export default function AlertasPage() {
 
   return (
     <div>
-      <CabeceraPanel
-        seccion="Operación"
-        titulo="Alertas"
-        descripcion="Publica y gestiona las alertas que reciben los ciudadanos en la app."
-        acciones={
-          <button onClick={abrirModal} className={botonCabeceraPrincipal}>
-            <Plus size={16} /> Nueva alerta
-          </button>
-        }
-        estadisticas={[
-          {
-            titulo: 'Activas',
-            valor: cantidadActivas,
-            icono: BellRing,
-            pie: 'Visibles para la comunidad',
-            tono: cantidadActivas > 0 ? 'aviso' : 'neutro',
-          },
-          { titulo: 'En historial', valor: alertas.length - cantidadActivas, icono: History, pie: 'Alertas finalizadas' },
-        ]}
-      />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-panel-text-muted">
+            <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+            Operación
+          </p>
+          <h1 className="mt-3 break-words text-[34px] font-semibold leading-[1] tracking-[-0.045em] sm:text-[52px] sm:tracking-[-0.05em]">Alertas</h1>
+          <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-panel-text-soft">Publica y gestiona las alertas para la comunidad.</p>
+        </div>
+        <button
+          onClick={abrirModal}
+          className="flex items-center justify-center gap-2 rounded-full bg-panel-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark"
+        >
+          <Plus size={16} /> Nueva alerta
+        </button>
+      </div>
 
-      {error && <p className="mb-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mt-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-      <div className="inline-flex rounded-full border border-panel-border bg-panel-card p-1 text-sm">
+      <div className="mt-6 inline-flex rounded-full border border-panel-border bg-panel-card p-1 text-sm">
         {(['activas', 'historial'] as const).map((p) => (
           <button
             key={p}
@@ -179,7 +175,7 @@ export default function AlertasPage() {
         >
           <form
             onSubmit={publicar}
-            className="panel-modal-enter my-auto w-full max-w-lg rounded-[28px] border border-panel-border bg-panel-card p-6 shadow-2xl"
+            className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl bg-panel-card p-6 shadow-2xl sm:max-h-[calc(100dvh-3rem)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between">
@@ -213,7 +209,6 @@ export default function AlertasPage() {
                 </label>
                 <input
                   id="titulo"
-                  autoFocus
                   value={form.titulo}
                   onChange={(e) => setForm({ ...form, titulo: e.target.value })}
                   placeholder="Ej: Alerta de inundación"

@@ -10,6 +10,7 @@ import {
   Search,
   Users,
   ClipboardList,
+  Network,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -36,4 +37,15 @@ export const menuAdmin: ItemMenu[] = [
   { ruta: '/admin/desaparecidos', etiqueta: 'Personas desaparecidas', icono: Search, grupo: 'Recursos', descripcion: 'Casos en búsqueda y encontrados' },
   { ruta: '/admin/usuarios', etiqueta: 'Usuarios', icono: Users, grupo: 'Administración', descripcion: 'Voluntarios y administradores' },
   { ruta: '/admin/auditoria', etiqueta: 'Auditoría', icono: ClipboardList, grupo: 'Administración', descripcion: 'Historial de cada cambio' },
+]
+
+// Super admin: el mismo panel, con alcance global. Reutiliza las páginas del administrador
+// (el backend le devuelve todo) y suma Organizaciones.
+export const menuSuperAdmin: ItemMenu[] = [
+  { ruta: '/superadmin', etiqueta: 'Inicio', icono: LayoutDashboard, fin: true, grupo: 'General', principal: true, descripcion: 'Resumen global del sistema' },
+  { ruta: '/superadmin/organizaciones', etiqueta: 'Organizaciones', icono: Network, grupo: 'Administración', principal: true, descripcion: 'Entidades y sus administradores' },
+  { ruta: '/superadmin/usuarios', etiqueta: 'Usuarios', icono: Users, grupo: 'Administración', principal: true, descripcion: 'Todos los usuarios del sistema' },
+  { ruta: '/superadmin/solicitudes', etiqueta: 'Solicitudes de ayuda', corta: 'Solicitudes', icono: LifeBuoy, grupo: 'Operación', principal: true, descripcion: 'Solicitudes de todas las organizaciones' },
+  { ruta: '/superadmin/reportes', etiqueta: 'Reportes', icono: FileWarning, grupo: 'Operación', descripcion: 'Reportes de todas las organizaciones' },
+  { ruta: '/superadmin/mapa', etiqueta: 'Mapa operativo', icono: MapaIcono, grupo: 'Operación', descripcion: 'Todo lo que pasa, en un mapa' },
 ]

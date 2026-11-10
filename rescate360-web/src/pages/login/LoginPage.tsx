@@ -3,6 +3,9 @@ import { Link, useNavigate } from 'react-router-dom'
 import { motion, useReducedMotion } from 'motion/react'
 import { Eye, EyeOff, ArrowLeft, ArrowRight, Loader2, Moon, Sun, Lock } from 'lucide-react'
 import { login } from '../../services/auth.service'
+import { ApiError, borrarTokens } from '../../services/api'
+import RecuperarClave from './RecuperarClave'
+import type { LoginResponse } from '../../types/auth'
 import { useAuth } from '../../context/AuthContext'
 import EscudoPuntos from '../landing/components/EscudoPuntos'
 import { Etiqueta, useTema } from '../landing/components/comunes'
@@ -18,6 +21,7 @@ export default function LoginPage() {
   const [mensaje, setMensaje] = useState('')
   const [esError, setEsError] = useState(false)
   const [cargando, setCargando] = useState(false)
+  const [recuperando, setRecuperando] = useState(false)
   const navigate = useNavigate()
   const { iniciarSesion } = useAuth()
   const { tema, alternar } = useTema()
@@ -37,26 +41,44 @@ export default function LoginPage() {
     setCargando(true)
 
     try {
-      const { token, usuario } = await login({ email, password })
-      iniciarSesion(token, usuario)
+      const sesion = await login({ email, password })
+      const { rol } = sesion.usuario
 
-      if (usuario.rol === 'administrador') navigate('/admin')
-      else if (usuario.rol === 'super_admin') navigate('/superadmin')
-      else {
+      if (rol === 'administrador' || rol === 'super_admin') {
+        iniciarSesion(sesion)
+        navigate(rol === 'administrador' ? '/admin' : '/superadmin')
+      } else {
+        // Ciudadanos y voluntarios usan la app: no se guarda la sesión en el panel
+        borrarTokens()
         setEsError(true)
         setMensaje('Tu cuenta es para la app móvil. Descarga la app de RESCATE360.')
       }
-    } catch {
+    } catch (error) {
       setEsError(true)
-      setMensaje('Correo o contraseña incorrectos.')
+      // El backend explica el motivo: credenciales, cuenta bloqueada, sin activar u organización inactiva
+      setMensaje(error instanceof ApiError ? error.message : 'No se pudo conectar con el servidor. Intenta de nuevo.')
     } finally {
       setCargando(false)
     }
   }
 
   const recuperarClave = () => {
-    setEsError(false)
-    setMensaje('La recuperación de contraseña estará disponible cuando se conecte el servicio de autenticación.')
+    setMensaje('')
+    setRecuperando(true)
+  }
+
+  // Tras cambiar la contraseña el backend ya devuelve la sesión: entra directo si es del panel
+  const claveRecuperada = (sesion: LoginResponse) => {
+    setRecuperando(false)
+    const { rol } = sesion.usuario
+    if (rol === 'administrador' || rol === 'super_admin') {
+      iniciarSesion(sesion)
+      navigate(rol === 'administrador' ? '/admin' : '/superadmin')
+    } else {
+      borrarTokens()
+      setEsError(false)
+      setMensaje('Tu contraseña cambió. Ingresa con ella en la app de RESCATE360.')
+    }
   }
 
   const entrar = (retraso: number) => ({
@@ -252,6 +274,9 @@ export default function LoginPage() {
           © 2026 RESCATE360 · Emergencias <a href="tel:123" className="text-brand">123</a>
         </p>
       </main>
+      {recuperando && (
+        <RecuperarClave emailInicial={email} onCerrar={() => setRecuperando(false)} onListo={claveRecuperada} />
+      )}
     </div>
   )
 }

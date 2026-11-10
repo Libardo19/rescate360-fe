@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
-import { Bell, ChevronDown, Command, LayoutGrid, LogOut, Moon, Search, Sun } from 'lucide-react'
+import { Bell, ChevronDown, Command, KeyRound, LayoutGrid, LogOut, Moon, Search, Sun } from 'lucide-react'
+import CambiarClave from '../components/CambiarClave'
 import { useAuth } from '../context/AuthContext'
 import { listarOrganizaciones } from '../services/organizaciones.service'
 import { useTema, type Tema } from '../pages/landing/components/comunes'
@@ -71,6 +72,7 @@ export default function PanelLayout({ menu, titulo }: Props) {
   }
   const [paleta, setPaleta] = useState(false)
   const [menuUsuario, setMenuUsuario] = useState(false)
+  const [cambiandoClave, setCambiandoClave] = useState(false)
   const [nombreOrg, setNombreOrg] = useState('')
   const [conScroll, setConScroll] = useState(false)
   const { usuario, cerrarSesion } = useAuth()
@@ -86,6 +88,8 @@ export default function PanelLayout({ menu, titulo }: Props) {
   const principales = menu.filter((m) => m.principal)
   const secundarios = menu.filter((m) => !m.principal)
   const secundarioActivo = secundarios.find((m) => esRutaActiva(m, location.pathname))
+  // Secciones que no caben en el dock móvil (solo 4): se resalta el botón de "todas".
+  const enDockOculto = !principales.slice(0, 4).some((m) => esRutaActiva(m, location.pathname))
 
   useEffect(() => {
     if (!usuario?.organizacion_id) return
@@ -155,7 +159,7 @@ export default function PanelLayout({ menu, titulo }: Props) {
         <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-3">
           {/* Marca + organización */}
           <Link
-            to="/admin"
+            to={menu[0]?.ruta ?? '/'}
             className={`flex h-12 items-center gap-2.5 rounded-full pl-1.5 pr-4 transition ${vidrio} ${conScroll ? 'bg-panel-card/90' : ''}`}
             aria-label="Inicio del panel"
           >
@@ -326,6 +330,15 @@ export default function PanelLayout({ menu, titulo }: Props) {
                       </p>
                     </div>
                     <button
+                      onClick={() => {
+                        setMenuUsuario(false)
+                        setCambiandoClave(true)
+                      }}
+                      className="flex w-full items-center gap-2 rounded-2xl px-3 py-2.5 text-sm text-panel-text-soft transition hover:bg-panel-bg hover:text-panel-text"
+                    >
+                      <KeyRound size={15} /> Cambiar contraseña
+                    </button>
+                    <button
                       onClick={salir}
                       className="flex w-full items-center gap-2 rounded-2xl px-3 py-2.5 text-sm text-panel-text-soft transition hover:bg-panel-bg hover:text-panel-text"
                     >
@@ -376,16 +389,17 @@ export default function PanelLayout({ menu, titulo }: Props) {
           onClick={() => setPaleta(true)}
           aria-label="Todas las secciones"
           className={`relative isolate flex h-12 w-12 items-center justify-center rounded-full transition-colors ${
-            secundarioActivo || location.pathname.startsWith('/admin/alertas') ? 'text-white dark:text-navy-950' : 'text-panel-text-soft'
+            enDockOculto ? 'text-white dark:text-navy-950' : 'text-panel-text-soft'
           }`}
         >
-          <Pildora grupo="dock" activo={!!secundarioActivo || location.pathname.startsWith('/admin/alertas')}>
+          <Pildora grupo="dock" activo={enDockOculto}>
             <LayoutGrid size={19} strokeWidth={1.9} />
           </Pildora>
         </button>
       </nav>
 
       <PaletaComandos abierta={paleta} onCerrar={() => setPaleta(false)} menu={menu} />
+      {cambiandoClave && <CambiarClave onCerrar={() => setCambiandoClave(false)} />}
     </div>
   )
 }

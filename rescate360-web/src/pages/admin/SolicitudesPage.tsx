@@ -1,35 +1,41 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Search, X, Sparkles, UserCog, Smartphone, Activity, ArrowRightLeft, LifeBuoy, Siren, Timer } from 'lucide-react'
-import CabeceraPanel from '../../components/panel/CabeceraPanel'
-import Semaforo from '../../components/panel/Semaforo'
-import { useAhora, minutosDesde, UMBRAL_CRITICO_MIN } from '../../utils/espera'
-import { listarSolicitudes, actualizarSolicitud } from '../../services/solicitudes.service'
+import { Search, X, Sparkles, UserCog, Building2, Siren } from 'lucide-react'
+import { listarSolicitudes, actualizarSolicitud, asignarOrganizacion } from '../../services/solicitudes.service'
 import { listarOrganizaciones } from '../../services/organizaciones.service'
+import { mensajeDeError } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
-import { prioridadEfectiva, organizacionEfectiva } from '../../types/solicitud'
-import type {
-  Solicitud,
-  CambiosSolicitud,
-  EstadoSolicitud,
-  OrigenSolicitud,
-  Prioridad,
-  PrioridadIA,
-} from '../../types/solicitud'
+import { useConsultaPeriodica } from '../../hooks/useConsultaPeriodica'
+import Semaforo from '../../components/panel/Semaforo'
+import { useAhora, minutosDesde } from '../../utils/espera'
+import CeldaVoluntario from '../../components/CeldaVoluntario'
 import type { Organizacion } from '../../types/organizacion'
+import { prioridadEfectiva } from '../../types/solicitud'
+import type { Solicitud, CambiosSolicitud, EstadoSolicitud, Prioridad, TipoAyuda } from '../../types/solicitud'
+
+const etiquetaTipo: Record<TipoAyuda, string> = {
+  medica: 'Médica',
+  alimentaria: 'Alimentaria',
+  refugio: 'Refugio',
+  rescate: 'Rescate',
+  ropa: 'Ropa',
+  otro: 'Otro',
+}
 
 const etiquetaEstado: Record<EstadoSolicitud, string> = {
   pendiente: 'Pendiente',
-  en_atencion: 'En atención',
-  resuelta: 'Resuelta',
+  en_proceso: 'En proceso',
+  atendida: 'Atendida',
+  cancelada: 'Cancelada',
 }
 
 const colorEstado: Record<EstadoSolicitud, string> = {
   pendiente: 'bg-amber-100 text-amber-700',
-  en_atencion: 'bg-blue-100 text-blue-700',
-  resuelta: 'bg-green-100 text-green-700',
+  en_proceso: 'bg-blue-100 text-blue-700',
+  atendida: 'bg-green-100 text-green-700',
+  cancelada: 'bg-slate-200 text-slate-600',
 }
 
-const etiquetaPrioridad: Record<PrioridadIA, string> = {
+const etiquetaPrioridad: Record<Prioridad, string> = {
   critica: 'Crítica',
   alta: 'Alta',
   media: 'Media',
@@ -37,7 +43,7 @@ const etiquetaPrioridad: Record<PrioridadIA, string> = {
   pendiente: 'Sin clasificar',
 }
 
-const colorPrioridad: Record<PrioridadIA, string> = {
+const colorPrioridad: Record<Prioridad, string> = {
   critica: 'bg-red-600 text-white',
   alta: 'bg-red-100 text-red-700',
   media: 'bg-amber-100 text-amber-700',
@@ -45,15 +51,8 @@ const colorPrioridad: Record<PrioridadIA, string> = {
   pendiente: 'bg-slate-200 text-slate-600',
 }
 
-// Las que la IA aún no clasificó van primero: hay que revisarlas a mano.
-const peso: Record<PrioridadIA, number> = { pendiente: 0, critica: 1, alta: 2, media: 3, baja: 4 }
-
-const origen: Record<OrigenSolicitud, { etiqueta: string; icono: typeof Smartphone }> = {
-  manual: { etiqueta: 'Manual', icono: Smartphone },
-  acelerometro: { etiqueta: 'Detección automática', icono: Activity },
-}
-
-const prioridadesManuales: Prioridad[] = ['critica', 'alta', 'media', 'baja']
+// Lo crítico primero; lo que la IA no ha clasificado va justo después, para que alguien lo revise
+const peso: Record<Prioridad, number> = { critica: 0, pendiente: 1, alta: 2, media: 3, baja: 4 }
 
 const formatearFecha = (iso: string) =>
   new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
@@ -62,34 +61,36 @@ const campo =
   'rounded-xl border border-panel-border bg-panel-card px-3.5 py-2.5 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
 
 export default function SolicitudesPage() {
-  const { usuario } = useAuth()
-  const [solicitudes, setSolicitudes] = useState<Solicitud[] | null>(null)
-  // Reloj del semáforo: se actualiza solo cada 30 s.
+  // Reloj del semáforo de espera: se actualiza solo cada 30 s.
   const ahora = useAhora()
-  const [organizaciones, setOrganizaciones] = useState<Organizacion[]>([])
+  const [solicitudes, setSolicitudes] = useState<Solicitud[] | null>(null)
   const [error, setError] = useState('')
-  const [aviso, setAviso] = useState('')
   const [busqueda, setBusqueda] = useState('')
   const [filtroEstado, setFiltroEstado] = useState<'todos' | EstadoSolicitud>('todos')
-  const [filtroPrioridad, setFiltroPrioridad] = useState<'todas' | PrioridadIA>('todas')
-  const [filtroOrigen, setFiltroOrigen] = useState<'todos' | OrigenSolicitud>('todos')
+  const [filtroPrioridad, setFiltroPrioridad] = useState<'todas' | Prioridad>('todas')
+  const [filtroTipo, setFiltroTipo] = useState<'todos' | TipoAyuda>('todos')
   const [seleccionada, setSeleccionada] = useState<Solicitud | null>(null)
-  const [destino, setDestino] = useState('')
   const [guardando, setGuardando] = useState(false)
+  const { usuario } = useAuth()
+  const esSuperAdmin = usuario?.rol === 'super_admin'
+  const [organizaciones, setOrganizaciones] = useState<Organizacion[]>([])
+
+  // Se refresca sola: cuando el voluntario finaliza, el admin la ve "Atendida" sin recargar
+  useConsultaPeriodica(() => {
+    listarSolicitudes()
+      .then((lista) => {
+        setSolicitudes(lista)
+        setSeleccionada((actual) => (actual ? (lista.find((s) => s.id === actual.id) ?? actual) : actual))
+      })
+      .catch((e) => setError(mensajeDeError(e, 'No se pudieron cargar las solicitudes.')))
+  })
 
   useEffect(() => {
-    listarSolicitudes()
-      .then(setSolicitudes)
-      .catch(() => setError('No se pudieron cargar las solicitudes.'))
-    listarOrganizaciones()
-      .then(setOrganizaciones)
-      .catch(() => setOrganizaciones([]))
-  }, [])
+    if (esSuperAdmin) listarOrganizaciones().then(setOrganizaciones).catch(() => {})
+  }, [esSuperAdmin])
 
   const nombreOrganizacion = (id: string | null) =>
-    organizaciones.find((o) => o.id === id)?.nombre ?? 'Sin asignar'
-
-  const otrasOrganizaciones = organizaciones.filter((o) => o.id !== usuario?.organizacion_id)
+    id ? (organizaciones.find((o) => o.id === id)?.nombre ?? 'Asignada') : 'Sin organización'
 
   const filtradas = useMemo(() => {
     if (!solicitudes) return []
@@ -103,106 +104,55 @@ export default function SolicitudesPage() {
           s.solicitante.toLowerCase().includes(texto)
         const coincideEstado = filtroEstado === 'todos' || s.estado === filtroEstado
         const coincidePrioridad = filtroPrioridad === 'todas' || prioridadEfectiva(s) === filtroPrioridad
-        const coincideOrigen = filtroOrigen === 'todos' || s.origen === filtroOrigen
-        return coincideTexto && coincideEstado && coincidePrioridad && coincideOrigen
+        const coincideTipo = filtroTipo === 'todos' || s.tipo === filtroTipo
+        return coincideTexto && coincideEstado && coincidePrioridad && coincideTipo
       })
       .sort((a, b) => {
         const porPrioridad = peso[prioridadEfectiva(a)] - peso[prioridadEfectiva(b)]
         return porPrioridad !== 0 ? porPrioridad : b.fecha.localeCompare(a.fecha)
       })
-  }, [solicitudes, busqueda, filtroEstado, filtroPrioridad, filtroOrigen])
+  }, [solicitudes, busqueda, filtroEstado, filtroPrioridad, filtroTipo])
 
-  const abrir = (s: Solicitud) => {
-    setDestino('')
-    setSeleccionada(s)
-  }
-
-  const aplicar = async (cambios: CambiosSolicitud) => {
-    if (!seleccionada) return
+  const guardar = async (accion: () => Promise<Solicitud>) => {
     setGuardando(true)
     setError('')
     try {
-      const actualizada = await actualizarSolicitud(seleccionada.id, cambios)
+      const actualizada = await accion()
       setSolicitudes((lista) => lista?.map((s) => (s.id === actualizada.id ? actualizada : s)) ?? null)
       setSeleccionada(actualizada)
-    } catch {
-      setError('No se pudo actualizar la solicitud.')
+    } catch (e) {
+      setError(mensajeDeError(e, 'No se pudo actualizar la solicitud.'))
     } finally {
       setGuardando(false)
     }
   }
 
-  // Al reasignarla, la solicitud pasa a la otra organización y este admin deja de tener acceso.
-  const reasignar = async () => {
-    if (!seleccionada || !destino) return
-    const nombre = nombreOrganizacion(destino)
-    if (!window.confirm(`¿Reasignar esta solicitud a ${nombre}? Dejará de aparecer en tu lista.`)) return
-    setGuardando(true)
-    setError('')
-    try {
-      await actualizarSolicitud(seleccionada.id, { organizacionManualId: destino })
-      setSolicitudes((lista) => lista?.filter((s) => s.id !== seleccionada.id) ?? null)
-      setSeleccionada(null)
-      setAviso(`La solicitud se reasignó a ${nombre}.`)
-    } catch {
-      setError('No se pudo reasignar la solicitud.')
-    } finally {
-      setGuardando(false)
-    }
+  const aplicar = (cambios: CambiosSolicitud) => {
+    if (seleccionada) guardar(() => actualizarSolicitud(seleccionada.id, cambios))
+  }
+
+  const enrutar = (organizacionId: string) => {
+    if (seleccionada && organizacionId) guardar(() => asignarOrganizacion(seleccionada.id, organizacionId))
   }
 
   if (error && !solicitudes) return <p className="text-panel-accent">{error}</p>
   if (!solicitudes) return <p className="text-panel-text-soft">Cargando…</p>
 
-  const abiertas = solicitudes.filter((s) => s.estado !== 'resuelta')
-  const urgentes = abiertas.filter((s) => ['critica', 'alta'].includes(prioridadEfectiva(s))).length
-  const sinClasificar = abiertas.filter((s) => prioridadEfectiva(s) === 'pendiente').length
-  // Pendientes (nadie las ha tomado) que llevan más de 30 min esperando.
-  const demoradas = solicitudes.filter((s) => s.estado === 'pendiente' && minutosDesde(s.fecha, ahora) >= UMBRAL_CRITICO_MIN).length
-
   return (
     <div>
-      <CabeceraPanel
-        seccion="Operación"
-        titulo="Solicitudes de ayuda"
-        descripcion="Se ordenan por prioridad. La IA propone una, pero la que tú definas manualmente prevalece."
-        estadisticas={[
-          { titulo: 'Abiertas', valor: abiertas.length, icono: LifeBuoy, pie: 'Pendientes o en atención' },
-          {
-            titulo: 'Urgentes',
-            valor: urgentes,
-            icono: Siren,
-            pie: 'Prioridad crítica o alta',
-            tono: urgentes > 0 ? 'alerta' : 'bien',
-          },
-          {
-            titulo: 'Sin clasificar',
-            valor: sinClasificar,
-            icono: Sparkles,
-            pie: 'La IA aún no las evaluó',
-            tono: sinClasificar > 0 ? 'aviso' : 'neutro',
-          },
-          {
-            titulo: 'Sin atender +30 min',
-            valor: demoradas,
-            icono: Timer,
-            pie: 'Pendientes que nadie ha tomado',
-            tono: demoradas > 0 ? 'alerta' : 'bien',
-          },
-        ]}
-      />
+      <p className="flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-panel-text-muted">
+        <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+        Operación
+      </p>
+      <h1 className="mt-3 break-words text-[34px] font-semibold leading-[1] tracking-[-0.045em] sm:text-[52px] sm:tracking-[-0.05em]">Solicitudes de ayuda</h1>
+      <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-panel-text-soft">
+        Las solicitudes se ordenan por prioridad. La IA propone una prioridad, pero la que tú definas manualmente
+        prevalece.
+      </p>
 
-      {error && <p className="mb-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-      {aviso && (
-        <p className="mb-3 flex items-center justify-between gap-3 rounded-2xl bg-green-50 px-3 py-2 text-sm text-green-700">
-          {aviso}
-          <button onClick={() => setAviso('')} aria-label="Cerrar aviso">
-            <X size={14} />
-          </button>
-        </p>
-      )}
+      {error && <p className="mt-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-      <div className="flex flex-col gap-3 lg:flex-row">
+      <div className="mt-6 flex flex-col gap-3 lg:flex-row">
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-panel-text-muted" />
           <input
@@ -214,7 +164,7 @@ export default function SolicitudesPage() {
         </div>
         <select
           value={filtroPrioridad}
-          onChange={(e) => setFiltroPrioridad(e.target.value as 'todas' | PrioridadIA)}
+          onChange={(e) => setFiltroPrioridad(e.target.value as 'todas' | Prioridad)}
           className={campo}
         >
           <option value="todas">Todas las prioridades</option>
@@ -237,14 +187,14 @@ export default function SolicitudesPage() {
           ))}
         </select>
         <select
-          value={filtroOrigen}
-          onChange={(e) => setFiltroOrigen(e.target.value as 'todos' | OrigenSolicitud)}
+          value={filtroTipo}
+          onChange={(e) => setFiltroTipo(e.target.value as 'todos' | TipoAyuda)}
           className={campo}
         >
-          <option value="todos">Todos los orígenes</option>
-          {(Object.keys(origen) as OrigenSolicitud[]).map((o) => (
-            <option key={o} value={o}>
-              {origen[o].etiqueta}
+          <option value="todos">Todos los tipos</option>
+          {Object.entries(etiquetaTipo).map(([valor, etiqueta]) => (
+            <option key={valor} value={valor}>
+              {etiqueta}
             </option>
           ))}
         </select>
@@ -259,10 +209,11 @@ export default function SolicitudesPage() {
           <thead className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">
             <tr>
               <th className="px-5 py-3">Prioridad</th>
+              <th className="px-5 py-3">Tipo</th>
               <th className="px-5 py-3">Descripción</th>
-              <th className="hidden px-5 py-3 2xl:table-cell">Origen</th>
               <th className="px-5 py-3">Solicitante</th>
               <th className="px-5 py-3">Estado</th>
+              <th className="px-5 py-3">Voluntario</th>
               <th className="px-5 py-3">Espera</th>
               <th className="px-5 py-3" />
             </tr>
@@ -270,14 +221,13 @@ export default function SolicitudesPage() {
           <tbody>
             {filtradas.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-5 py-10 text-center text-panel-text-soft">
+                <td colSpan={8} className="px-5 py-10 text-center text-panel-text-soft">
                   No hay solicitudes con esos filtros.
                 </td>
               </tr>
             )}
             {filtradas.map((s) => {
               const prioridad = prioridadEfectiva(s)
-              const { etiqueta, icono: IconoOrigen } = origen[s.origen]
               return (
                 <tr key={s.id} className="border-t border-panel-border">
                   <td className="px-5 py-3">
@@ -285,17 +235,22 @@ export default function SolicitudesPage() {
                       {etiquetaPrioridad[prioridad]}
                     </span>
                     <p className="mt-1 text-[11px] text-panel-text-muted">
-                      {s.prioridadManual ? 'Manual' : 'Sugerida por IA'}
+                      {s.prioridadManual ? 'Manual' : s.prioridadIA === 'pendiente' ? 'Sin clasificar' : 'Sugerida por IA'}
                     </p>
+                  </td>
+                  <td className="px-5 py-3 font-medium">
+                    {s.origen === 'sos' ? (
+                      <span className="inline-flex items-center gap-1 text-red-600">
+                        <Siren size={14} /> SOS
+                      </span>
+                    ) : (
+                      etiquetaTipo[s.tipo]
+                    )}
+                    {esSuperAdmin && <p className="text-[11px] font-normal text-panel-text-muted">{nombreOrganizacion(s.organizacionId)}</p>}
                   </td>
                   <td className="px-5 py-3">
                     <p className="max-w-xs truncate">{s.descripcion}</p>
                     <p className="text-xs text-panel-text-muted">{s.ubicacion}</p>
-                  </td>
-                  <td className="hidden px-5 py-3 text-panel-text-soft 2xl:table-cell">
-                    <span className="flex items-center gap-1.5 whitespace-nowrap">
-                      <IconoOrigen size={14} /> {etiqueta}
-                    </span>
                   </td>
                   <td className="px-5 py-3 text-panel-text-soft">{s.solicitante}</td>
                   <td className="px-5 py-3">
@@ -303,19 +258,19 @@ export default function SolicitudesPage() {
                       {etiquetaEstado[s.estado]}
                     </span>
                   </td>
+                  <td className="px-5 py-3">
+                    <CeldaVoluntario atencion={s.atencion} />
+                  </td>
                   <td className="whitespace-nowrap px-5 py-3">
-                    {/* Semáforo: solo cuenta mientras nadie ha tomado la solicitud. */}
-                    {s.estado === 'pendiente' ? (
-                      <Semaforo minutos={minutosDesde(s.fecha, ahora)} compacto />
-                    ) : (
-                      <span className="font-mono text-[11px] text-panel-text-muted">
-                        {s.estado === 'en_atencion' ? 'En atención' : 'Cerrada'}
-                      </span>
-                    )}
-                    <p className="mt-1 text-[11px] text-panel-text-muted">{formatearFecha(s.fecha)}</p>
+                    {/* Semáforo: cuenta mientras nadie ha tomado la solicitud (verde, ámbar +15 min, rojo +30 min). */}
+                    {s.estado === 'pendiente' && <Semaforo minutos={minutosDesde(s.fecha, ahora)} compacto />}
+                    <p className={`text-[11px] text-panel-text-muted ${s.estado === 'pendiente' ? 'mt-1' : ''}`}>{formatearFecha(s.fecha)}</p>
                   </td>
                   <td className="px-5 py-3 text-right">
-                    <button onClick={() => abrir(s)} className="text-sm font-semibold text-panel-primary hover:underline">
+                    <button
+                      onClick={() => setSeleccionada(s)}
+                      className="text-sm font-semibold text-panel-primary hover:underline"
+                    >
                       Gestionar
                     </button>
                   </td>
@@ -332,20 +287,15 @@ export default function SolicitudesPage() {
           onClick={() => setSeleccionada(null)}
         >
           <div
-            className="panel-modal-enter my-auto w-full max-w-lg rounded-[28px] border border-panel-border bg-panel-card p-6 shadow-2xl"
+            className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl bg-panel-card p-6 shadow-2xl sm:max-h-[calc(100dvh-3rem)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-xl font-semibold tracking-[-0.02em]">Solicitud de ayuda</h2>
-                <p className="mt-1 text-xs text-panel-text-muted">
-                  {formatearFecha(seleccionada.fecha)} · {origen[seleccionada.origen].etiqueta}
-                  {seleccionada.estado === 'pendiente' && (
-                    <span className="ml-2 inline-block align-middle">
-                      <Semaforo minutos={minutosDesde(seleccionada.fecha, ahora)} />
-                    </span>
-                  )}
-                </p>
+                <h2 className="text-xl font-semibold tracking-[-0.02em]">
+                  Ayuda {etiquetaTipo[seleccionada.tipo].toLowerCase()}
+                </h2>
+                <p className="mt-1 text-xs text-panel-text-muted">{formatearFecha(seleccionada.fecha)}</p>
               </div>
               <button onClick={() => setSeleccionada(null)} aria-label="Cerrar">
                 <X size={20} />
@@ -370,17 +320,12 @@ export default function SolicitudesPage() {
             </dl>
 
             <div className="mt-5 rounded-xl bg-panel-bg p-4 text-sm">
-              <p className="flex flex-wrap items-center gap-2 font-semibold">
+              <p className="flex items-center gap-2 font-semibold">
                 <Sparkles size={16} className="text-panel-info" />
                 Sugerencia de la IA:
                 <span className={`rounded-full px-2 py-0.5 text-xs ${colorPrioridad[seleccionada.prioridadIA]}`}>
                   {etiquetaPrioridad[seleccionada.prioridadIA]}
                 </span>
-                {seleccionada.confianzaIA !== null && (
-                  <span className="text-xs font-normal text-panel-text-muted">
-                    {Math.round(seleccionada.confianzaIA * 100)}% de confianza
-                  </span>
-                )}
               </p>
               <p className="mt-1 text-panel-text-soft">{seleccionada.motivoIA}</p>
             </div>
@@ -390,7 +335,7 @@ export default function SolicitudesPage() {
                 <UserCog size={16} className="text-panel-primary" /> Prioridad manual
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
-                {prioridadesManuales.map((p) => (
+                {(['critica', 'alta', 'media', 'baja'] as Prioridad[]).map((p) => (
                   <button
                     key={p}
                     disabled={guardando}
@@ -404,17 +349,35 @@ export default function SolicitudesPage() {
                     {etiquetaPrioridad[p]}
                   </button>
                 ))}
-                {seleccionada.prioridadManual && (
-                  <button
-                    disabled={guardando}
-                    onClick={() => aplicar({ prioridadManual: null })}
-                    className="rounded-lg px-3 py-2 text-sm text-panel-primary hover:underline disabled:opacity-50"
-                  >
-                    Usar la de la IA
-                  </button>
-                )}
               </div>
             </div>
+
+            {esSuperAdmin && (
+              <div className="mt-5">
+                <label htmlFor="organizacion" className="flex items-center gap-2 text-sm font-semibold">
+                  <Building2 size={16} className="text-panel-primary" /> Organización que la atiende
+                </label>
+                <select
+                  id="organizacion"
+                  value={seleccionada.organizacionId ?? ''}
+                  disabled={guardando}
+                  onChange={(e) => enrutar(e.target.value)}
+                  className={`${campo} mt-2 w-full`}
+                >
+                  <option value="" disabled>
+                    Sin organización: elige una
+                  </option>
+                  {organizaciones
+                    .filter((o) => o.activa)
+                    .map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.nombre}
+                      </option>
+                    ))}
+                </select>
+                <p className="mt-1 text-xs text-panel-text-muted">Al asignarla, su administrador y sus voluntarios la ven y la pueden tomar.</p>
+              </div>
+            )}
 
             <div className="mt-5">
               <label htmlFor="estado" className="text-sm font-semibold">
@@ -433,40 +396,6 @@ export default function SolicitudesPage() {
                   </option>
                 ))}
               </select>
-            </div>
-
-            <div className="mt-5 border-t border-panel-border pt-5">
-              <p className="flex items-center gap-2 text-sm font-semibold">
-                <ArrowRightLeft size={16} className="text-panel-primary" /> Organización
-              </p>
-              <p className="mt-1 text-xs text-panel-text-muted">
-                Asignada a {nombreOrganizacion(organizacionEfectiva(seleccionada))}
-                {seleccionada.organizacionManualId ? ' (reasignada manualmente)' : ''}. Si otra entidad debe
-                atenderla, reasígnala.
-              </p>
-              <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-                <select
-                  aria-label="Organización destino"
-                  value={destino}
-                  disabled={guardando}
-                  onChange={(e) => setDestino(e.target.value)}
-                  className={`${campo} flex-1`}
-                >
-                  <option value="">Elegir organización…</option>
-                  {otrasOrganizaciones.map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {o.nombre}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  disabled={guardando || !destino}
-                  onClick={reasignar}
-                  className="rounded-lg border border-panel-primary px-4 py-2 text-sm font-semibold text-panel-primary transition hover:bg-panel-bg disabled:opacity-40"
-                >
-                  Reasignar
-                </button>
-              </div>
             </div>
           </div>
         </div>

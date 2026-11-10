@@ -17,7 +17,6 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { listarCentros, crearCentro, actualizarCentro } from '../../services/centros.service'
-import CabeceraPanel, { botonCabeceraPrincipal } from '../../components/panel/CabeceraPanel'
 import type { Centro, DatosCentro, EstadoCentro, TipoCentro } from '../../types/centro'
 
 const CENTRO_MAPA: [number, number] = [10.4631, -73.2532]
@@ -83,6 +82,11 @@ export default function CentrosPage() {
   const [form, setForm] = useState<FormCentro>(formVacio)
   const [errorForm, setErrorForm] = useState('')
   const [guardando, setGuardando] = useState(false)
+
+  const enfocarCentroEnMapa = (centro: Centro) => {
+    setEnfocado(centro)
+    document.getElementById('centros-map')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   useEffect(() => {
     listarCentros()
@@ -195,28 +199,52 @@ export default function CentrosPage() {
   if (error && !centros) return <p className="text-panel-accent">{error}</p>
   if (!centros) return <p className="text-panel-text-soft">Cargando…</p>
 
+  const tarjetas = [
+    { valor: resumen.activos, titulo: 'Centros de ayuda', pie: 'Activos', icono: House, color: 'bg-green-600', pieColor: 'text-green-600' },
+    { valor: resumen.albergues, titulo: 'Albergues', pie: 'Disponibles', icono: Users, color: 'bg-blue-500', pieColor: 'text-blue-600' },
+    { valor: resumen.comedores, titulo: 'Comedores', pie: 'En operación', icono: Utensils, color: 'bg-orange-500', pieColor: 'text-orange-600' },
+    { valor: resumen.medicos, titulo: 'Puestos médicos', pie: 'Disponibles', icono: HeartPulse, color: 'bg-violet-500', pieColor: 'text-violet-600' },
+  ]
+
   return (
     <div>
-      <CabeceraPanel
-        seccion="Recursos"
-        titulo="Centros de ayuda"
-        descripcion="Albergues, comedores, puestos médicos y centros de acopio que ven los ciudadanos en la app."
-        acciones={
-          <button onClick={abrirCrear} className={botonCabeceraPrincipal}>
-            <Plus size={16} /> Nuevo centro
-          </button>
-        }
-        estadisticas={[
-          { titulo: 'Centros activos', valor: resumen.activos, icono: House, pie: `De ${centros.length} registrados` },
-          { titulo: 'Albergues', valor: resumen.albergues, icono: Users, pie: 'Disponibles' },
-          { titulo: 'Comedores', valor: resumen.comedores, icono: Utensils, pie: 'Disponibles' },
-          { titulo: 'Puestos médicos', valor: resumen.medicos, icono: HeartPulse, pie: 'Disponibles' },
-        ]}
-      />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-panel-text-muted">
+            <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+            Recursos
+          </p>
+          <h1 className="mt-3 break-words text-[34px] font-semibold leading-[1] tracking-[-0.045em] sm:text-[52px] sm:tracking-[-0.05em]">Centros de ayuda</h1>
+          <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-panel-text-soft">
+            Encuentra los centros de ayuda más cercanos o consulta la lista completa.
+          </p>
+        </div>
+        <button
+          onClick={abrirCrear}
+          className="flex items-center justify-center gap-2 rounded-full bg-panel-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark"
+        >
+          <Plus size={16} /> Nuevo centro
+        </button>
+      </div>
 
-      {error && <p className="mb-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mt-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-      <div className="grid gap-6 2xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {tarjetas.map(({ valor, titulo, pie, icono: Icono, pieColor }) => (
+          <div key={titulo} className="flex items-center gap-4 rounded-3xl border border-panel-border bg-panel-card p-5">
+            <div className={`flex h-11 w-11 items-center justify-center rounded-2xl border border-panel-border text-panel-text-soft`}>
+              <Icono size={24} />
+            </div>
+            <div>
+              <p className="text-2xl font-extrabold">{valor}</p>
+              <p className="text-sm text-panel-text-soft">{titulo}</p>
+              <p className={`text-xs font-medium ${pieColor}`}>{pie}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <section className="min-w-0 rounded-3xl border border-panel-border bg-panel-card">
           <h2 className="px-5 pt-5 text-lg font-semibold tracking-[-0.02em]">Lista de centros de ayuda</h2>
 
@@ -276,7 +304,16 @@ export default function CentrosPage() {
                         </div>
                       </td>
                       <td className="px-5 py-3 text-panel-text-soft">{etiqueta}</td>
-                      <td className="hidden px-5 py-3 text-panel-text-soft md:table-cell">{c.ubicacion}</td>
+                      <td className="hidden px-5 py-3 text-panel-text-soft md:table-cell">
+                        <button
+                          type="button"
+                          onClick={() => enfocarCentroEnMapa(c)}
+                          aria-label={`Ver ${c.nombre} en el mapa`}
+                          className="text-left hover:text-panel-primary hover:underline"
+                        >
+                          {c.ubicacion}
+                        </button>
+                      </td>
                       <td className="px-5 py-3">
                         <span className={`rounded-full px-3 py-1 text-xs font-medium ${estados[c.estado].clase}`}>
                           {estados[c.estado].etiqueta}
@@ -285,7 +322,7 @@ export default function CentrosPage() {
                       <td className="px-5 py-3">
                         <div className="flex justify-end gap-1 text-panel-text-soft">
                           <button
-                            onClick={() => setEnfocado(c)}
+                            onClick={() => enfocarCentroEnMapa(c)}
                             title="Ver en el mapa"
                             aria-label="Ver en el mapa"
                             className="rounded p-2 hover:bg-panel-bg hover:text-panel-primary"
@@ -318,9 +355,9 @@ export default function CentrosPage() {
           </div>
         </section>
 
-        <section className="min-w-0 rounded-3xl border border-panel-border bg-panel-card p-5">
+        <section id="centros-map" className="relative z-0 isolate min-w-0 scroll-mt-4 rounded-3xl border border-panel-border bg-panel-card p-5">
           <h2 className="text-lg font-semibold tracking-[-0.02em]">Ubicación en el mapa</h2>
-          <div className="relative z-0 mt-4 overflow-hidden rounded-xl border border-panel-border">
+          <div className="mt-4 overflow-hidden rounded-xl border border-panel-border">
             <MapContainer center={CENTRO_MAPA} zoom={13} scrollWheelZoom className="h-[420px] w-full">
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -365,7 +402,7 @@ export default function CentrosPage() {
         >
           <form
             onSubmit={guardar}
-            className="panel-modal-enter my-auto w-full max-w-lg rounded-[28px] border border-panel-border bg-panel-card p-6 shadow-2xl"
+            className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl bg-panel-card p-6 shadow-2xl sm:max-h-[calc(100dvh-3rem)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between">
@@ -384,7 +421,6 @@ export default function CentrosPage() {
                 </label>
                 <input
                   id="nombre"
-                  autoFocus
                   value={form.nombre}
                   onChange={(e) => setForm({ ...form, nombre: e.target.value })}
                   placeholder="Ej: Colegio San José"

@@ -52,7 +52,8 @@ export default function PaletaComandos({ abierta, onCerrar, menu }: Props) {
         icono: m.icono,
         ruta: m.ruta,
       })),
-      ...ACCIONES,
+      // Solo las acciones cuya sección existe en el menú de este rol.
+      ...ACCIONES.filter((a) => menu.some((m) => m.ruta === a.ruta.split('?')[0])),
     ],
     [menu],
   )

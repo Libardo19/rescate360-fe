@@ -1,303 +1,296 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
-  Droplets,
-  Wheat,
-  Pill,
-  Shirt,
-  SprayCan,
-  BedDouble,
-  Package,
+  HandHeart,
+  Banknote,
+  Hourglass,
+  Megaphone,
+  Search,
   Plus,
-  ArrowDownToLine,
-  ArrowUpFromLine,
-  Building2,
-  PackageX,
-  Boxes,
+  X,
+  Check,
+  ShoppingBasket,
+  Shirt,
+  Pill,
+  Droplets,
+  Package,
   type LucideIcon,
 } from 'lucide-react'
-import { listarDonaciones, crearDonacion, actualizarCantidad } from '../../services/donaciones.service'
-import { listarCentros } from '../../services/centros.service'
-import type { Donacion, TipoDonacion } from '../../types/donacion'
-import type { Centro } from '../../types/centro'
-import Modal from '../../components/panel/Modal'
-import CabeceraPanel, { botonCabeceraPrincipal } from '../../components/panel/CabeceraPanel'
+import {
+  listarDonaciones,
+  listarCampanas,
+  crearCampana,
+  finalizarCampana,
+  marcarDonacionRecibida,
+} from '../../services/donaciones.service'
+import type { Donacion, Campana, CategoriaDonacion, EstadoDonacion } from '../../types/donacion'
 
-const tipos: Record<TipoDonacion, { etiqueta: string; icono: LucideIcon; clase: string; unidad: string }> = {
-  agua: { etiqueta: 'Agua', icono: Droplets, clase: 'bg-blue-100 text-blue-600', unidad: 'litros' },
-  alimentos: { etiqueta: 'Alimentos', icono: Wheat, clase: 'bg-amber-100 text-amber-700', unidad: 'kg' },
-  medicamentos: { etiqueta: 'Medicamentos', icono: Pill, clase: 'bg-violet-100 text-violet-600', unidad: 'cajas' },
-  ropa: { etiqueta: 'Ropa', icono: Shirt, clase: 'bg-pink-100 text-pink-600', unidad: 'prendas' },
-  higiene: { etiqueta: 'Higiene', icono: SprayCan, clase: 'bg-teal-100 text-teal-700', unidad: 'kits' },
-  cobijas: { etiqueta: 'Cobijas', icono: BedDouble, clase: 'bg-orange-100 text-orange-600', unidad: 'unidades' },
-  otro: { etiqueta: 'Otro', icono: Package, clase: 'bg-slate-200 text-slate-600', unidad: 'unidades' },
+const categorias: Record<CategoriaDonacion, { etiqueta: string; icono: LucideIcon; clase: string }> = {
+  alimentos: { etiqueta: 'Alimentos', icono: ShoppingBasket, clase: 'bg-blue-100 text-blue-600' },
+  ropa: { etiqueta: 'Ropa', icono: Shirt, clase: 'bg-violet-100 text-violet-600' },
+  medicamentos: { etiqueta: 'Medicamentos', icono: Pill, clase: 'bg-red-100 text-red-600' },
+  agua: { etiqueta: 'Agua', icono: Droplets, clase: 'bg-cyan-100 text-cyan-600' },
+  dinero: { etiqueta: 'Dinero', icono: Banknote, clase: 'bg-orange-100 text-orange-600' },
+  otro: { etiqueta: 'Otro', icono: Package, clase: 'bg-slate-200 text-slate-600' },
 }
 
-const unidadesSugeridas = ['unidades', 'litros', 'kg', 'cajas', 'paquetes', 'kits', 'prendas']
+const estados: Record<EstadoDonacion, { etiqueta: string; clase: string }> = {
+  recibida: { etiqueta: 'Recibida', clase: 'bg-green-100 text-green-700' },
+  en_proceso: { etiqueta: 'En proceso', clase: 'bg-amber-100 text-amber-700' },
+  entregada: { etiqueta: 'Entregada', clase: 'bg-blue-100 text-blue-700' },
+}
 
-const formatearFecha = (iso: string) =>
-  new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
+const moneda = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
+const numero = new Intl.NumberFormat('es-CO')
 
-const formatearNumero = (n: number) => n.toLocaleString('es-CO')
+const formatearFecha = (iso: string) => new Date(iso).toLocaleDateString('es-CO', { dateStyle: 'medium' })
 
 const campo =
   'w-full rounded-xl border border-panel-border bg-panel-card px-3.5 py-2.5 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
 
-interface FormNueva {
-  centroId: string
-  tipo: TipoDonacion
-  cantidad: string
+interface FormCampana {
+  titulo: string
+  descripcion: string
+  categoria: CategoriaDonacion
+  meta: string
   unidad: string
+  fechaFin: string
+}
+
+const formVacio: FormCampana = {
+  titulo: '',
+  descripcion: '',
+  categoria: 'alimentos',
+  meta: '',
+  unidad: 'kits',
+  fechaFin: '',
 }
 
 export default function DonacionesPage() {
   const [donaciones, setDonaciones] = useState<Donacion[] | null>(null)
-  const [centros, setCentros] = useState<Centro[]>([])
+  const [campanas, setCampanas] = useState<Campana[] | null>(null)
   const [error, setError] = useState('')
-  const [centroSel, setCentroSel] = useState<'todos' | string>('todos')
-  const [filtroTipo, setFiltroTipo] = useState<'todos' | TipoDonacion>('todos')
-
+  const [busqueda, setBusqueda] = useState('')
+  const [filtroCategoria, setFiltroCategoria] = useState<'todas' | CategoriaDonacion>('todas')
     // ?accion=nueva abre el formulario directamente (desde la paleta de comandos o el Inicio).
   const [params, setParams] = useSearchParams()
   const abrirDesdeUrl = params.get('accion') === 'nueva'
   useEffect(() => {
     if (abrirDesdeUrl) setParams({}, { replace: true })
   }, [abrirDesdeUrl, setParams])
-  const [nuevaAbierta, setNuevaAbierta] = useState(abrirDesdeUrl)
-  const [form, setForm] = useState<FormNueva>({ centroId: '', tipo: 'agua', cantidad: '', unidad: 'litros' })
-
-  const [ajuste, setAjuste] = useState<Donacion | null>(null)
-  const [movimiento, setMovimiento] = useState<'entrada' | 'salida'>('entrada')
-  const [cantidadAjuste, setCantidadAjuste] = useState('')
-
+  const [modalAbierto, setModalAbierto] = useState(abrirDesdeUrl)
+  const [form, setForm] = useState<FormCampana>(formVacio)
   const [errorForm, setErrorForm] = useState('')
   const [guardando, setGuardando] = useState(false)
+  const [ahora] = useState(() => Date.now())
 
   useEffect(() => {
-    Promise.all([listarDonaciones(), listarCentros()])
+    Promise.all([listarDonaciones(), listarCampanas()])
       .then(([d, c]) => {
         setDonaciones(d)
-        setCentros(c)
+        setCampanas(c)
       })
-      .catch(() => setError('No se pudo cargar el inventario de donaciones.'))
+      .catch(() => setError('No se pudieron cargar las donaciones.'))
   }, [])
 
-  const nombreCentro = (id: string) => centros.find((c) => c.id === id)?.nombre ?? 'Centro desconocido'
+  const filtradas = useMemo(() => {
+    if (!donaciones) return []
+    const texto = busqueda.trim().toLowerCase()
+    return donaciones
+      .filter((d) => {
+        const coincideTexto = !texto || d.descripcion.toLowerCase().includes(texto)
+        const coincideCategoria = filtroCategoria === 'todas' || d.categoria === filtroCategoria
+        return coincideTexto && coincideCategoria
+      })
+      .sort((a, b) => b.fecha.localeCompare(a.fecha))
+  }, [donaciones, busqueda, filtroCategoria])
 
-  // Solo se listan los centros que tienen al menos un registro, más el total.
-  const conteoPorCentro = useMemo(() => {
-    const conteo = new Map<string, number>()
-    donaciones?.forEach((d) => conteo.set(d.centroId, (conteo.get(d.centroId) ?? 0) + 1))
-    return conteo
-  }, [donaciones])
+  const resumen = useMemo(() => {
+    const lista = donaciones ?? []
+    return {
+      recibidas: lista.filter((d) => d.estado === 'recibida').length,
+      valor: lista.reduce((suma, d) => suma + (d.monto ?? 0), 0),
+      enProceso: lista.filter((d) => d.estado === 'en_proceso').length,
+      campanasActivas: (campanas ?? []).filter((c) => c.activa).length,
+    }
+  }, [donaciones, campanas])
 
-  const filtradas = useMemo(
-    () =>
-      (donaciones ?? [])
-        .filter((d) => centroSel === 'todos' || d.centroId === centroSel)
-        .filter((d) => filtroTipo === 'todos' || d.tipo === filtroTipo)
-        .sort((a, b) => b.actualizadoEn.localeCompare(a.actualizadoEn)),
-    [donaciones, centroSel, filtroTipo],
-  )
+  const campanasActivas = (campanas ?? []).filter((c) => c.activa)
 
-  const resumen = useMemo(
-    () => ({
-      registros: donaciones?.length ?? 0,
-      centros: conteoPorCentro.size,
-      agotados: donaciones?.filter((d) => d.cantidad === 0).length ?? 0,
-    }),
-    [donaciones, conteoPorCentro],
-  )
-
-  const reemplazar = (actualizada: Donacion) =>
-    setDonaciones((lista) => lista?.map((d) => (d.id === actualizada.id ? actualizada : d)) ?? null)
-
-  const abrirNueva = () => {
-    setForm({ centroId: centroSel === 'todos' ? '' : centroSel, tipo: 'agua', cantidad: '', unidad: 'litros' })
-    setErrorForm('')
-    setNuevaAbierta(true)
-  }
-
-  // Si ya hay un registro del mismo tipo y unidad en ese centro, se suma a él en vez de duplicarlo.
-  const existente = donaciones?.find(
-    (d) =>
-      d.centroId === form.centroId &&
-      d.tipo === form.tipo &&
-      d.unidad.trim().toLowerCase() === form.unidad.trim().toLowerCase(),
-  )
-
-  const registrar = async (e: FormEvent) => {
+  const publicarCampana = async (e: FormEvent) => {
     e.preventDefault()
-    const cantidad = Number(form.cantidad)
-    if (!form.centroId) return setErrorForm('Elige el centro que recibe la donación.')
-    if (!Number.isInteger(cantidad) || cantidad <= 0) return setErrorForm('La cantidad debe ser un número entero mayor que 0.')
-    if (!form.unidad.trim()) return setErrorForm('Indica la unidad (litros, kg, cajas…).')
+    const meta = Number(form.meta)
+    if (!form.titulo.trim() || !form.descripcion.trim() || !form.unidad.trim()) {
+      setErrorForm('Completa el título, la descripción y la unidad.')
+      return
+    }
+    if (!Number.isFinite(meta) || meta <= 0) {
+      setErrorForm('La meta debe ser un número mayor que cero.')
+      return
+    }
+    const fechaFin = `${form.fechaFin}T23:59:59`
+    if (!form.fechaFin || new Date(fechaFin).getTime() < ahora) {
+      setErrorForm('Elige una fecha de cierre que no haya pasado.')
+      return
+    }
 
     setGuardando(true)
     setErrorForm('')
     try {
-      if (existente) {
-        reemplazar(await actualizarCantidad(existente.id, existente.cantidad + cantidad))
-      } else {
-        const nueva = await crearDonacion({ ...form, cantidad, unidad: form.unidad.trim() })
-        setDonaciones((lista) => [nueva, ...(lista ?? [])])
-      }
-      setNuevaAbierta(false)
+      const nueva = await crearCampana({
+        titulo: form.titulo.trim(),
+        descripcion: form.descripcion.trim(),
+        categoria: form.categoria,
+        meta,
+        unidad: form.unidad.trim(),
+        fechaFin,
+      })
+      setCampanas((lista) => [nueva, ...(lista ?? [])])
+      setModalAbierto(false)
     } catch {
-      setErrorForm('No se pudo registrar la donación.')
+      setErrorForm('No se pudo crear la campaña.')
     } finally {
       setGuardando(false)
     }
   }
 
-  const abrirAjuste = (d: Donacion) => {
-    setAjuste(d)
-    setMovimiento('entrada')
-    setCantidadAjuste('')
-    setErrorForm('')
+  const terminarCampana = async (c: Campana) => {
+    if (!window.confirm(`¿Finalizar la campaña "${c.titulo}"?`)) return
+    setError('')
+    try {
+      const actualizada = await finalizarCampana(c.id)
+      setCampanas((lista) => lista?.map((x) => (x.id === actualizada.id ? actualizada : x)) ?? null)
+    } catch {
+      setError('No se pudo finalizar la campaña.')
+    }
   }
 
-  const valorAjuste = Number(cantidadAjuste)
-  const ajusteValido = Number.isInteger(valorAjuste) && valorAjuste > 0
-  const cantidadResultante = ajuste
-    ? ajuste.cantidad + (movimiento === 'entrada' ? 1 : -1) * (ajusteValido ? valorAjuste : 0)
-    : 0
-
-  const aplicarAjuste = async (e: FormEvent) => {
-    e.preventDefault()
-    if (!ajuste) return
-    if (!ajusteValido) return setErrorForm('Escribe una cantidad entera mayor que 0.')
-    if (cantidadResultante < 0) return setErrorForm(`Solo hay ${formatearNumero(ajuste.cantidad)} ${ajuste.unidad} disponibles.`)
-
-    setGuardando(true)
-    setErrorForm('')
+  const confirmarRecibida = async (d: Donacion) => {
+    setError('')
     try {
-      reemplazar(await actualizarCantidad(ajuste.id, cantidadResultante))
-      setAjuste(null)
+      const actualizada = await marcarDonacionRecibida(d.id)
+      setDonaciones((lista) => lista?.map((x) => (x.id === actualizada.id ? actualizada : x)) ?? null)
     } catch {
-      setErrorForm('No se pudo actualizar la cantidad.')
-    } finally {
-      setGuardando(false)
+      setError('No se pudo actualizar la donación.')
     }
   }
 
   if (error && !donaciones) return <p className="text-panel-accent">{error}</p>
-  if (!donaciones) return <p className="text-panel-text-soft">Cargando…</p>
+  if (!donaciones || !campanas) return <p className="text-panel-text-soft">Cargando…</p>
 
-  const botonCentro = (activo: boolean) =>
-    `flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm transition ${
-      activo ? 'bg-panel-primary font-semibold text-white' : 'text-panel-text-soft hover:bg-panel-bg hover:text-panel-text'
-    }`
+  const tarjetas = [
+    { valor: String(resumen.recibidas), titulo: 'Donaciones recibidas', pie: 'Confirmadas', icono: HandHeart, color: 'bg-green-600', pieColor: 'text-green-600' },
+    { valor: moneda.format(resumen.valor), titulo: 'Valor en dinero', pie: 'Aportes registrados', icono: Banknote, color: 'bg-blue-500', pieColor: 'text-blue-600' },
+    { valor: String(resumen.enProceso), titulo: 'En proceso', pie: 'Por confirmar', icono: Hourglass, color: 'bg-amber-500', pieColor: 'text-amber-600' },
+    { valor: String(resumen.campanasActivas), titulo: 'Campañas activas', pie: 'En curso', icono: Megaphone, color: 'bg-teal-500', pieColor: 'text-teal-600' },
+  ]
 
   return (
     <div>
-      <CabeceraPanel
-        seccion="Recursos"
-        titulo="Donaciones"
-        descripcion="Inventario de lo que hay disponible en cada centro de ayuda."
-        acciones={
-          <button onClick={abrirNueva} className={botonCabeceraPrincipal}>
-            <Plus size={16} /> Registrar donación
-          </button>
-        }
-        estadisticas={[
-          { titulo: 'Registros de inventario', valor: resumen.registros, icono: Boxes, pie: 'Tipos de insumo por centro' },
-          { titulo: 'Centros con donaciones', valor: resumen.centros, icono: Building2, pie: `De ${centros.length} centros` },
-          {
-            titulo: 'Agotados',
-            valor: resumen.agotados,
-            icono: PackageX,
-            pie: resumen.agotados > 0 ? 'Necesitan reposición' : 'Todo con existencias',
-            tono: resumen.agotados > 0 ? 'alerta' : 'bien',
-          },
-        ]}
-      />
+      <p className="flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-panel-text-muted">
+        <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+        Recursos
+      </p>
+      <h1 className="mt-3 break-words text-[34px] font-semibold leading-[1] tracking-[-0.045em] sm:text-[52px] sm:tracking-[-0.05em]">Donaciones</h1>
+      <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-panel-text-soft">
+        Ayuda a quienes más lo necesitan. Con tu donación haces la diferencia.
+      </p>
 
-      {error && <p className="mb-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mt-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-      <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
-        <nav aria-label="Centros" className="h-fit rounded-3xl border border-panel-border bg-panel-card p-3">
-          <p className="px-3 pb-2 pt-1 text-xs uppercase tracking-wide text-panel-text-muted">Centros</p>
-          <button onClick={() => setCentroSel('todos')} className={botonCentro(centroSel === 'todos')}>
-            Todos los centros
-            <span className="tabular-nums">{donaciones.length}</span>
-          </button>
-          {centros
-            .filter((c) => conteoPorCentro.has(c.id))
-            .map((c) => (
-              <button key={c.id} onClick={() => setCentroSel(c.id)} className={botonCentro(centroSel === c.id)}>
-                <span className="truncate">{c.nombre}</span>
-                <span className="tabular-nums">{conteoPorCentro.get(c.id)}</span>
-              </button>
-            ))}
-        </nav>
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {tarjetas.map(({ valor, titulo, pie, icono: Icono, pieColor }) => (
+          <div key={titulo} className="flex items-center gap-4 rounded-3xl border border-panel-border bg-panel-card p-5">
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-panel-border text-panel-text-soft`}>
+              <Icono size={24} />
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-2xl font-extrabold">{valor}</p>
+              <p className="text-sm text-panel-text-soft">{titulo}</p>
+              <p className={`text-xs font-medium ${pieColor}`}>{pie}</p>
+            </div>
+          </div>
+        ))}
+      </div>
 
+      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <section className="min-w-0 rounded-3xl border border-panel-border bg-panel-card">
-          <div className="flex flex-col gap-3 px-5 pt-5 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-lg font-semibold tracking-[-0.02em]">{centroSel === 'todos' ? 'Inventario completo' : nombreCentro(centroSel)}</h2>
+          <h2 className="px-5 pt-5 text-lg font-semibold tracking-[-0.02em]">Listado de donaciones</h2>
+
+          <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row">
+            <div className="relative flex-1">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-panel-text-muted" />
+              <input
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                placeholder="Buscar donaciones"
+                className={`${campo} pl-9`}
+              />
+            </div>
             <select
-              aria-label="Filtrar por tipo"
-              value={filtroTipo}
-              onChange={(e) => setFiltroTipo(e.target.value as 'todos' | TipoDonacion)}
+              value={filtroCategoria}
+              onChange={(e) => setFiltroCategoria(e.target.value as 'todas' | CategoriaDonacion)}
               className={`${campo} sm:w-48`}
             >
-              <option value="todos">Todos los tipos</option>
-              {(Object.keys(tipos) as TipoDonacion[]).map((t) => (
-                <option key={t} value={t}>
-                  {tipos[t].etiqueta}
+              <option value="todas">Todas las categorías</option>
+              {(Object.keys(categorias) as CategoriaDonacion[]).map((c) => (
+                <option key={c} value={c}>
+                  {categorias[c].etiqueta}
                 </option>
               ))}
             </select>
           </div>
 
-          <div className="mt-4 max-w-full overflow-x-auto">
-            <table className="w-full min-w-[620px] text-left text-sm">
+          <div className="max-w-full overflow-x-auto">
+            <table className="w-full min-w-[680px] text-left text-sm">
               <thead className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">
                 <tr>
+                  <th className="px-5 py-3">Fecha</th>
                   <th className="px-5 py-3">Tipo</th>
-                  {centroSel === 'todos' && <th className="px-5 py-3">Centro</th>}
-                  <th className="px-5 py-3 text-right">Disponible</th>
-                  <th className="px-5 py-3">Actualizado</th>
-                  <th className="px-5 py-3" />
+                  <th className="hidden px-5 py-3 md:table-cell">Descripción</th>
+                  <th className="px-5 py-3">Cantidad</th>
+                  <th className="px-5 py-3">Estado</th>
                 </tr>
               </thead>
               <tbody>
                 {filtradas.length === 0 && (
                   <tr>
                     <td colSpan={5} className="px-5 py-10 text-center text-panel-text-soft">
-                      No hay donaciones registradas con esos filtros.
+                      No hay donaciones con esos filtros.
                     </td>
                   </tr>
                 )}
                 {filtradas.map((d) => {
-                  const { etiqueta, icono: Icono, clase } = tipos[d.tipo]
+                  const { icono: Icono, clase, etiqueta } = categorias[d.categoria]
                   return (
                     <tr key={d.id} className="border-t border-panel-border">
+                      <td className="whitespace-nowrap px-5 py-3 text-panel-text-soft">{formatearFecha(d.fecha)}</td>
                       <td className="px-5 py-3">
-                        <div className="flex items-center gap-3">
-                          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${clase}`}>
-                            <Icono size={16} />
+                        <span className="flex items-center gap-2">
+                          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${clase}`}>
+                            <Icono size={15} />
                           </span>
                           <span className="font-medium">{etiqueta}</span>
+                        </span>
+                      </td>
+                      <td className="hidden px-5 py-3 text-panel-text-soft md:table-cell">{d.descripcion}</td>
+                      <td className="px-5 py-3">{d.monto ? moneda.format(d.monto) : d.cantidad}</td>
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className={`rounded-full px-3 py-1 text-xs font-medium ${estados[d.estado].clase}`}>
+                            {estados[d.estado].etiqueta}
+                          </span>
+                          {d.estado === 'en_proceso' && (
+                            <button
+                              onClick={() => confirmarRecibida(d)}
+                              title="Marcar como recibida"
+                              aria-label="Marcar como recibida"
+                              className="rounded p-1.5 text-panel-text-soft hover:bg-panel-bg hover:text-panel-success"
+                            >
+                              <Check size={16} />
+                            </button>
+                          )}
                         </div>
-                      </td>
-                      {centroSel === 'todos' && (
-                        <td className="px-5 py-3 text-panel-text-soft">{nombreCentro(d.centroId)}</td>
-                      )}
-                      <td className="whitespace-nowrap px-5 py-3 text-right">
-                        <span className={`font-bold tabular-nums ${d.cantidad === 0 ? 'text-panel-accent' : ''}`}>
-                          {formatearNumero(d.cantidad)}
-                        </span>{' '}
-                        <span className="text-panel-text-soft">{d.unidad}</span>
-                      </td>
-                      <td className="whitespace-nowrap px-5 py-3 text-panel-text-soft">{formatearFecha(d.actualizadoEn)}</td>
-                      <td className="px-5 py-3 text-right">
-                        <button
-                          onClick={() => abrirAjuste(d)}
-                          className="text-sm font-semibold text-panel-primary hover:underline"
-                        >
-                          Ajustar
-                        </button>
                       </td>
                     </tr>
                   )
@@ -306,67 +299,150 @@ export default function DonacionesPage() {
             </table>
           </div>
         </section>
+
+        <section className="min-w-0 rounded-3xl border border-panel-border bg-panel-card p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold tracking-[-0.02em]">Campañas de donación</h2>
+            <button
+              onClick={() => {
+                setForm(formVacio)
+                setErrorForm('')
+                setModalAbierto(true)
+              }}
+              className="flex shrink-0 items-center gap-1.5 rounded-full bg-navy-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-navy-800 dark:bg-white dark:text-navy-950"
+            >
+              <Plus size={16} /> Nueva campaña
+            </button>
+          </div>
+
+          <div className="mt-4 space-y-4">
+            {campanasActivas.length === 0 && (
+              <p className="rounded-xl border border-dashed border-panel-border px-4 py-10 text-center text-sm text-panel-text-soft">
+                No hay campañas activas.
+              </p>
+            )}
+            {campanasActivas.map((c) => {
+              const { icono: Icono, clase } = categorias[c.categoria]
+              const porcentaje = Math.min(100, Math.round((c.recaudado / c.meta) * 100))
+              const dias = Math.ceil((new Date(c.fechaFin).getTime() - ahora) / 86400000)
+              return (
+                <article key={c.id} className="flex min-w-0 gap-4 rounded-xl border border-panel-border p-4">
+                  <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl ${clase}`}>
+                    <Icono size={26} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="break-words font-bold">{c.titulo}</h3>
+                    <p className="break-words text-sm text-panel-text-soft">{c.descripcion}</p>
+
+                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-panel-bg">
+                      <div className="h-full rounded-full bg-panel-info" style={{ width: `${porcentaje}%` }} />
+                    </div>
+                    <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-xs text-panel-text-muted">
+                      <span>
+                        {porcentaje}% · {numero.format(c.recaudado)} / {numero.format(c.meta)} {c.unidad}
+                      </span>
+                      <span>{dias > 0 ? `${dias} ${dias === 1 ? 'día restante' : 'días restantes'}` : 'Cierra hoy o ya cerró'}</span>
+                    </div>
+
+                    <button
+                      onClick={() => terminarCampana(c)}
+                      className="mt-2 text-sm font-semibold text-panel-accent hover:underline"
+                    >
+                      Finalizar campaña
+                    </button>
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+        </section>
       </div>
 
-      {nuevaAbierta && (
-        <Modal titulo="Registrar donación" onCerrar={() => setNuevaAbierta(false)}>
-          <form onSubmit={registrar}>
+      {modalAbierto && (
+        <div
+          className="panel-enfoque fixed inset-0 z-[1100] flex items-start justify-center overflow-y-auto bg-navy-950/35 p-4 backdrop-blur-md sm:p-6"
+          onClick={() => setModalAbierto(false)}
+        >
+          <form
+            onSubmit={publicarCampana}
+            className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl bg-panel-card p-6 shadow-2xl sm:max-h-[calc(100dvh-3rem)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between">
+              <h2 className="text-xl font-semibold tracking-[-0.02em]">Nueva campaña</h2>
+              <button type="button" onClick={() => setModalAbierto(false)} aria-label="Cerrar">
+                <X size={20} />
+              </button>
+            </div>
+
             <div className="mt-5 space-y-4">
               <div>
-                <label htmlFor="centro" className="text-sm font-medium">
-                  Centro que la recibe
+                <label htmlFor="titulo" className="text-sm font-medium">
+                  Título
                 </label>
-                <select
-                  id="centro"
-                  autoFocus
-                  value={form.centroId}
-                  onChange={(e) => setForm({ ...form, centroId: e.target.value })}
+                <input
+                  id="titulo"
+                  value={form.titulo}
+                  onChange={(e) => setForm({ ...form, titulo: e.target.value })}
+                  placeholder="Ej: Alimentos para familias"
                   className={`${campo} mt-1`}
-                >
-                  <option value="">Elegir centro…</option>
-                  {centros
-                    .filter((c) => c.estado !== 'inactivo')
-                    .map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.nombre}
-                      </option>
-                    ))}
-                </select>
+                />
               </div>
               <div>
-                <label htmlFor="tipoDonacion" className="text-sm font-medium">
-                  Tipo
+                <label htmlFor="descripcion" className="text-sm font-medium">
+                  Descripción
                 </label>
-                <select
-                  id="tipoDonacion"
-                  value={form.tipo}
-                  onChange={(e) => {
-                    const tipo = e.target.value as TipoDonacion
-                    setForm({ ...form, tipo, unidad: tipos[tipo].unidad })
-                  }}
+                <textarea
+                  id="descripcion"
+                  rows={3}
+                  value={form.descripcion}
+                  onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
+                  placeholder="Qué se necesita y para quién"
                   className={`${campo} mt-1`}
-                >
-                  {(Object.keys(tipos) as TipoDonacion[]).map((t) => (
-                    <option key={t} value={t}>
-                      {tipos[t].etiqueta}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label htmlFor="cantidad" className="text-sm font-medium">
-                    Cantidad
+                  <label htmlFor="categoria" className="text-sm font-medium">
+                    Categoría
+                  </label>
+                  <select
+                    id="categoria"
+                    value={form.categoria}
+                    onChange={(e) => setForm({ ...form, categoria: e.target.value as CategoriaDonacion })}
+                    className={`${campo} mt-1`}
+                  >
+                    {(Object.keys(categorias) as CategoriaDonacion[]).map((c) => (
+                      <option key={c} value={c}>
+                        {categorias[c].etiqueta}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="fechaFin" className="text-sm font-medium">
+                    Fecha de cierre
                   </label>
                   <input
-                    id="cantidad"
+                    id="fechaFin"
+                    type="date"
+                    value={form.fechaFin}
+                    onChange={(e) => setForm({ ...form, fechaFin: e.target.value })}
+                    className={`${campo} mt-1`}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="meta" className="text-sm font-medium">
+                    Meta
+                  </label>
+                  <input
+                    id="meta"
                     type="number"
-                    min={1}
-                    step={1}
-                    inputMode="numeric"
-                    value={form.cantidad}
-                    onChange={(e) => setForm({ ...form, cantidad: e.target.value })}
-                    className={`${campo} mt-1 tabular-nums`}
+                    min="1"
+                    value={form.meta}
+                    onChange={(e) => setForm({ ...form, meta: e.target.value })}
+                    placeholder="Ej: 500"
+                    className={`${campo} mt-1`}
                   />
                 </div>
                 <div>
@@ -375,24 +451,13 @@ export default function DonacionesPage() {
                   </label>
                   <input
                     id="unidad"
-                    list="unidades"
                     value={form.unidad}
                     onChange={(e) => setForm({ ...form, unidad: e.target.value })}
+                    placeholder="kits, prendas, COP…"
                     className={`${campo} mt-1`}
                   />
-                  <datalist id="unidades">
-                    {unidadesSugeridas.map((u) => (
-                      <option key={u} value={u} />
-                    ))}
-                  </datalist>
                 </div>
               </div>
-              {existente && (
-                <p className="rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-700">
-                  Este centro ya tiene {formatearNumero(existente.cantidad)} {existente.unidad} de{' '}
-                  {tipos[existente.tipo].etiqueta.toLowerCase()}. La cantidad se sumará a ese registro.
-                </p>
-              )}
             </div>
 
             {errorForm && <p className="mt-4 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{errorForm}</p>}
@@ -400,7 +465,7 @@ export default function DonacionesPage() {
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
-                onClick={() => setNuevaAbierta(false)}
+                onClick={() => setModalAbierto(false)}
                 className="rounded-full border border-panel-border px-4 py-2 text-sm text-panel-text-soft transition hover:bg-panel-bg"
               >
                 Cancelar
@@ -408,93 +473,13 @@ export default function DonacionesPage() {
               <button
                 type="submit"
                 disabled={guardando}
-                className="rounded-full bg-panel-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark active:scale-[0.98] disabled:opacity-60"
+                className="rounded-full bg-panel-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark disabled:opacity-60"
               >
-                {guardando ? 'Guardando…' : 'Registrar'}
+                {guardando ? 'Creando…' : 'Crear campaña'}
               </button>
             </div>
           </form>
-        </Modal>
-      )}
-
-      {ajuste && (
-        <Modal
-          titulo={`Ajustar ${tipos[ajuste.tipo].etiqueta.toLowerCase()}`}
-          subtitulo={nombreCentro(ajuste.centroId)}
-          onCerrar={() => setAjuste(null)}
-        >
-          <form onSubmit={aplicarAjuste}>
-            <div className="mt-5 grid grid-cols-2 gap-2 rounded-lg border border-panel-border bg-panel-bg p-1 text-sm">
-              {(
-                [
-                  ['entrada', 'Entrada', ArrowDownToLine],
-                  ['salida', 'Salida / entrega', ArrowUpFromLine],
-                ] as const
-              ).map(([valor, etiqueta, Icono]) => (
-                <button
-                  key={valor}
-                  type="button"
-                  onClick={() => setMovimiento(valor)}
-                  aria-pressed={movimiento === valor}
-                  className={`flex items-center justify-center gap-2 rounded-md px-3 py-2 font-medium transition ${
-                    movimiento === valor ? 'bg-panel-card text-panel-text shadow-sm' : 'text-panel-text-soft hover:text-panel-text'
-                  }`}
-                >
-                  <Icono size={16} /> {etiqueta}
-                </button>
-              ))}
-            </div>
-
-            <label htmlFor="cantidadAjuste" className="mt-5 block text-sm font-medium">
-              Cantidad ({ajuste.unidad})
-            </label>
-            <input
-              id="cantidadAjuste"
-              type="number"
-              min={1}
-              step={1}
-              inputMode="numeric"
-              autoFocus
-              value={cantidadAjuste}
-              onChange={(e) => setCantidadAjuste(e.target.value)}
-              className={`${campo} mt-1 tabular-nums`}
-            />
-
-            <div className="mt-4 flex items-center justify-between rounded-xl bg-panel-bg px-4 py-3 text-sm">
-              <span className="text-panel-text-soft">
-                Disponible: <span className="font-semibold tabular-nums text-panel-text">{formatearNumero(ajuste.cantidad)}</span>
-              </span>
-              <span className="text-panel-text-soft">
-                Quedará:{' '}
-                <span
-                  className={`font-bold tabular-nums ${cantidadResultante < 0 ? 'text-panel-accent' : 'text-panel-text'}`}
-                >
-                  {formatearNumero(cantidadResultante)}
-                </span>{' '}
-                {ajuste.unidad}
-              </span>
-            </div>
-
-            {errorForm && <p className="mt-4 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{errorForm}</p>}
-
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setAjuste(null)}
-                className="rounded-full border border-panel-border px-4 py-2 text-sm text-panel-text-soft transition hover:bg-panel-bg"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={guardando || !ajusteValido || cantidadResultante < 0}
-                className="rounded-full bg-panel-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark active:scale-[0.98] disabled:opacity-40"
-              >
-                {guardando ? 'Guardando…' : 'Guardar ajuste'}
-              </button>
-            </div>
-          </form>
-        </Modal>
+        </div>
       )}
     </div>
   )

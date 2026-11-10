@@ -1,7 +1,18 @@
-import { api, USE_MOCK } from './api'
-import type { Centro, DatosCentro } from '../types/centro'
+import { api, consulta, USE_MOCK, type Pagina } from './api'
+import type { Centro, CentroApi, DatosCentro, EstadoCentro, TipoCentro } from '../types/centro'
 
-// Datos de prueba, SOLO para desarrollo de la interfaz.
+export const aCentro = (c: CentroApi): Centro => ({
+  id: c.id,
+  nombre: c.nombre,
+  tipo: (c.tipo as TipoCentro) ?? 'albergue',
+  ubicacion: c.direccion ?? `${c.ubicacion.lat.toFixed(5)}, ${c.ubicacion.lng.toFixed(5)}`,
+  estado: (c.estado as EstadoCentro) ?? 'activo',
+  lat: c.ubicacion.lat,
+  lng: c.ubicacion.lng,
+  recursosDisponibles: c.recursos_disponibles,
+})
+
+// Datos de prueba, SOLO para desarrollo de la interfaz (VITE_USE_MOCK=true).
 let mock: Centro[] = [
   { id: '1', nombre: 'Colegio San José', tipo: 'albergue', ubicacion: 'Cra. 9 #14-30', estado: 'activo', lat: 10.4689, lng: -73.2551 },
   { id: '2', nombre: 'Refugio Municipal', tipo: 'albergue', ubicacion: 'Calle 16 #8-32', estado: 'activo', lat: 10.4602, lng: -73.2447 },
@@ -17,8 +28,8 @@ let mock: Centro[] = [
 export async function listarCentros(): Promise<Centro[]> {
   if (USE_MOCK) return mock.map((c) => ({ ...c }))
 
-  // BACKEND: confirmar la ruta real y la forma de la respuesta.
-  return api<Centro[]>('/admin/centros')
+  const pagina = await api<Pagina<CentroApi>>(`/centros-ayuda${consulta({ por_pagina: 100 })}`)
+  return pagina.items.map(aCentro)
 }
 
 export async function crearCentro(datos: DatosCentro): Promise<Centro> {
@@ -28,8 +39,20 @@ export async function crearCentro(datos: DatosCentro): Promise<Centro> {
     return { ...nuevo }
   }
 
-  // BACKEND: endpoint para crear un centro de ayuda.
-  return api<Centro>('/admin/centros', { method: 'POST', body: JSON.stringify(datos) })
+  const payload = {
+    nombre: datos.nombre,
+    tipo: datos.tipo,
+    estado: datos.estado,
+    direccion: datos.ubicacion,
+    lat: datos.lat,
+    lng: datos.lng,
+  }
+
+  const respuesta = await api<CentroApi>('/centros-ayuda', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+  return aCentro(respuesta)
 }
 
 export async function actualizarCentro(id: string, cambios: Partial<DatosCentro>): Promise<Centro> {
@@ -40,6 +63,17 @@ export async function actualizarCentro(id: string, cambios: Partial<DatosCentro>
     return { ...actualizado }
   }
 
-  // BACKEND: endpoint para editar un centro (incluye activar o desactivar con el estado).
-  return api<Centro>(`/admin/centros/${id}`, { method: 'PATCH', body: JSON.stringify(cambios) })
+  const payload: Record<string, unknown> = {}
+  if (cambios.nombre !== undefined) payload.nombre = cambios.nombre
+  if (cambios.tipo !== undefined) payload.tipo = cambios.tipo
+  if (cambios.estado !== undefined) payload.estado = cambios.estado
+  if (cambios.ubicacion !== undefined) payload.direccion = cambios.ubicacion
+  if (cambios.lat !== undefined) payload.lat = cambios.lat
+  if (cambios.lng !== undefined) payload.lng = cambios.lng
+
+  const respuesta = await api<CentroApi>(`/centros-ayuda/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+  return aCentro(respuesta)
 }

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../core/utils/validators.dart';
+import '../../../../shared/widgets/campo_password.dart';
+import '../../../../shared/widgets/campo_texto.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../widgets/consentimiento_datos_checkbox.dart';
@@ -20,8 +22,6 @@ class _RegistroScreenState extends ConsumerState<RegistroScreen> {
   final _correoCtrl = TextEditingController();
   final _telefonoCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
-  final _confirmarCtrl = TextEditingController();
-  bool _ocultarPassword = true;
   bool _aceptaDatos = false;
   bool _intentoEnviar = false;
 
@@ -31,7 +31,6 @@ class _RegistroScreenState extends ConsumerState<RegistroScreen> {
     _correoCtrl.dispose();
     _telefonoCtrl.dispose();
     _passwordCtrl.dispose();
-    _confirmarCtrl.dispose();
     super.dispose();
   }
 
@@ -40,12 +39,13 @@ class _RegistroScreenState extends ConsumerState<RegistroScreen> {
     final formOk = _formKey.currentState!.validate();
     if (!formOk || !_aceptaDatos) return;
 
+    final telefono =
+        _telefonoCtrl.text.trim().replaceAll(RegExp(r'[\s\-]'), '');
+
     final ok = await ref.read(authViewModelProvider.notifier).registrar(
           nombre: _nombreCtrl.text.trim(),
           correo: _correoCtrl.text.trim(),
-          telefono: _telefonoCtrl.text.trim().isEmpty
-              ? null
-              : _telefonoCtrl.text.trim(),
+          telefono: telefono.isEmpty ? null : telefono,
           password: _passwordCtrl.text,
         );
     if (ok && mounted) {
@@ -59,91 +59,50 @@ class _RegistroScreenState extends ConsumerState<RegistroScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(backgroundColor: AppColors.background, elevation: 0),
+      appBar: AppBar(),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(28, 8, 28, 24),
+          padding: const EdgeInsets.fromLTRB(28, 0, 28, 24),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                RichText(
-                  text: const TextSpan(
-                    children: [
-                      TextSpan(text: 'RESCATE ', style: AppTextStyles.logo),
-                      TextSpan(text: '360', style: AppTextStyles.logoAccent),
-                    ],
-                  ),
+                const Text('Crear cuenta', style: AppTextStyles.h1),
+                const SizedBox(height: 4),
+                const Text(
+                  'Completa tus datos para unirte a RESCATE360',
+                  style: AppTextStyles.bodySecondary,
                 ),
-                const SizedBox(height: 6),
-                const Text('Crea tu cuenta',
-                    style: AppTextStyles.bodySecondary),
-                const SizedBox(height: 28),
-                const Text('Nombre completo', style: AppTextStyles.body),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _nombreCtrl,
-                  style: AppTextStyles.body,
-                  textCapitalization: TextCapitalization.words,
-                  decoration:
-                      const InputDecoration(hintText: 'Nombre y apellido'),
-                  validator: Validators.nombre,
+                const SizedBox(height: 24),
+                CampoTexto(
+                  etiqueta: 'Nombre completo',
+                  controlador: _nombreCtrl,
+                  hint: 'Ej: Juan Pérez',
+                  capitalizacion: TextCapitalization.words,
+                  validador: Validators.nombre,
                 ),
                 const SizedBox(height: 16),
-                const Text('Correo electrónico', style: AppTextStyles.body),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _correoCtrl,
-                  style: AppTextStyles.body,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration:
-                      const InputDecoration(hintText: 'tucorreo@ejemplo.com'),
-                  validator: Validators.correo,
+                CampoTexto(
+                  etiqueta: 'Correo electrónico',
+                  controlador: _correoCtrl,
+                  hint: 'tucorreo@ejemplo.com',
+                  tipoTeclado: TextInputType.emailAddress,
+                  validador: Validators.correo,
                 ),
                 const SizedBox(height: 16),
-                const Text('Teléfono (opcional)', style: AppTextStyles.body),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _telefonoCtrl,
-                  style: AppTextStyles.body,
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(hintText: '3001234567'),
-                  validator: Validators.telefono,
+                CampoTexto(
+                  etiqueta: 'Número de teléfono',
+                  controlador: _telefonoCtrl,
+                  hint: '+57 300 123 4567',
+                  tipoTeclado: TextInputType.phone,
+                  validador: Validators.telefono,
                 ),
                 const SizedBox(height: 16),
-                const Text('Contraseña', style: AppTextStyles.body),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _passwordCtrl,
-                  style: AppTextStyles.body,
-                  obscureText: _ocultarPassword,
-                  decoration: InputDecoration(
-                    hintText: 'Mínimo 6 caracteres',
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _ocultarPassword
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
-                        color: AppColors.textMuted,
-                      ),
-                      onPressed: () =>
-                          setState(() => _ocultarPassword = !_ocultarPassword),
-                    ),
-                  ),
-                  validator: Validators.password,
-                ),
-                const SizedBox(height: 16),
-                const Text('Confirmar contraseña', style: AppTextStyles.body),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _confirmarCtrl,
-                  style: AppTextStyles.body,
-                  obscureText: _ocultarPassword,
-                  decoration:
-                      const InputDecoration(hintText: 'Repite tu contraseña'),
-                  validator: (v) =>
-                      Validators.confirmarPassword(v, _passwordCtrl.text),
+                CampoPassword(
+                  controlador: _passwordCtrl,
+                  hint: 'Mín. 8 caracteres',
+                  validador: Validators.passwordNueva,
                 ),
                 const SizedBox(height: 18),
                 ConsentimientoDatosCheckbox(
@@ -161,7 +120,7 @@ class _RegistroScreenState extends ConsumerState<RegistroScreen> {
                 ],
                 const SizedBox(height: 20),
                 PrimaryButton(
-                  label: 'Crear cuenta',
+                  label: 'Registrarse',
                   loading: authState.loading,
                   onPressed: _submit,
                 ),
@@ -176,8 +135,7 @@ class _RegistroScreenState extends ConsumerState<RegistroScreen> {
                         children: [
                           TextSpan(text: '¿Ya tienes cuenta? '),
                           TextSpan(
-                              text: 'Iniciar sesión',
-                              style: AppTextStyles.link),
+                              text: 'Inicia sesión', style: AppTextStyles.link),
                         ],
                       ),
                     ),

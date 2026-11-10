@@ -1,155 +1,206 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { MapContainer, TileLayer, Polygon, Polyline, CircleMarker, Popup, useMap, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, Circle, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import {
+  TriangleAlert,
+  ShieldAlert,
+  MapPin,
+  Eye,
+  Search,
+  Plus,
+  Pencil,
+  Power,
+  X,
   Waves,
   Mountain,
   Flame,
-  ShieldAlert,
-  Building,
-  TriangleAlert,
-  Plus,
-  Undo2,
-  CheckCircle2,
-  RotateCcw,
-  MousePointerClick,
-  Ruler,
   type LucideIcon,
 } from 'lucide-react'
-import { listarZonas, crearZona, cambiarEstadoZona } from '../../services/zonas.service'
-import { hectareas, type Coordenada, type EstadoZona, type TipoRiesgo, type ZonaPeligrosa } from '../../types/zona'
-import CabeceraPanel, { botonCabeceraPrincipal } from '../../components/panel/CabeceraPanel'
+import VolarA from '../../components/VolarA'
+import { listarZonas, crearZona, actualizarZona } from '../../services/zonas.service'
+import type { Zona, DatosZona, EstadoZona, NivelRiesgo, TipoRiesgo } from '../../types/zona'
 
-const CENTRO_MAPA: Coordenada = [10.4731, -73.2582]
+const CENTRO_MAPA: [number, number] = [10.4631, -73.2532]
 
-const riesgos: Record<TipoRiesgo, { etiqueta: string; icono: LucideIcon; clase: string; color: string }> = {
-  inundacion: { etiqueta: 'Inundación', icono: Waves, clase: 'bg-blue-100 text-blue-600', color: '#3e7bfa' },
-  deslizamiento: { etiqueta: 'Deslizamiento', icono: Mountain, clase: 'bg-amber-100 text-amber-700', color: '#d97706' },
-  incendio: { etiqueta: 'Incendio', icono: Flame, clase: 'bg-red-100 text-red-600', color: '#e5534b' },
-  inseguridad: { etiqueta: 'Inseguridad', icono: ShieldAlert, clase: 'bg-violet-100 text-violet-600', color: '#7c5cd6' },
-  estructural: { etiqueta: 'Riesgo estructural', icono: Building, clase: 'bg-slate-200 text-slate-700', color: '#475569' },
-  otro: { etiqueta: 'Otro', icono: TriangleAlert, clase: 'bg-slate-100 text-slate-600', color: '#64748b' },
+const riesgos: Record<TipoRiesgo, { etiqueta: string; icono: LucideIcon }> = {
+  inundacion: { etiqueta: 'Inundación', icono: Waves },
+  deslizamiento: { etiqueta: 'Deslizamiento', icono: Mountain },
+  incendio: { etiqueta: 'Incendio', icono: Flame },
+  seguridad: { etiqueta: 'Seguridad', icono: ShieldAlert },
+  otro: { etiqueta: 'Otro', icono: TriangleAlert },
 }
 
-const formatearFecha = (iso: string) =>
-  new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
+const niveles: Record<NivelRiesgo, { etiqueta: string; clase: string; color: string }> = {
+  alto: { etiqueta: 'Alto', clase: 'bg-red-100 text-red-700', color: '#e5534b' },
+  medio: { etiqueta: 'Medio', clase: 'bg-amber-100 text-amber-700', color: '#f5a524' },
+  bajo: { etiqueta: 'Bajo', clase: 'bg-green-100 text-green-700', color: '#2fa96b' },
+}
 
-const formatearHa = (ha: number) => `${ha.toLocaleString('es-CO', { maximumFractionDigits: 1 })} ha`
+const estados: Record<EstadoZona, { etiqueta: string; clase: string }> = {
+  activa: { etiqueta: 'Activa', clase: 'bg-green-100 text-green-700' },
+  en_monitoreo: { etiqueta: 'En monitoreo', clase: 'bg-amber-100 text-amber-700' },
+  inactiva: { etiqueta: 'Inactiva', clase: 'bg-slate-200 text-slate-600' },
+}
 
 const campo =
   'w-full rounded-xl border border-panel-border bg-panel-card px-3.5 py-2.5 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
 
-// Mientras se dibuja, cada clic en el mapa agrega un vértice.
-function CapturarClics({ activo, onPunto }: { activo: boolean; onPunto: (p: Coordenada) => void }) {
-  useMapEvents({
-    click(e) {
-      if (activo) onPunto([Number(e.latlng.lat.toFixed(6)), Number(e.latlng.lng.toFixed(6))])
-    },
-  })
-  return null
+interface FormZona {
+  nombre: string
+  tipoRiesgo: TipoRiesgo
+  nivel: NivelRiesgo
+  estado: EstadoZona
+  descripcion: string
+  lat: string
+  lng: string
+  radio: string
 }
 
-function EncuadrarZona({ zona }: { zona: ZonaPeligrosa | null }) {
-  const map = useMap()
-  useEffect(() => {
-    if (zona) map.flyToBounds(zona.area, { padding: [40, 40], maxZoom: 16, duration: 0.6 })
-  }, [zona, map])
-  return null
+const formVacio: FormZona = {
+  nombre: '',
+  tipoRiesgo: 'inundacion',
+  nivel: 'medio',
+  estado: 'activa',
+  descripcion: '',
+  lat: String(CENTRO_MAPA[0]),
+  lng: String(CENTRO_MAPA[1]),
+  radio: '500',
 }
+
+type Modal = { modo: 'crear' } | { modo: 'editar'; zona: Zona } | null
 
 export default function ZonasPage() {
-  const [zonas, setZonas] = useState<ZonaPeligrosa[] | null>(null)
+  const [zonas, setZonas] = useState<Zona[] | null>(null)
   const [error, setError] = useState('')
-  const [pestana, setPestana] = useState<EstadoZona>('activa')
-  const [enfocada, setEnfocada] = useState<ZonaPeligrosa | null>(null)
+  const [busqueda, setBusqueda] = useState('')
+  const [filtroRiesgo, setFiltroRiesgo] = useState<'todos' | TipoRiesgo>('todos')
+  const [filtroNivel, setFiltroNivel] = useState<'todos' | NivelRiesgo>('todos')
+  const [enfocada, setEnfocada] = useState<Zona | null>(null)
     // ?accion=nueva abre el formulario directamente (desde la paleta de comandos o el Inicio).
   const [params, setParams] = useSearchParams()
   const abrirDesdeUrl = params.get('accion') === 'nueva'
   useEffect(() => {
     if (abrirDesdeUrl) setParams({}, { replace: true })
   }, [abrirDesdeUrl, setParams])
-  const [dibujando, setDibujando] = useState(abrirDesdeUrl)
-  const areaDibujo = useRef<HTMLDivElement>(null)
-  const enfocarDibujo = () =>
-    requestAnimationFrame(() => areaDibujo.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
-  const [puntos, setPuntos] = useState<Coordenada[]>([])
-  const [tipoNuevo, setTipoNuevo] = useState<TipoRiesgo>('inundacion')
+  const [modal, setModal] = useState<Modal>(abrirDesdeUrl ? { modo: 'crear' } : null)
+  const [form, setForm] = useState<FormZona>(formVacio)
+  const [errorForm, setErrorForm] = useState('')
   const [guardando, setGuardando] = useState(false)
+
+  const enfocarZonaEnMapa = (zona: Zona) => {
+    setEnfocada(zona)
+    document.getElementById('zonas-map')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   useEffect(() => {
     listarZonas()
       .then(setZonas)
-      .catch(() => setError('No se pudieron cargar las zonas peligrosas.'))
+      .catch(() => setError('No se pudieron cargar las zonas.'))
   }, [])
 
-  const zonasCargadas = zonas !== null
-  useEffect(() => {
-    if (zonasCargadas && dibujando) areaDibujo.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    // Solo al terminar de cargar.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [zonasCargadas])
-
-  const visibles = useMemo(
-    () =>
-      (zonas ?? [])
-        .filter((z) => z.estado === pestana)
-        .sort((a, b) => b.actualizadoEn.localeCompare(a.actualizadoEn)),
-    [zonas, pestana],
-  )
+  const filtradas = useMemo(() => {
+    if (!zonas) return []
+    const texto = busqueda.trim().toLowerCase()
+    return zonas.filter((z) => {
+      const coincideTexto = !texto || z.nombre.toLowerCase().includes(texto)
+      const coincideRiesgo = filtroRiesgo === 'todos' || z.tipoRiesgo === filtroRiesgo
+      const coincideNivel = filtroNivel === 'todos' || z.nivel === filtroNivel
+      return coincideTexto && coincideRiesgo && coincideNivel
+    })
+  }, [zonas, busqueda, filtroRiesgo, filtroNivel])
 
   const resumen = useMemo(() => {
-    const activas = (zonas ?? []).filter((z) => z.estado === 'activa')
+    const lista = zonas ?? []
     return {
-      activas: activas.length,
-      resueltas: (zonas ?? []).length - activas.length,
-      hectareas: Math.round(activas.reduce((s, z) => s + hectareas(z.area), 0)),
+      total: lista.length,
+      altas: lista.filter((z) => z.nivel === 'alto' && z.estado !== 'inactiva').length,
+      activas: lista.filter((z) => z.estado === 'activa').length,
+      monitoreo: lista.filter((z) => z.estado === 'en_monitoreo').length,
     }
   }, [zonas])
 
-  const empezarDibujo = () => {
-    setEnfocada(null)
-    setPuntos([])
-    setTipoNuevo('inundacion')
-    setDibujando(true)
-    enfocarDibujo()
-    setError('')
+  const abrirCrear = () => {
+    setForm(formVacio)
+    setErrorForm('')
+    setModal({ modo: 'crear' })
   }
 
-  const cancelarDibujo = () => {
-    setDibujando(false)
-    setPuntos([])
+  const abrirEditar = (z: Zona) => {
+    setForm({
+      nombre: z.nombre,
+      tipoRiesgo: z.tipoRiesgo,
+      nivel: z.nivel,
+      estado: z.estado,
+      descripcion: z.descripcion,
+      lat: String(z.lat),
+      lng: String(z.lng),
+      radio: String(z.radio),
+    })
+    setErrorForm('')
+    setModal({ modo: 'editar', zona: z })
   }
 
-  const guardarZona = async () => {
-    if (puntos.length < 3) return
+  const guardar = async (e: FormEvent) => {
+    e.preventDefault()
+    const actual = modal
+    if (!actual) return
+
+    const lat = Number(form.lat)
+    const lng = Number(form.lng)
+    const radio = Number(form.radio)
+    if (!form.nombre.trim() || !form.descripcion.trim()) {
+      setErrorForm('Completa el nombre y la descripción.')
+      return
+    }
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+      setErrorForm('La latitud o la longitud no son válidas.')
+      return
+    }
+    if (!Number.isFinite(radio) || radio <= 0) {
+      setErrorForm('El radio debe ser un número mayor que cero.')
+      return
+    }
+
+    const datos: DatosZona = {
+      nombre: form.nombre.trim(),
+      tipoRiesgo: form.tipoRiesgo,
+      nivel: form.nivel,
+      estado: form.estado,
+      descripcion: form.descripcion.trim(),
+      lat,
+      lng,
+      radio,
+    }
+
     setGuardando(true)
-    setError('')
+    setErrorForm('')
     try {
-      const nueva = await crearZona({ tipoRiesgo: tipoNuevo, area: puntos })
-      setZonas((lista) => [nueva, ...(lista ?? [])])
-      setPestana('activa')
-      setEnfocada(nueva)
-      cancelarDibujo()
+      if (actual.modo === 'crear') {
+        const nueva = await crearZona(datos)
+        setZonas((lista) => [nueva, ...(lista ?? [])])
+        setEnfocada(nueva)
+      } else {
+        const actualizada = await actualizarZona(actual.zona.id, datos)
+        setZonas((lista) => lista?.map((z) => (z.id === actualizada.id ? actualizada : z)) ?? null)
+        setEnfocada(actualizada)
+      }
+      setModal(null)
     } catch {
-      setError('No se pudo guardar la zona.')
+      setErrorForm('No se pudo guardar la zona.')
     } finally {
       setGuardando(false)
     }
   }
 
-  const alternarEstado = async (z: ZonaPeligrosa) => {
-    const nuevo: EstadoZona = z.estado === 'activa' ? 'resuelta' : 'activa'
-    const pregunta =
-      nuevo === 'resuelta'
-        ? `¿Marcar como resuelta la zona de ${riesgos[z.tipoRiesgo].etiqueta.toLowerCase()}? Dejará de mostrarse como peligro a los ciudadanos.`
-        : `¿Volver a activar la zona de ${riesgos[z.tipoRiesgo].etiqueta.toLowerCase()}?`
-    if (!window.confirm(pregunta)) return
+  const alternarEstado = async (z: Zona) => {
+    const nuevo: EstadoZona = z.estado === 'inactiva' ? 'activa' : 'inactiva'
+    const verbo = nuevo === 'inactiva' ? 'desactivar' : 'activar'
+    if (!window.confirm(`¿Seguro que quieres ${verbo} la zona "${z.nombre}"?`)) return
     setError('')
     try {
-      const actualizada = await cambiarEstadoZona(z.id, nuevo)
+      const actualizada = await actualizarZona(z.id, { estado: nuevo })
       setZonas((lista) => lista?.map((x) => (x.id === actualizada.id ? actualizada : x)) ?? null)
-      if (enfocada?.id === actualizada.id) setEnfocada(null)
     } catch {
       setError('No se pudo cambiar el estado de la zona.')
     }
@@ -158,241 +209,375 @@ export default function ZonasPage() {
   if (error && !zonas) return <p className="text-panel-accent">{error}</p>
   if (!zonas) return <p className="text-panel-text-soft">Cargando…</p>
 
+  const tarjetas = [
+    { valor: resumen.total, titulo: 'Zonas de riesgo', pie: 'Identificadas', icono: TriangleAlert, color: 'bg-red-500', pieColor: 'text-red-600' },
+    { valor: resumen.altas, titulo: 'Con nivel alto', pie: 'Requieren atención', icono: ShieldAlert, color: 'bg-orange-500', pieColor: 'text-orange-600' },
+    { valor: resumen.activas, titulo: 'Zonas activas', pie: 'Vigentes', icono: MapPin, color: 'bg-blue-500', pieColor: 'text-blue-600' },
+    { valor: resumen.monitoreo, titulo: 'En monitoreo', pie: 'En observación', icono: Eye, color: 'bg-green-600', pieColor: 'text-green-600' },
+  ]
+
   return (
     <div>
-      <CabeceraPanel
-        seccion="Recursos"
-        titulo="Zonas peligrosas"
-        descripcion="Delimita en el mapa las áreas de riesgo que verán los ciudadanos en la app."
-        acciones={
-          !dibujando && (
-            <button onClick={empezarDibujo} className={botonCabeceraPrincipal}>
-              <Plus size={16} /> Nueva zona
-            </button>
-          )
-        }
-        estadisticas={[
-          {
-            titulo: 'Zonas activas',
-            valor: resumen.activas,
-            icono: TriangleAlert,
-            pie: 'Visibles como peligro',
-            tono: resumen.activas > 0 ? 'alerta' : 'bien',
-          },
-          { titulo: 'Zonas resueltas', valor: resumen.resueltas, icono: CheckCircle2, pie: 'Ya sin riesgo' },
-          { titulo: 'Hectáreas en riesgo', valor: resumen.hectareas, icono: Ruler, pie: 'Área aproximada de zonas activas' },
-        ]}
-      />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-panel-text-muted">
+            <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+            Recursos
+          </p>
+          <h1 className="mt-3 break-words text-[34px] font-semibold leading-[1] tracking-[-0.045em] sm:text-[52px] sm:tracking-[-0.05em]">Zonas peligrosas</h1>
+          <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-panel-text-soft">
+            Consulta y gestiona las zonas de riesgo identificadas en tu comunidad.
+          </p>
+        </div>
+        <button
+          onClick={abrirCrear}
+          className="flex items-center justify-center gap-2 rounded-full bg-panel-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark"
+        >
+          <Plus size={16} /> Nueva zona
+        </button>
+      </div>
 
-      {error && <p className="mb-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mt-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-      <div ref={areaDibujo} className="grid scroll-mt-28 gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-        <section className="min-w-0 rounded-3xl border border-panel-border bg-panel-card p-5">
-          {dibujando ? (
-            <div>
-              <h2 className="text-lg font-semibold tracking-[-0.02em]">Nueva zona peligrosa</h2>
-              <ol className="mt-3 space-y-2 text-sm text-panel-text-soft">
-                <li className="flex gap-2">
-                  <MousePointerClick size={16} className="mt-0.5 shrink-0 text-panel-info" />
-                  Haz clic en el mapa para marcar cada esquina del área. Necesitas al menos 3 puntos.
-                </li>
-              </ol>
-
-              <label htmlFor="tipoRiesgo" className="mt-5 block text-sm font-medium">
-                Tipo de riesgo
-              </label>
-              <select
-                id="tipoRiesgo"
-                value={tipoNuevo}
-                onChange={(e) => setTipoNuevo(e.target.value as TipoRiesgo)}
-                className={`${campo} mt-1`}
-              >
-                {(Object.keys(riesgos) as TipoRiesgo[]).map((t) => (
-                  <option key={t} value={t}>
-                    {riesgos[t].etiqueta}
-                  </option>
-                ))}
-              </select>
-
-              <div className="mt-4 flex items-center justify-between rounded-xl bg-panel-bg px-4 py-3 text-sm">
-                <span>
-                  <span className="font-semibold tabular-nums">{puntos.length}</span> puntos marcados
-                </span>
-                <span className="tabular-nums text-panel-text-soft">
-                  {puntos.length >= 3 ? formatearHa(hectareas(puntos)) : '—'}
-                </span>
-              </div>
-
-              <div className="mt-5 flex flex-wrap gap-2">
-                <button
-                  onClick={() => setPuntos((p) => p.slice(0, -1))}
-                  disabled={puntos.length === 0 || guardando}
-                  className="flex items-center gap-2 rounded-lg border border-panel-border px-3 py-2 text-sm text-panel-text-soft transition hover:bg-panel-bg disabled:opacity-40"
-                >
-                  <Undo2 size={16} /> Deshacer punto
-                </button>
-                <button
-                  onClick={cancelarDibujo}
-                  disabled={guardando}
-                  className="rounded-lg border border-panel-border px-3 py-2 text-sm text-panel-text-soft transition hover:bg-panel-bg"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={guardarZona}
-                  disabled={puntos.length < 3 || guardando}
-                  className="ml-auto rounded-full bg-panel-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark active:scale-[0.98] disabled:opacity-40"
-                >
-                  {guardando ? 'Guardando…' : 'Guardar zona'}
-                </button>
-              </div>
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {tarjetas.map(({ valor, titulo, pie, icono: Icono, pieColor }) => (
+          <div key={titulo} className="flex items-center gap-4 rounded-3xl border border-panel-border bg-panel-card p-5">
+            <div className={`flex h-11 w-11 items-center justify-center rounded-2xl border border-panel-border text-panel-text-soft`}>
+              <Icono size={24} />
             </div>
-          ) : (
             <div>
-              <div className="inline-flex rounded-full border border-panel-border bg-panel-bg p-1 text-sm">
-                {(['activa', 'resuelta'] as const).map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => setPestana(p)}
-                    className={`rounded-full px-4 py-1.5 font-medium transition ${
-                      pestana === p ? 'bg-panel-primary text-white' : 'text-panel-text-soft hover:text-panel-text'
-                    }`}
-                  >
-                    {p === 'activa' ? `Activas (${resumen.activas})` : `Resueltas (${resumen.resueltas})`}
-                  </button>
-                ))}
-              </div>
-
-              <ul className="mt-4 space-y-2">
-                {visibles.length === 0 && (
-                  <li className="rounded-xl border border-dashed border-panel-border px-4 py-10 text-center text-sm text-panel-text-soft">
-                    {pestana === 'activa' ? 'No hay zonas peligrosas activas.' : 'No hay zonas resueltas.'}
-                  </li>
-                )}
-                {visibles.map((z) => {
-                  const { etiqueta, icono: Icono, clase } = riesgos[z.tipoRiesgo]
-                  const seleccionada = enfocada?.id === z.id
-                  return (
-                    <li
-                      key={z.id}
-                      className={`flex items-center gap-3 rounded-xl border p-3 transition ${
-                        seleccionada ? 'border-panel-primary bg-panel-bg' : 'border-panel-border'
-                      }`}
-                    >
-                      <button
-                        onClick={() => setEnfocada(z)}
-                        className="flex min-w-0 flex-1 items-center gap-3 text-left"
-                        aria-label={`Ver ${etiqueta} en el mapa`}
-                      >
-                        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${clase}`}>
-                          <Icono size={18} />
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block font-semibold">{etiqueta}</span>
-                          <span className="block truncate text-xs text-panel-text-muted">
-                            {formatearHa(hectareas(z.area))} · {formatearFecha(z.actualizadoEn)} · {z.gestionadoPor}
-                          </span>
-                        </span>
-                      </button>
-                      <button
-                        onClick={() => alternarEstado(z)}
-                        title={z.estado === 'activa' ? 'Marcar como resuelta' : 'Volver a activar'}
-                        aria-label={z.estado === 'activa' ? 'Marcar como resuelta' : 'Volver a activar'}
-                        className="rounded p-2 text-panel-text-soft transition hover:bg-panel-bg hover:text-panel-primary"
-                      >
-                        {z.estado === 'activa' ? <CheckCircle2 size={18} /> : <RotateCcw size={18} />}
-                      </button>
-                    </li>
-                  )
-                })}
-              </ul>
+              <p className="text-2xl font-extrabold">{valor}</p>
+              <p className="text-sm text-panel-text-soft">{titulo}</p>
+              <p className={`text-xs font-medium ${pieColor}`}>{pie}</p>
             </div>
-          )}
-        </section>
-
-        <section className="min-w-0 rounded-3xl border border-panel-border bg-panel-card p-5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-lg font-semibold tracking-[-0.02em]">Mapa de zonas</h2>
-            {dibujando && (
-              <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
-                Modo dibujo: haz clic en el mapa
-              </span>
-            )}
           </div>
-          <div className="relative z-0 mt-4 overflow-hidden rounded-xl border border-panel-border">
-            <MapContainer
-              center={CENTRO_MAPA}
-              zoom={14}
-              scrollWheelZoom
-              className={`h-[480px] w-full ${dibujando ? 'cursor-crosshair' : ''}`}
-            >
+        ))}
+      </div>
+
+      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+        <section id="zonas-map" className="relative z-0 isolate min-w-0 scroll-mt-4 rounded-3xl border border-panel-border bg-panel-card p-5">
+          <h2 className="text-lg font-semibold tracking-[-0.02em]">Mapa de zonas de riesgo</h2>
+          <div className="mt-3 flex flex-wrap gap-3 text-xs text-panel-text-soft">
+            {(Object.keys(niveles) as NivelRiesgo[]).map((n) => (
+              <span key={n} className="flex items-center gap-1.5">
+                <span className="h-3 w-3 rounded-full" style={{ backgroundColor: niveles[n].color }} />
+                Nivel {niveles[n].etiqueta.toLowerCase()}
+              </span>
+            ))}
+          </div>
+          <div className="mt-3 overflow-hidden rounded-xl border border-panel-border">
+            <MapContainer center={CENTRO_MAPA} zoom={12} scrollWheelZoom className="h-[420px] w-full">
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
-              <CapturarClics activo={dibujando} onPunto={(p) => setPuntos((lista) => [...lista, p])} />
-              <EncuadrarZona zona={enfocada} />
-
-              {zonas.map((z) => {
-                const activa = z.estado === 'activa'
-                const resaltada = enfocada?.id === z.id
-                return (
-                  <Polygon
-                    key={z.id}
-                    positions={z.area}
-                    pathOptions={{
-                      color: riesgos[z.tipoRiesgo].color,
-                      weight: resaltada ? 4 : 2,
-                      dashArray: activa ? undefined : '6 6',
-                      fillOpacity: activa ? (resaltada ? 0.4 : 0.25) : 0.08,
-                    }}
-                    eventHandlers={{ click: () => !dibujando && setEnfocada(z) }}
-                  >
-                    {!dibujando && (
-                      <Popup>
-                        <p className="font-bold">{riesgos[z.tipoRiesgo].etiqueta}</p>
-                        <p>
-                          {activa ? 'Activa' : 'Resuelta'} · {formatearHa(hectareas(z.area))}
-                        </p>
-                      </Popup>
-                    )}
-                  </Polygon>
-                )
-              })}
-
-              {dibujando && puntos.length >= 3 && (
-                <Polygon
-                  positions={puntos}
-                  pathOptions={{ color: riesgos[tipoNuevo].color, weight: 2, dashArray: '4 4', fillOpacity: 0.2 }}
-                />
-              )}
-              {dibujando && puntos.length === 2 && (
-                <Polyline positions={puntos} pathOptions={{ color: riesgos[tipoNuevo].color, dashArray: '4 4' }} />
-              )}
-              {dibujando &&
-                puntos.map((p, i) => (
-                  <CircleMarker
-                    key={`${p[0]}-${p[1]}-${i}`}
-                    center={p}
-                    radius={5}
-                    pathOptions={{ color: '#ffffff', weight: 2, fillColor: riesgos[tipoNuevo].color, fillOpacity: 1 }}
-                  />
-                ))}
+              <VolarA lat={enfocada?.lat} lng={enfocada?.lng} zoom={14} />
+              {filtradas.map((z) => (
+                <Circle
+                  key={z.id}
+                  center={[z.lat, z.lng]}
+                  radius={z.radio}
+                  pathOptions={{
+                    color: niveles[z.nivel].color,
+                    weight: enfocada?.id === z.id ? 4 : 2,
+                    fillColor: niveles[z.nivel].color,
+                    fillOpacity: z.estado === 'inactiva' ? 0.06 : 0.25,
+                    dashArray: z.estado === 'inactiva' ? '6' : undefined,
+                  }}
+                >
+                  <Popup>
+                    <p className="font-bold">{z.nombre}</p>
+                    <p>
+                      {riesgos[z.tipoRiesgo].etiqueta} · Nivel {niveles[z.nivel].etiqueta.toLowerCase()}
+                    </p>
+                    <p className="mt-1 text-xs">{z.descripcion}</p>
+                  </Popup>
+                </Circle>
+              ))}
             </MapContainer>
           </div>
-          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-panel-text-soft">
-            {(Object.keys(riesgos) as TipoRiesgo[]).map((t) => (
-              <span key={t} className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: riesgos[t].color }} />
-                {riesgos[t].etiqueta}
-              </span>
-            ))}
-            <span className="flex items-center gap-1.5">
-              <span className="h-2.5 w-4 rounded-sm border border-dashed border-slate-400" /> Resuelta
-            </span>
+        </section>
+
+        <section className="min-w-0 rounded-3xl border border-panel-border bg-panel-card">
+          <h2 className="px-5 pt-5 text-lg font-semibold tracking-[-0.02em]">Lista de zonas de riesgo</h2>
+
+          <div className="flex flex-col gap-3 px-5 py-4 lg:flex-row">
+            <div className="relative flex-1">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-panel-text-muted" />
+              <input
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                placeholder="Buscar zona"
+                className={`${campo} pl-9`}
+              />
+            </div>
+            <select
+              value={filtroRiesgo}
+              onChange={(e) => setFiltroRiesgo(e.target.value as 'todos' | TipoRiesgo)}
+              className={`${campo} lg:w-40`}
+            >
+              <option value="todos">Todos los riesgos</option>
+              {(Object.keys(riesgos) as TipoRiesgo[]).map((t) => (
+                <option key={t} value={t}>
+                  {riesgos[t].etiqueta}
+                </option>
+              ))}
+            </select>
+            <select
+              value={filtroNivel}
+              onChange={(e) => setFiltroNivel(e.target.value as 'todos' | NivelRiesgo)}
+              className={`${campo} lg:w-36`}
+            >
+              <option value="todos">Todos los niveles</option>
+              {(Object.keys(niveles) as NivelRiesgo[]).map((n) => (
+                <option key={n} value={n}>
+                  {niveles[n].etiqueta}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="max-w-full overflow-x-auto">
+            <table className="w-full min-w-[600px] text-left text-sm">
+              <thead className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">
+                <tr>
+                  <th className="px-5 py-3">Zona</th>
+                  <th className="px-5 py-3">Tipo de riesgo</th>
+                  <th className="px-5 py-3">Nivel</th>
+                  <th className="px-5 py-3">Estado</th>
+                  <th className="px-5 py-3 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtradas.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-10 text-center text-panel-text-soft">
+                      No hay zonas con esos filtros.
+                    </td>
+                  </tr>
+                )}
+                {filtradas.map((z) => {
+                  const { icono: Icono, etiqueta } = riesgos[z.tipoRiesgo]
+                  return (
+                    <tr key={z.id} className="border-t border-panel-border">
+                      <td className="px-5 py-3 font-medium">{z.nombre}</td>
+                      <td className="px-5 py-3">
+                        <span className="flex items-center gap-2 text-panel-text-soft">
+                          <Icono size={16} /> {etiqueta}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className={`rounded-full px-3 py-1 text-xs font-medium ${niveles[z.nivel].clase}`}>
+                          {niveles[z.nivel].etiqueta}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className={`rounded-full px-3 py-1 text-xs font-medium ${estados[z.estado].clase}`}>
+                          {estados[z.estado].etiqueta}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <div className="flex justify-end gap-1 text-panel-text-soft">
+                          <button
+                            onClick={() => enfocarZonaEnMapa(z)}
+                            title="Ver en el mapa"
+                            aria-label="Ver en el mapa"
+                            className="rounded p-2 hover:bg-panel-bg hover:text-panel-primary"
+                          >
+                            <MapPin size={16} />
+                          </button>
+                          <button
+                            onClick={() => abrirEditar(z)}
+                            title="Ver detalles y editar"
+                            aria-label="Ver detalles y editar"
+                            className="rounded p-2 hover:bg-panel-bg hover:text-panel-primary"
+                          >
+                            <Pencil size={16} />
+                          </button>
+                          <button
+                            onClick={() => alternarEstado(z)}
+                            title={z.estado === 'inactiva' ? 'Activar' : 'Desactivar'}
+                            aria-label={z.estado === 'inactiva' ? 'Activar' : 'Desactivar'}
+                            className="rounded p-2 hover:bg-panel-bg hover:text-panel-accent"
+                          >
+                            <Power size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
         </section>
       </div>
+
+      {modal && (
+        <div
+          className="panel-enfoque fixed inset-0 z-[1100] flex items-start justify-center overflow-y-auto bg-navy-950/35 p-4 backdrop-blur-md sm:p-6"
+          onClick={() => setModal(null)}
+        >
+          <form
+            onSubmit={guardar}
+            className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl bg-panel-card p-6 shadow-2xl sm:max-h-[calc(100dvh-3rem)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between">
+              <h2 className="text-xl font-semibold tracking-[-0.02em]">
+                {modal.modo === 'crear' ? 'Nueva zona de riesgo' : 'Detalles de la zona'}
+              </h2>
+              <button type="button" onClick={() => setModal(null)} aria-label="Cerrar">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-4">
+              <div>
+                <label htmlFor="nombre" className="text-sm font-medium">
+                  Nombre de la zona
+                </label>
+                <input
+                  id="nombre"
+                  value={form.nombre}
+                  onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+                  placeholder="Ej: Ladera La Esperanza"
+                  className={`${campo} mt-1`}
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div>
+                  <label htmlFor="riesgo" className="text-sm font-medium">
+                    Tipo de riesgo
+                  </label>
+                  <select
+                    id="riesgo"
+                    value={form.tipoRiesgo}
+                    onChange={(e) => setForm({ ...form, tipoRiesgo: e.target.value as TipoRiesgo })}
+                    className={`${campo} mt-1`}
+                  >
+                    {(Object.keys(riesgos) as TipoRiesgo[]).map((t) => (
+                      <option key={t} value={t}>
+                        {riesgos[t].etiqueta}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="nivel" className="text-sm font-medium">
+                    Nivel
+                  </label>
+                  <select
+                    id="nivel"
+                    value={form.nivel}
+                    onChange={(e) => setForm({ ...form, nivel: e.target.value as NivelRiesgo })}
+                    className={`${campo} mt-1`}
+                  >
+                    {(Object.keys(niveles) as NivelRiesgo[]).map((n) => (
+                      <option key={n} value={n}>
+                        {niveles[n].etiqueta}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="estado" className="text-sm font-medium">
+                    Estado
+                  </label>
+                  <select
+                    id="estado"
+                    value={form.estado}
+                    onChange={(e) => setForm({ ...form, estado: e.target.value as EstadoZona })}
+                    className={`${campo} mt-1`}
+                  >
+                    {(Object.keys(estados) as EstadoZona[]).map((s) => (
+                      <option key={s} value={s}>
+                        {estados[s].etiqueta}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="descripcion" className="text-sm font-medium">
+                  Descripción
+                </label>
+                <textarea
+                  id="descripcion"
+                  rows={3}
+                  value={form.descripcion}
+                  onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
+                  placeholder="Por qué es una zona de riesgo"
+                  className={`${campo} mt-1`}
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div>
+                  <label htmlFor="lat" className="text-sm font-medium">
+                    Latitud
+                  </label>
+                  <input
+                    id="lat"
+                    type="number"
+                    step="any"
+                    value={form.lat}
+                    onChange={(e) => setForm({ ...form, lat: e.target.value })}
+                    className={`${campo} mt-1`}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="lng" className="text-sm font-medium">
+                    Longitud
+                  </label>
+                  <input
+                    id="lng"
+                    type="number"
+                    step="any"
+                    value={form.lng}
+                    onChange={(e) => setForm({ ...form, lng: e.target.value })}
+                    className={`${campo} mt-1`}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="radio" className="text-sm font-medium">
+                    Radio (metros)
+                  </label>
+                  <input
+                    id="radio"
+                    type="number"
+                    min="1"
+                    value={form.radio}
+                    onChange={(e) => setForm({ ...form, radio: e.target.value })}
+                    className={`${campo} mt-1`}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {errorForm && <p className="mt-4 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{errorForm}</p>}
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setModal(null)}
+                className="rounded-full border border-panel-border px-4 py-2 text-sm text-panel-text-soft transition hover:bg-panel-bg"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={guardando}
+                className="rounded-full bg-panel-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark disabled:opacity-60"
+              >
+                {guardando ? 'Guardando…' : 'Guardar'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,82 +1,51 @@
-import { api, USE_MOCK } from './api'
-import { desplazarFechas } from './mockTiempo'
-import type { RegistroAuditoria } from '../types/auditoria'
+import { api, consulta, USE_MOCK, type Pagina } from './api'
+import type { EventoAuditoria, AuditoriaApi, ModuloAuditoria, TipoEvento } from '../types/auditoria'
 
-// Datos de prueba, SOLO para desarrollo de la interfaz.
-const MOCK: RegistroAuditoria[] = desplazarFechas([
-  {
-    id: 'a1', tabla: 'solicitudes_ayuda', registroId: '2', operacion: 'UPDATE', usuarioId: '1', usuarioNombre: 'Admin Demo',
-    datosAnteriores: { estado: 'pendiente', prioridad_ia: 'media', prioridad_manual: null, modificado_por: null },
-    datosNuevos: { estado: 'en_atencion', prioridad_ia: 'media', prioridad_manual: 'alta', modificado_por: '1' },
-    camposModificados: ['estado', 'prioridad_manual', 'modificado_por'], creadoEn: '2026-10-05T08:52:00',
-  },
-  {
-    id: 'a2', tabla: 'reportes', registroId: '2', operacion: 'UPDATE', usuarioId: '1', usuarioNombre: 'Admin Demo',
-    datosAnteriores: { estado: 'pendiente', verificado_por: null },
-    datosNuevos: { estado: 'verificado', verificado_por: '1' },
-    camposModificados: ['estado', 'verificado_por'], creadoEn: '2026-10-05T07:25:00',
-  },
-  {
-    id: 'a3', tabla: 'usuarios', registroId: '12', operacion: 'UPDATE', usuarioId: '1', usuarioNombre: 'Admin Demo',
-    datosAnteriores: { nombre: 'Jorge Baquero', rol: 'ciudadano', organizacion_id: null },
-    datosNuevos: { nombre: 'Jorge Baquero', rol: 'voluntario', organizacion_id: 'org-1' },
-    camposModificados: ['rol', 'organizacion_id'], creadoEn: '2026-10-01T09:15:00',
-  },
-  {
-    id: 'a4', tabla: 'zonas_peligrosas', registroId: '1', operacion: 'INSERT', usuarioId: '1', usuarioNombre: 'Admin Demo',
-    datosAnteriores: null,
-    datosNuevos: { tipo_riesgo: 'inundacion', estado: 'activa', gestionado_por: '1' },
-    camposModificados: null, creadoEn: '2026-10-05T08:40:00',
-  },
-  {
-    id: 'a5', tabla: 'alertas', registroId: '1', operacion: 'INSERT', usuarioId: '14', usuarioNombre: 'Ricardo Lozano',
-    datosAnteriores: null,
-    datosNuevos: { tipo: 'inundacion', mensaje: 'Crecida del río en la zona urbana. Evite acercarse a las orillas.', creado_por: '14' },
-    camposModificados: null, creadoEn: '2026-10-05T09:00:00',
-  },
-  {
-    id: 'a6', tabla: 'zonas_peligrosas', registroId: '4', operacion: 'UPDATE', usuarioId: '14', usuarioNombre: 'Ricardo Lozano',
-    datosAnteriores: { estado: 'activa' },
-    datosNuevos: { estado: 'resuelta' },
-    camposModificados: ['estado'], creadoEn: '2026-10-02T16:30:00',
-  },
-  {
-    id: 'a7', tabla: 'personas_desaparecidas', registroId: '4', operacion: 'UPDATE', usuarioId: '1', usuarioNombre: 'Admin Demo',
-    datosAnteriores: { nombre: 'Rosa Elena Pacheco', estado_caso: 'buscando' },
-    datosNuevos: { nombre: 'Rosa Elena Pacheco', estado_caso: 'encontrado' },
-    camposModificados: ['estado_caso'], creadoEn: '2026-10-03T13:10:00',
-  },
-  {
-    id: 'a8', tabla: 'reportes', registroId: '6', operacion: 'UPDATE', usuarioId: '14', usuarioNombre: 'Ricardo Lozano',
-    datosAnteriores: { estado: 'pendiente' },
-    datosNuevos: { estado: 'duplicado' },
-    camposModificados: ['estado'], creadoEn: '2026-10-05T07:55:00',
-  },
-  {
-    id: 'a9', tabla: 'solicitudes_ayuda', registroId: '5', operacion: 'INSERT', usuarioId: null, usuarioNombre: null,
-    datosAnteriores: null,
-    datosNuevos: { origen: 'acelerometro', estado: 'pendiente', prioridad_ia: 'pendiente' },
-    camposModificados: null, creadoEn: '2026-10-05T10:22:00',
-  },
-  {
-    id: 'a10', tabla: 'alertas', registroId: '7', operacion: 'DELETE', usuarioId: '1', usuarioNombre: 'Admin Demo',
-    datosAnteriores: { tipo: 'otro', mensaje: 'Alerta de prueba publicada por error.', creado_por: '1' },
-    datosNuevos: null,
-    camposModificados: null, creadoEn: '2026-10-01T12:00:00',
-  },
-  {
-    id: 'a11', tabla: 'reportes', registroId: '7', operacion: 'UPDATE', usuarioId: '1', usuarioNombre: 'Admin Demo',
-    datosAnteriores: { estado: 'pendiente', verificado_por: null },
-    datosNuevos: { estado: 'rechazado', verificado_por: '1' },
-    camposModificados: ['estado', 'verificado_por'], creadoEn: '2026-10-03T18:30:00',
-  },
-], 'creadoEn')
+const MAPA_MODULOS: Record<string, ModuloAuditoria> = {
+  usuarios: 'usuarios',
+  solicitudes_ayuda: 'solicitudes',
+  reportes: 'reportes',
+  personas_desaparecidas: 'desaparecidos',
+  zonas_peligrosas: 'zonas',
+  centros_ayuda: 'centros',
+  alertas: 'alertas',
+  campanas: 'donaciones',
+  donaciones: 'donaciones',
+  sesiones: 'acceso',
+  auth: 'acceso',
+}
 
-export async function listarAuditoria(): Promise<RegistroAuditoria[]> {
-  if (USE_MOCK) return MOCK.map((r) => ({ ...r }))
+export const aEventoAuditoria = (a: AuditoriaApi): EventoAuditoria => {
+  const modulo = MAPA_MODULOS[a.tabla] ?? 'reportes'
+  const tipo: TipoEvento = a.tabla === 'sesiones' || a.tabla === 'auth' ? 'acceso' : 'cambio'
+  const detalle = a.campos_modificados?.length
+    ? `Campos modificados: ${a.campos_modificados.join(', ')}`
+    : a.accion
 
-  // BACKEND: confirmar la ruta real y paginar (la tabla crece rápido).
-  // Un administrador solo debe ver los cambios hechos sobre recursos de su organización
-  // o por usuarios de su organización; el super_admin ve todo.
-  return api<RegistroAuditoria[]>('/admin/auditoria')
+  return {
+    id: a.id,
+    fecha: a.creado_en,
+    usuario: a.actor?.nombre ?? 'Sistema',
+    accion: a.accion,
+    tipo,
+    modulo,
+    detalle,
+    ip: '—',
+  }
+}
+
+// Datos de prueba inventados, SOLO para desarrollo de la interfaz (VITE_USE_MOCK=true).
+const MOCK: EventoAuditoria[] = [
+  { id: '1', fecha: '2026-10-08T10:24:00', usuario: 'Admin Demo', accion: 'Inició sesión', tipo: 'acceso', modulo: 'acceso', detalle: 'Inicio de sesión en el panel', ip: '192.168.1.10' },
+  { id: '2', fecha: '2026-10-08T09:52:00', usuario: 'Marta Salcedo', accion: 'Creó reporte', tipo: 'cambio', modulo: 'reportes', detalle: 'Reporte de accidente en Calle 10', ip: '192.168.1.21' },
+  { id: '3', fecha: '2026-10-08T09:18:00', usuario: 'Carlos Peñaranda', accion: 'Actualizó solicitud', tipo: 'cambio', modulo: 'solicitudes', detalle: 'Estado cambiado a "En proceso"', ip: '192.168.1.33' },
+  { id: '4', fecha: '2026-10-08T08:45:00', usuario: 'Laura Mejía', accion: 'Añadió usuario', tipo: 'cambio', modulo: 'usuarios', detalle: 'Nuevo voluntario invitado', ip: '192.168.1.45' },
+  { id: '5', fecha: '2026-10-07T21:12:00', usuario: 'Admin Demo', accion: 'Eliminó zona peligrosa', tipo: 'cambio', modulo: 'zonas', detalle: 'Zona: Pastizales del borde urbano', ip: '192.168.1.10' },
+]
+
+export async function listarEventos(): Promise<EventoAuditoria[]> {
+  if (USE_MOCK) return MOCK.map((e) => ({ ...e }))
+
+  const pagina = await api<Pagina<AuditoriaApi>>(`/auditoria${consulta({ por_pagina: 100 })}`)
+  return pagina.items.map(aEventoAuditoria)
 }

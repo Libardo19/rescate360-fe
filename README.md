@@ -27,6 +27,10 @@ Equipo: Libardo José Acosta García, Sergio Eli Saucedo, Oscar Javier Ávila Ov
 
 ## Ambiente de desarrollo
 
+**Pruebas del equipo en teléfonos (Wi-Fi o datos móviles):** ver
+[docs/PRUEBA_MOVIL.md](docs/PRUEBA_MOVIL.md). Compilar con
+`scripts/compilar-apk.ps1` para incluir la URL HTTPS de `config/demo.json`.
+
 > Guía paso a paso (backend + app) para montar el proyecto en tu PC: [AMBIENTACION.md](https://github.com/Libardo19/rescate360-be/blob/main/docs/AMBIENTACION.md).
 
 La app **no corre en Docker**: se ejecuta en un emulador o celular con el SDK de Flutter instalado en el PC. En Docker solo va el backend ([rescate360-be](https://github.com/Libardo19/rescate360-be)).
