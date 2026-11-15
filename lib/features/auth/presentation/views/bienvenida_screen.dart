@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../shared/widgets/curvas_de_nivel.dart';
 import '../viewmodels/auth_viewmodel.dart';
+import '../widgets/ilustracion_bienvenida.dart';
 
 /// Pantalla de bienvenida. Si hay una sesión guardada en el dispositivo, entra directo.
 class BienvenidaScreen extends ConsumerStatefulWidget {
@@ -27,13 +27,44 @@ abstract final class _Color {
   static const textoTenue = Color(0xFF93A6DB);
 }
 
-class _BienvenidaScreenState extends ConsumerState<BienvenidaScreen> {
+class _BienvenidaScreenState extends ConsumerState<BienvenidaScreen> with SingleTickerProviderStateMixin {
   bool _revisando = true;
+  // Los botones y el pie entran escalonados cuando el logo ya se asentó
+  late final _acciones = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
+  final _desdeQueAbrio = Stopwatch()..start();
 
   @override
   void initState() {
     super.initState();
     _restaurar();
+  }
+
+  @override
+  void dispose() {
+    _acciones.dispose();
+    super.dispose();
+  }
+
+  Future<void> _mostrarAcciones() async {
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _acciones.value = 1;
+      return;
+    }
+    final falta = IlustracionBienvenida.llegadaDelLogo - _desdeQueAbrio.elapsed;
+    if (falta > Duration.zero) await Future.delayed(falta);
+    if (mounted) _acciones.forward();
+  }
+
+  /// Sube y aparece; [desde] y [hasta] escalonan cada parte dentro de [_acciones].
+  Widget _entra(Widget hijo, double desde, double hasta) {
+    final curva = CurvedAnimation(parent: _acciones, curve: Interval(desde, hasta, curve: Curves.easeOutCubic));
+    return FadeTransition(
+      opacity: curva,
+      child: SlideTransition(
+        position: Tween(begin: const Offset(0, 0.35), end: Offset.zero).animate(curva),
+        child: hijo,
+      ),
+    );
   }
 
   @override
@@ -51,6 +82,7 @@ class _BienvenidaScreenState extends ConsumerState<BienvenidaScreen> {
       Navigator.of(context).pushNamedAndRemoveUntil(rutaInicio(rol), (_) => false);
     } else {
       setState(() => _revisando = false);
+      _mostrarAcciones();
     }
   }
 
@@ -72,7 +104,7 @@ class _BienvenidaScreenState extends ConsumerState<BienvenidaScreen> {
           child: SafeArea(
             child: Column(
               children: [
-                const Expanded(child: _Ilustracion()),
+                const Expanded(child: IlustracionBienvenida(imagen: _ilustracion)),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
                   child: AnimatedSwitcher(
@@ -90,36 +122,52 @@ class _BienvenidaScreenState extends ConsumerState<BienvenidaScreen> {
                         : Column(
                             key: const ValueKey('acciones'),
                             children: [
-                              _BotonPrincipal(
-                                etiqueta: 'Iniciar sesión',
-                                icono: Icons.login_rounded,
-                                onTap: () => Navigator.of(context).pushNamed('/login'),
+                              _entra(
+                                _BotonPrincipal(
+                                  etiqueta: 'Iniciar sesión',
+                                  icono: Icons.login_rounded,
+                                  onTap: () => Navigator.of(context).pushNamed('/login'),
+                                ),
+                                0,
+                                0.7,
                               ),
                               const SizedBox(height: 10),
-                              _BotonContorno(
-                                etiqueta: 'Crear cuenta',
-                                icono: Icons.person_outline_rounded,
-                                onTap: () => Navigator.of(context).pushNamed('/registro'),
+                              _entra(
+                                _BotonContorno(
+                                  etiqueta: 'Crear cuenta',
+                                  icono: Icons.person_outline_rounded,
+                                  onTap: () => Navigator.of(context).pushNamed('/registro'),
+                                ),
+                                0.12,
+                                0.82,
                               ),
                             ],
                           ),
                   ),
                 ),
-                const Text(
-                  'Juntos somos más fuertes',
-                  style: TextStyle(fontSize: 14, color: _Color.textoSuave),
-                ),
-                const SizedBox(height: 8),
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.lock_rounded, size: 14, color: _Color.textoTenue),
-                    SizedBox(width: 6),
-                    Text(
-                      'Acceso seguro para voluntarios',
-                      style: TextStyle(fontSize: 12, color: _Color.textoTenue),
-                    ),
-                  ],
+                _entra(
+                  const Column(
+                    children: [
+                      Text(
+                        'Juntos somos más fuertes',
+                        style: TextStyle(fontSize: 14, color: _Color.textoSuave),
+                      ),
+                      SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.lock_rounded, size: 14, color: _Color.textoTenue),
+                          SizedBox(width: 6),
+                          Text(
+                            'Acceso seguro para voluntarios',
+                            style: TextStyle(fontSize: 12, color: _Color.textoTenue),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  0.3,
+                  1,
                 ),
                 const SizedBox(height: 16),
               ],
@@ -127,43 +175,6 @@ class _BienvenidaScreenState extends ConsumerState<BienvenidaScreen> {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// La ilustración se muestra a su tamaño natural (nunca se amplía ni se recorta).
-/// El espacio que sobra alrededor lo llenan curvas de nivel,
-/// y la imagen se desvanece en sus bordes para que no se note dónde termina.
-class _Ilustracion extends StatelessWidget {
-  const _Ilustracion();
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        const ClipRect(
-          child: RepaintBoundary(child: CustomPaint(painter: CurvasDeNivelPainter(conMancha: false))),
-        ),
-        Align(
-          // Un poco por debajo del centro: reparte el espacio libre sin dejar un hueco arriba.
-          alignment: const Alignment(0, 0.3),
-          child: ShaderMask(
-            blendMode: BlendMode.dstIn,
-            shaderCallback: (rect) => const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.transparent, Colors.black, Colors.black, Colors.transparent],
-              stops: [0, 0.14, 0.88, 1],
-            ).createShader(rect),
-            child: const Image(
-              image: _ilustracion,
-              fit: BoxFit.contain,
-              semanticLabel: 'RESCATE 360. Tu comunidad, más segura. Actúa cuando más importa.',
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

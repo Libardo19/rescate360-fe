@@ -76,6 +76,13 @@ class MapaViewModel extends StateNotifier<MapaState> {
     }
   }
 
+  /// Para quien solo muestra el mapa (la vista previa del inicio): arranca si nadie lo ha hecho.
+  /// Así el inicio y la pestaña Mapa comparten el mismo GPS y la misma consulta cada 15 s.
+  Future<void> iniciarSiHaceFalta() async {
+    if (_timer != null || state.posicion != null) return;
+    await iniciar();
+  }
+
   /// La app pasó a segundo plano: no se consulta para no gastar datos ni batería.
   void pausar(bool pausado) {
     _pausado = pausado;
