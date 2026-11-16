@@ -11,6 +11,8 @@ class SecureStorage {
   static const _access = 'access_token';
   static const _refresh = 'refresh_token';
   static const _usuario = 'usuario';
+  static const _colaOfflinePropia = 'offline_propios';
+  static const _colaOfflineAjena = 'offline_ajenos';
   // Llave HMAC para firmar los mensajes sin conexión (GET /usuarios/me/llave-offline)
   static const _llaveOffline = 'llave_offline';
 
@@ -34,7 +36,20 @@ class SecureStorage {
   Future<String?> usuarioJson() => _storage.read(key: _usuario);
 
   Future<String?> llaveOffline() => _storage.read(key: _llaveOffline);
-  Future<void> guardarLlaveOffline(String llave) => _storage.write(key: _llaveOffline, value: llave);
+  Future<void> guardarLlaveOffline(String llave) =>
+      _storage.write(key: _llaveOffline, value: llave);
+
+  /// Cola de emergencia protegida con Android Keystore o iOS Keychain.
+  Future<String?> leerColaOffline({required bool ajena}) =>
+      _storage.read(key: ajena ? _colaOfflineAjena : _colaOfflinePropia);
+
+  Future<void> guardarColaOffline(String contenido, {required bool ajena}) =>
+      _storage.write(
+          key: ajena ? _colaOfflineAjena : _colaOfflinePropia,
+          value: contenido);
+
+  Future<void> borrarColaOffline({required bool ajena}) =>
+      _storage.delete(key: ajena ? _colaOfflineAjena : _colaOfflinePropia);
 
   Future<void> borrarSesion() async {
     await _storage.delete(key: _llaveOffline);

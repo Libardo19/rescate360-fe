@@ -30,7 +30,8 @@ class NearbyMesh {
 
   bool get activo => _activo;
 
-  Future<bool> iniciar({required String miUsuarioId, required String nombre}) async {
+  Future<bool> iniciar(
+      {required String miUsuarioId, required String nombre}) async {
     if (_activo) return true;
     _miUsuarioId = miUsuarioId;
     final anuncia = await _nearby.startAdvertising(
@@ -87,7 +88,8 @@ class NearbyMesh {
   Future<void> _enviarCola(String endpointId) async {
     final mensajes = (await _cola.todos()).where((m) => m.relevable).toList();
     if (mensajes.isEmpty) return;
-    final bytes = utf8.encode(jsonEncode([for (final m in mensajes) m.toJson()]));
+    final bytes =
+        utf8.encode(jsonEncode([for (final m in mensajes) m.toJson()]));
     try {
       await _nearby.sendBytesPayload(endpointId, Uint8List.fromList(bytes));
     } catch (_) {
@@ -98,10 +100,15 @@ class NearbyMesh {
 
   Future<void> _alRecibir(String endpointId, Payload payload) async {
     final bytes = payload.bytes;
-    if (payload.type != PayloadType.BYTES || bytes == null || _miUsuarioId == null) return;
+    if (payload.type != PayloadType.BYTES ||
+        bytes == null ||
+        _miUsuarioId == null) {
+      return;
+    }
     try {
-      final lista = (jsonDecode(utf8.decode(bytes)) as List).cast<Map<String, dynamic>>();
-      final nuevos = await _cola.agregarAjenos(lista.map(MensajeOffline.fromJson), miUsuarioId: _miUsuarioId!);
+      final lista = MensajeOffline.desdeLoteBytes(bytes);
+      final nuevos =
+          await _cola.agregarAjenos(lista, miUsuarioId: _miUsuarioId!);
       if (nuevos > 0) {
         _recibidos.add(nuevos);
         // Los pasa a los demás conectados, para que sigan saltando hacia alguien con internet
@@ -113,4 +120,5 @@ class NearbyMesh {
   }
 }
 
-final nearbyMeshProvider = Provider<NearbyMesh>((ref) => NearbyMesh(ref.watch(offlineQueueProvider)));
+final nearbyMeshProvider =
+    Provider<NearbyMesh>((ref) => NearbyMesh(ref.watch(offlineQueueProvider)));
