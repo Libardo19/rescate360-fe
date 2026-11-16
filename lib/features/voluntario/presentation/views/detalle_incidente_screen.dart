@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../shared/widgets/galeria_fotos.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
@@ -26,8 +27,7 @@ class DetalleIncidenteScreen extends ConsumerWidget {
 
   Future<void> _tomar(BuildContext context, WidgetRef ref) async {
     final mensajero = ScaffoldMessenger.of(context);
-    final error =
-        await ref.read(voluntarioViewModelProvider).tomar(solicitud);
+    final error = await ref.read(voluntarioViewModelProvider).tomar(solicitud);
     if (!context.mounted) return;
 
     if (error != null) {
@@ -148,21 +148,12 @@ class DetalleIncidenteScreen extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(solicitud.descripcion, style: AppTextStyles.body),
             const SizedBox(height: 22),
-            const Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.photo_library_outlined,
-                    size: 18, color: AppColors.textMuted),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Las fotos del reporte aparecerán aquí cuando el backend '
-                    'las exponga en la API.',
-                    style: AppTextStyles.caption,
-                  ),
-                ),
-              ],
-            ),
+            if (solicitud.evidenciaImagenes.isNotEmpty) ...[
+              const Text('Evidencia del reporte', style: AppTextStyles.h2),
+              const SizedBox(height: 10),
+              GaleriaFotos(fotos: solicitud.evidenciaImagenes, alto: 230),
+              const SizedBox(height: 22),
+            ],
           ],
         ),
       ),
