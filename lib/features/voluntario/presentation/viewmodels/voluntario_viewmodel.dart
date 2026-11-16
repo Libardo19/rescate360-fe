@@ -3,6 +3,7 @@ import '../../../../core/errors/exceptions.dart';
 import '../../../solicitudes_ayuda/data/models/solicitud_ayuda_model.dart';
 import '../../data/models/asignacion_model.dart';
 import '../../data/repositories/voluntario_repository.dart';
+import 'voluntario_local_viewmodel.dart';
 
 /// Casos abiertos de la organización del voluntario.
 final casosOrganizacionProvider =
@@ -43,16 +44,39 @@ class VoluntarioViewModel {
     }
   }
 
-  Future<String?> tomar(SolicitudAyudaModel caso) =>
-      _hacer(() => _ref.read(voluntarioRepositoryProvider).tomar(caso));
+  Future<String?> tomar(SolicitudAyudaModel caso) async {
+    final error = await _hacer(() => _ref.read(voluntarioRepositoryProvider).tomar(caso));
+    if (error == null) {
+      _ref.read(disponibilidadProvider.notifier).cambiar(EstadoDisponibilidad.ocupado);
+    }
+    return error;
+  }
 
-  Future<String?> finalizar(String asignacionId) => _hacer(() => _ref
-      .read(voluntarioRepositoryProvider)
-      .cerrar(asignacionId, finalizada: true));
+  Future<String?> finalizar(String asignacionId) async {
+    final quedanOtras = _hayOtrasAsignacionesActivas(asignacionId);
+    final error = await _hacer(() => _ref
+        .read(voluntarioRepositoryProvider)
+        .cerrar(asignacionId, finalizada: true));
+    if (error == null && !quedanOtras) {
+      _ref.read(disponibilidadProvider.notifier).cambiar(EstadoDisponibilidad.disponible);
+    }
+    return error;
+  }
 
-  Future<String?> soltar(String asignacionId) => _hacer(() => _ref
-      .read(voluntarioRepositoryProvider)
-      .cerrar(asignacionId, finalizada: false));
+  Future<String?> soltar(String asignacionId) async {
+    final quedanOtras = _hayOtrasAsignacionesActivas(asignacionId);
+    final error = await _hacer(() => _ref
+        .read(voluntarioRepositoryProvider)
+        .cerrar(asignacionId, finalizada: false));
+    if (error == null && !quedanOtras) {
+      _ref.read(disponibilidadProvider.notifier).cambiar(EstadoDisponibilidad.disponible);
+    }
+    return error;
+  }
+
+  bool _hayOtrasAsignacionesActivas(String asignacionId) =>
+      (_ref.read(misTareasProvider).valueOrNull ?? const <AsignacionModel>[])
+          .any((a) => a.id != asignacionId && a.estado == 'activa');
 }
 
 final voluntarioViewModelProvider =
