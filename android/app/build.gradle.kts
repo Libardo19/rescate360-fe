@@ -28,8 +28,16 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // R8 reduce y optimiza el bytecode de Android; Flutter obfusca Dart en el script de entrega.
+            isDebuggable = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+            // Firma de desarrollo para poder instalar `flutter run --release` localmente.
+            // Antes de distribuir el APK, reemplazar por una llave privada de release fuera del repo.
             signingConfig = signingConfigs.getByName("debug")
         }
     }
