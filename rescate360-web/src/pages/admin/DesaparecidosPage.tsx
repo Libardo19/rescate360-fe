@@ -36,7 +36,7 @@ const formatearFecha = (valor: string) =>
   new Date(valor.length === 10 ? `${valor}T00:00:00` : valor).toLocaleDateString('es-CO', { dateStyle: 'long' })
 
 const campo =
-  'w-full rounded-lg border border-panel-border bg-panel-card px-3 py-2 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
+  'w-full rounded-xl border border-panel-border bg-panel-card px-3.5 py-2.5 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
 
 interface FormPersona {
   nombre: string
@@ -184,8 +184,12 @@ export default function DesaparecidosPage() {
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold text-panel-primary">Personas desaparecidas</h1>
-          <p className="mt-1 text-sm text-panel-info">
+          <p className="flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-panel-text-muted">
+            <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+            Recursos
+          </p>
+          <h1 className="mt-3 break-words text-[34px] font-semibold leading-[1] tracking-[-0.045em] sm:text-[52px] sm:tracking-[-0.05em]">Personas desaparecidas</h1>
+          <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-panel-text-soft">
             Ayúdanos a encontrarlas. Comparte esta información y mantente atento a las actualizaciones.
           </p>
         </div>
@@ -195,18 +199,18 @@ export default function DesaparecidosPage() {
             setErrorForm('')
             setModalAbierto(true)
           }}
-          className="flex items-center justify-center gap-2 rounded-lg bg-panel-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark"
+          className="flex items-center justify-center gap-2 rounded-full bg-panel-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark"
         >
           <Plus size={16} /> Registrar caso
         </button>
       </div>
 
-      {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mt-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {tarjetas.map(({ valor, titulo, pie, icono: Icono, color, pieColor }) => (
-          <div key={titulo} className="flex items-center gap-4 rounded-2xl border border-panel-border bg-panel-card p-5">
-            <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white ${color}`}>
+        {tarjetas.map(({ valor, titulo, pie, icono: Icono, pieColor }) => (
+          <div key={titulo} className="flex items-center gap-4 rounded-3xl border border-panel-border bg-panel-card p-5">
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-panel-border text-panel-text-soft`}>
               <Icono size={24} />
             </div>
             <div>
@@ -219,8 +223,8 @@ export default function DesaparecidosPage() {
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[3fr_2fr]">
-        <section className="rounded-2xl border border-panel-border bg-panel-card">
-          <h2 className="px-5 pt-5 font-bold">Lista de personas desaparecidas</h2>
+        <section className="rounded-3xl border border-panel-border bg-panel-card">
+          <h2 className="px-5 pt-5 text-lg font-semibold tracking-[-0.02em]">Lista de personas desaparecidas</h2>
 
           <div className="flex flex-col gap-3 px-5 py-4 lg:flex-row">
             <div className="relative flex-1">
@@ -260,7 +264,7 @@ export default function DesaparecidosPage() {
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="text-xs uppercase text-panel-text-muted">
+              <thead className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">
                 <tr>
                   <th className="px-5 py-3">Nombre</th>
                   <th className="px-5 py-3">Edad</th>
@@ -306,7 +310,7 @@ export default function DesaparecidosPage() {
           </div>
         </section>
 
-        <section className="h-fit rounded-2xl border border-panel-border bg-panel-card p-5">
+        <section className="h-fit rounded-3xl border border-panel-border bg-panel-card p-5">
           {!seleccionada ? (
             <p className="py-10 text-center text-sm text-panel-text-soft">Selecciona un caso para ver su detalle.</p>
           ) : (
@@ -332,19 +336,19 @@ export default function DesaparecidosPage() {
                 <div className="flex gap-3">
                   <MapPin size={16} className="mt-0.5 shrink-0 text-panel-text-muted" />
                   <div>
-                    <dt className="text-xs uppercase text-panel-text-muted">Última ubicación</dt>
+                    <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">Última ubicación</dt>
                     <dd>{seleccionada.ultimaUbicacion}</dd>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <CalendarDays size={16} className="mt-0.5 shrink-0 text-panel-text-muted" />
                   <div>
-                    <dt className="text-xs uppercase text-panel-text-muted">Fecha de desaparición</dt>
+                    <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">Fecha de desaparición</dt>
                     <dd>{formatearFecha(seleccionada.fechaDesaparicion)}</dd>
                   </div>
                 </div>
                 <div>
-                  <dt className="text-xs uppercase text-panel-text-muted">Descripción</dt>
+                  <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">Descripción</dt>
                   <dd className="mt-1">{seleccionada.descripcion}</dd>
                 </div>
               </dl>
@@ -369,7 +373,7 @@ export default function DesaparecidosPage() {
 
               <button
                 onClick={compartir}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-panel-border px-4 py-2 text-sm font-semibold text-panel-text-soft transition hover:bg-panel-bg"
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-panel-border px-4 py-2 text-sm font-semibold text-panel-text-soft transition hover:bg-panel-bg"
               >
                 {copiado ? <Check size={16} className="text-panel-success" /> : <Share2 size={16} />}
                 {copiado ? 'Texto copiado' : 'Compartir'}
@@ -381,7 +385,7 @@ export default function DesaparecidosPage() {
 
       {modalAbierto && (
         <div
-          className="fixed inset-0 z-[1000] flex items-center justify-center overflow-y-auto bg-black/40 p-4 sm:p-6"
+          className="panel-enfoque fixed inset-0 z-[1100] flex items-start justify-center overflow-y-auto bg-navy-950/35 p-4 backdrop-blur-md sm:p-6"
           onClick={() => setModalAbierto(false)}
         >
           <form
@@ -390,7 +394,7 @@ export default function DesaparecidosPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between">
-              <h2 className="text-xl font-extrabold text-panel-primary">Registrar caso</h2>
+              <h2 className="text-xl font-semibold tracking-[-0.02em]">Registrar caso</h2>
               <button type="button" onClick={() => setModalAbierto(false)} aria-label="Cerrar">
                 <X size={20} />
               </button>
@@ -478,20 +482,20 @@ export default function DesaparecidosPage() {
               </div>
             </div>
 
-            {errorForm && <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{errorForm}</p>}
+            {errorForm && <p className="mt-4 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{errorForm}</p>}
 
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setModalAbierto(false)}
-                className="rounded-lg border border-panel-border px-4 py-2 text-sm text-panel-text-soft transition hover:bg-panel-bg"
+                className="rounded-full border border-panel-border px-4 py-2 text-sm text-panel-text-soft transition hover:bg-panel-bg"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={guardando}
-                className="rounded-lg bg-panel-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark disabled:opacity-60"
+                className="rounded-full bg-panel-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark disabled:opacity-60"
               >
                 {guardando ? 'Registrando…' : 'Registrar'}
               </button>

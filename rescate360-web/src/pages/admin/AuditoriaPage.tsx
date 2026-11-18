@@ -47,7 +47,7 @@ const formatearFecha = (iso: string) =>
 const numero = new Intl.NumberFormat('es-CO')
 
 const campo =
-  'w-full rounded-lg border border-panel-border bg-panel-card px-3 py-2 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
+  'w-full rounded-xl border border-panel-border bg-panel-card px-3.5 py-2.5 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
 
 export default function AuditoriaPage() {
   const [eventos, setEventos] = useState<EventoAuditoria[] | null>(null)
@@ -125,13 +125,17 @@ export default function AuditoriaPage() {
 
   return (
     <div className="min-w-0">
-      <h1 className="text-2xl font-extrabold text-panel-primary">Auditoría</h1>
-      <p className="mt-1 text-sm text-panel-info">Consulta el historial de acciones y eventos del sistema.</p>
+      <p className="flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-panel-text-muted">
+        <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+        Administración
+      </p>
+      <h1 className="mt-3 break-words text-[34px] font-semibold leading-[1] tracking-[-0.045em] sm:text-[52px] sm:tracking-[-0.05em]">Auditoría</h1>
+      <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-panel-text-soft">Consulta el historial de acciones y eventos del sistema.</p>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {tarjetas.map(({ valor, titulo, icono: Icono, color }) => (
-          <div key={titulo} className="flex items-center gap-4 rounded-2xl border border-panel-border bg-panel-card p-5">
-            <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white ${color}`}>
+        {tarjetas.map(({ valor, titulo, icono: Icono }) => (
+          <div key={titulo} className="flex items-center gap-4 rounded-3xl border border-panel-border bg-panel-card p-5">
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-panel-border text-panel-text-soft`}>
               <Icono size={24} />
             </div>
             <div>
@@ -143,12 +147,12 @@ export default function AuditoriaPage() {
       </div>
 
       <div className="mt-6 grid min-w-0 gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
-        <section className="min-w-0 rounded-2xl border border-panel-border bg-panel-card">
-          <h2 className="px-5 pt-5 font-bold">Registro de auditoría</h2>
+        <section className="min-w-0 rounded-3xl border border-panel-border bg-panel-card">
+          <h2 className="px-5 pt-5 text-lg font-semibold tracking-[-0.02em]">Registro de auditoría</h2>
 
           <div className="mt-3 max-w-full overflow-x-auto">
             <table className="w-full min-w-[680px] text-left text-sm">
-              <thead className="text-xs uppercase text-panel-text-muted">
+              <thead className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">
                 <tr>
                   <th className="px-5 py-3">Fecha / hora</th>
                   <th className="px-5 py-3">Usuario</th>
@@ -233,8 +237,8 @@ export default function AuditoriaPage() {
           </div>
         </section>
 
-        <section className="h-fit min-w-0 rounded-2xl border border-panel-border bg-panel-card p-5">
-          <h2 className="font-bold">Filtros</h2>
+        <section className="h-fit min-w-0 rounded-3xl border border-panel-border bg-panel-card p-5">
+          <h2 className="text-lg font-semibold tracking-[-0.02em]">Filtros</h2>
 
           <div className="mt-4 space-y-4">
             <div className="grid grid-cols-2 gap-3 xl:grid-cols-1">
@@ -322,11 +326,11 @@ export default function AuditoriaPage() {
             </div>
           </div>
 
-          {errorFiltro && <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{errorFiltro}</p>}
+          {errorFiltro && <p className="mt-4 rounded-2xl bg-red-50 px-3 py-2 text-xs text-red-700">{errorFiltro}</p>}
 
           <button
             onClick={aplicar}
-            className="mt-5 w-full rounded-lg bg-panel-info px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+            className="mt-5 w-full rounded-full bg-navy-950 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_-12px_rgba(11,27,54,0.8)] transition hover:bg-navy-800 active:scale-[0.98] dark:bg-white dark:text-navy-950"
           >
             Aplicar filtros
           </button>

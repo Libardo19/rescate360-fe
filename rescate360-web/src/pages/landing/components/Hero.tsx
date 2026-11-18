@@ -1,58 +1,105 @@
-import { Download, CirclePlay, ShieldPlus } from 'lucide-react'
-import heroBg from '../../../assets/hero-bg.png'
-import appHome from '../../../assets/app-home-cutout.png'
+import { motion, useReducedMotion } from 'motion/react'
+import { ArrowRight, Check } from 'lucide-react'
+import BlurText from '../../../components/reactbits/BlurText/BlurText'
+import EscudoPuntos from './EscudoPuntos'
+import type { Tema } from './comunes'
 
-export default function Hero() {
+const sellos = [
+  'Funciona sin internet',
+  'Prioridad asistida por IA',
+  'Datos tratados según la Ley 1581',
+  'Alertas oficiales en tiempo real',
+]
+
+export default function Hero({ tema }: { tema: Tema }) {
+  const reducir = useReducedMotion()
+  const entrar = (retraso: number) => ({
+    initial: reducir ? false : { opacity: 0, y: 14, filter: 'blur(6px)' },
+    animate: { opacity: 1, y: 0, filter: 'blur(0px)' },
+    transition: { duration: 0.8, delay: retraso, ease: [0.22, 1, 0.36, 1] as const },
+  })
+
   return (
-    <section id="inicio" className="relative scroll-mt-20 overflow-hidden text-white">
-      <img src={heroBg} alt="" className="absolute inset-0 h-full w-full object-cover" />
-      <div className="absolute inset-0 bg-linear-to-r from-navy-950 via-navy-950/85 to-navy-950/30" />
+    <section id="inicio" className="relative flex min-h-[100svh] flex-col overflow-hidden pt-24">
+      <div className="mx-auto grid w-full max-w-6xl flex-1 items-center gap-6 px-5 sm:px-6 lg:grid-cols-[1.08fr_0.92fr] lg:gap-4">
+        <div className="relative z-10 py-6 lg:py-0">
+          <motion.p {...entrar(0.05)} className="flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-slate-500 dark:text-white/50">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand opacity-60 motion-reduce:hidden" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-brand" />
+            </span>
+            Red de respuesta · Valledupar, Cesar
+          </motion.p>
 
-      <div className="relative mx-auto grid min-h-[520px] max-w-6xl items-center gap-5 px-6 pb-10 pt-28 md:min-h-[400px] md:grid-cols-[1.05fr_0.95fr] md:pb-6 md:pt-20">
-        <div className="landing-reveal">
-          <p className="text-xs font-medium uppercase tracking-widest text-white/70">
-            Plataforma de emergencias y coordinación comunitaria
-          </p>
-          <h1 className="mt-3 text-4xl font-extrabold leading-[0.98] sm:text-5xl lg:text-7xl">
-            Juntos somos <span className="block text-brand">más fuertes</span>
-          </h1>
-          <p className="mt-4 text-base font-medium sm:text-lg md:text-sm lg:text-lg">Coordinación comunitaria ante emergencias.</p>
-          <p className="mt-3 max-w-lg text-sm leading-relaxed text-white/80 sm:text-base md:text-xs lg:text-base">
-            Reporta, solicita ayuda y mantente informado. RESCATE360 conecta a la comunidad con los
-            organismos de respuesta para un apoyo más rápido y efectivo.
-          </p>
+          <motion.div {...entrar(0.12)} className="mt-6 flex items-center gap-3">
+            <img src="/logoRescate.png" alt="" className="h-11 w-11 sm:h-14 sm:w-14" />
+            <span className="font-display text-4xl font-bold tracking-[-0.045em] text-navy-950 sm:text-6xl dark:text-white">
+              RESCATE<span className="text-brand">360</span>
+            </span>
+          </motion.div>
 
-          <div className="mt-5 flex flex-col gap-3 sm:flex-row md:flex-wrap">
+          <h1 className="sr-only">Reporta en segundos. Ayuda en minutos.</h1>
+          <div aria-hidden="true" className="mt-6 font-display text-[44px] font-semibold leading-[0.98] tracking-[-0.045em] sm:text-6xl lg:text-[50px] xl:text-[56px]">
+            <BlurText
+              text="Reporta en segundos."
+              trigger="load"
+              delay={90}
+              stepDuration={0.4}
+              className="text-navy-950 dark:text-white"
+            />
+            <BlurText text="Ayuda en minutos." trigger="load" delay={90} stepDuration={0.4} className="text-brand" />
+          </div>
+
+          <motion.p {...entrar(0.55)} className="mt-6 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-white/60">
+            Conecta a la comunidad con bomberos, Cruz Roja, Defensa Civil y voluntarios: reportes con ubicación, solicitudes
+            de ayuda priorizadas y alertas oficiales, incluso cuando no hay señal.
+          </motion.p>
+
+          <motion.div {...entrar(0.7)} className="mt-8 flex flex-wrap gap-3">
             <a
               href="#descarga"
-              className="flex items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-brand px-3 py-2.5 text-xs font-semibold transition hover:bg-brand-dark sm:px-4 lg:px-5 lg:text-sm"
+              className="group inline-flex items-center gap-2 rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_30px_-10px_rgba(232,52,63,0.7)] transition hover:bg-brand-dark active:scale-[0.98]"
             >
-              <Download size={18} /> Descargar app
+              Descargar la app
+              <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
             </a>
             <a
               href="#como-funciona"
-              className="flex items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-white/40 px-3 py-2.5 text-xs font-semibold transition hover:bg-white/10 sm:px-4 lg:px-5 lg:text-sm"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white/50 px-5 py-3 text-sm font-semibold text-navy-950 backdrop-blur transition hover:border-slate-400 hover:bg-white active:scale-[0.98] dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
             >
-              <CirclePlay size={18} /> Conocer cómo funciona
+              Ver cómo funciona
             </a>
-          </div>
-
-          <div className="mt-3 flex flex-wrap gap-2 text-xs">
-            <span className="rounded-md border border-white/30 px-3 py-2">Google Play · Próximamente</span>
-            <span className="rounded-md border border-white/30 px-3 py-2">App Store · Próximamente</span>
-          </div>
+          </motion.div>
         </div>
 
-        <div className="relative flex items-center justify-center md:justify-end">
-          <div className="home-phone-3d relative w-40 sm:w-44 lg:w-60 xl:mr-36">
-            <img src={appHome} alt="Pantalla de inicio de la app RESCATE360" className="home-phone-image block w-full" />
-          </div>
-          <div className="absolute -right-2 top-4 hidden w-36 text-right xl:block">
-            <ShieldPlus size={40} className="ml-auto" />
-            <p className="mt-2 text-lg font-bold leading-snug">Tu comunidad más segura, siempre.</p>
-          </div>
-        </div>
+        <motion.div
+          initial={reducir ? false : { opacity: 0, scale: 0.94 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1.2, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          className="relative mx-auto w-full max-w-[340px] sm:max-w-[440px] lg:max-w-[560px]"
+        >
+          <EscudoPuntos oscuro={tema === 'oscuro'} />
+          <p className="pointer-events-none absolute bottom-[6%] right-0 font-mono text-[10px] uppercase tracking-[0.18em] text-slate-400 dark:text-white/35">
+            Señal · respuesta coordinada
+          </p>
+        </motion.div>
       </div>
+
+      {/* Sellos */}
+      <motion.ul
+        {...entrar(0.9)}
+        aria-label="Características"
+        className="mx-auto flex w-full max-w-6xl flex-wrap justify-center gap-2 px-5 pb-8 pt-6 sm:px-6"
+      >
+        {sellos.map((s) => (
+          <li
+            key={s}
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/60 px-3 py-1.5 text-xs text-slate-600 backdrop-blur dark:border-white/10 dark:bg-white/5 dark:text-white/65"
+          >
+            <Check size={13} className="text-emerald-600 dark:text-emerald-400" /> {s}
+          </li>
+        ))}
+      </motion.ul>
     </section>
   )
 }

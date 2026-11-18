@@ -15,16 +15,16 @@ export default function CodigoActivacion({ invitacion, onCerrar }: { invitacion:
   }
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 p-4" onClick={onCerrar}>
+    <div className="panel-enfoque fixed inset-0 z-[1100] flex items-start justify-center overflow-y-auto bg-navy-950/35 p-4 backdrop-blur-md sm:p-6" onClick={onCerrar}>
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="titulo-codigo"
-        className="w-full max-w-md rounded-2xl bg-panel-card p-6 shadow-2xl"
+        className="panel-modal-enter my-auto w-full max-w-md rounded-[28px] border border-panel-border bg-panel-card p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between">
-          <h2 id="titulo-codigo" className="flex items-center gap-2 text-xl font-extrabold text-panel-primary">
+          <h2 id="titulo-codigo" className="flex items-center gap-2 text-xl font-semibold tracking-[-0.02em]">
             <KeyRound size={20} /> Código de activación
           </h2>
           <button type="button" onClick={onCerrar} aria-label="Cerrar">
@@ -42,7 +42,7 @@ export default function CodigoActivacion({ invitacion, onCerrar }: { invitacion:
           <button
             type="button"
             onClick={copiar}
-            className="flex items-center gap-1 rounded-lg bg-panel-primary px-3 py-2 text-sm font-semibold text-white hover:bg-panel-primary-dark"
+            className="flex items-center gap-1 rounded-full bg-panel-primary px-3 py-2 text-sm font-semibold text-white hover:bg-panel-primary-dark"
           >
             {copiado ? <Check size={16} /> : <Copy size={16} />} {copiado ? 'Copiado' : 'Copiar'}
           </button>
@@ -54,7 +54,7 @@ export default function CodigoActivacion({ invitacion, onCerrar }: { invitacion:
         </p>
 
         <div className="mt-5 flex justify-end">
-          <button type="button" onClick={onCerrar} className="rounded-lg bg-panel-primary px-5 py-2 text-sm font-semibold text-white hover:bg-panel-primary-dark">
+          <button type="button" onClick={onCerrar} className="rounded-full bg-panel-primary px-5 py-2 text-sm font-semibold text-white hover:bg-panel-primary-dark">
             Listo
           </button>
         </div>

@@ -5,6 +5,8 @@ import { listarOrganizaciones } from '../../services/organizaciones.service'
 import { mensajeDeError } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
 import { useConsultaPeriodica } from '../../hooks/useConsultaPeriodica'
+import Semaforo from '../../components/panel/Semaforo'
+import { useAhora, minutosDesde } from '../../utils/espera'
 import CeldaVoluntario from '../../components/CeldaVoluntario'
 import type { Organizacion } from '../../types/organizacion'
 import { prioridadEfectiva } from '../../types/solicitud'
@@ -56,9 +58,11 @@ const formatearFecha = (iso: string) =>
   new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
 
 const campo =
-  'rounded-lg border border-panel-border bg-panel-card px-3 py-2 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
+  'rounded-xl border border-panel-border bg-panel-card px-3.5 py-2.5 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
 
 export default function SolicitudesPage() {
+  // Reloj del semáforo de espera: se actualiza solo cada 30 s.
+  const ahora = useAhora()
   const [solicitudes, setSolicitudes] = useState<Solicitud[] | null>(null)
   const [error, setError] = useState('')
   const [busqueda, setBusqueda] = useState('')
@@ -136,13 +140,17 @@ export default function SolicitudesPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold text-panel-primary">Solicitudes de ayuda</h1>
-      <p className="mt-1 text-sm text-panel-text-soft">
+      <p className="flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-panel-text-muted">
+        <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+        Operación
+      </p>
+      <h1 className="mt-3 break-words text-[34px] font-semibold leading-[1] tracking-[-0.045em] sm:text-[52px] sm:tracking-[-0.05em]">Solicitudes de ayuda</h1>
+      <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-panel-text-soft">
         Las solicitudes se ordenan por prioridad. La IA propone una prioridad, pero la que tú definas manualmente
         prevalece.
       </p>
 
-      {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mt-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
       <div className="mt-6 flex flex-col gap-3 lg:flex-row">
         <div className="relative flex-1">
@@ -196,9 +204,9 @@ export default function SolicitudesPage() {
         Mostrando {filtradas.length} de {solicitudes.length} solicitudes
       </p>
 
-      <div className="mt-2 max-w-full overflow-x-auto rounded-2xl border border-panel-border bg-panel-card">
+      <div className="mt-2 max-w-full overflow-x-auto rounded-3xl border border-panel-border bg-panel-card">
         <table className="w-full min-w-[850px] text-left text-sm">
-          <thead className="text-xs uppercase text-panel-text-muted">
+          <thead className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">
             <tr>
               <th className="px-5 py-3">Prioridad</th>
               <th className="px-5 py-3">Tipo</th>
@@ -206,7 +214,7 @@ export default function SolicitudesPage() {
               <th className="px-5 py-3">Solicitante</th>
               <th className="px-5 py-3">Estado</th>
               <th className="px-5 py-3">Voluntario</th>
-              <th className="px-5 py-3">Fecha</th>
+              <th className="px-5 py-3">Espera</th>
               <th className="px-5 py-3" />
             </tr>
           </thead>
@@ -253,7 +261,11 @@ export default function SolicitudesPage() {
                   <td className="px-5 py-3">
                     <CeldaVoluntario atencion={s.atencion} />
                   </td>
-                  <td className="whitespace-nowrap px-5 py-3 text-panel-text-soft">{formatearFecha(s.fecha)}</td>
+                  <td className="whitespace-nowrap px-5 py-3">
+                    {/* Semáforo: cuenta mientras nadie ha tomado la solicitud (verde, ámbar +15 min, rojo +30 min). */}
+                    {s.estado === 'pendiente' && <Semaforo minutos={minutosDesde(s.fecha, ahora)} compacto />}
+                    <p className={`text-[11px] text-panel-text-muted ${s.estado === 'pendiente' ? 'mt-1' : ''}`}>{formatearFecha(s.fecha)}</p>
+                  </td>
                   <td className="px-5 py-3 text-right">
                     <button
                       onClick={() => setSeleccionada(s)}
@@ -271,7 +283,7 @@ export default function SolicitudesPage() {
 
       {seleccionada && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4 sm:p-6"
+          className="panel-enfoque fixed inset-0 z-[1100] flex items-start justify-center overflow-y-auto bg-navy-950/35 p-4 backdrop-blur-md sm:p-6"
           onClick={() => setSeleccionada(null)}
         >
           <div
@@ -280,7 +292,7 @@ export default function SolicitudesPage() {
           >
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-xl font-extrabold text-panel-primary">
+                <h2 className="text-xl font-semibold tracking-[-0.02em]">
                   Ayuda {etiquetaTipo[seleccionada.tipo].toLowerCase()}
                 </h2>
                 <p className="mt-1 text-xs text-panel-text-muted">{formatearFecha(seleccionada.fecha)}</p>
@@ -292,15 +304,15 @@ export default function SolicitudesPage() {
 
             <dl className="mt-5 space-y-3 text-sm">
               <div>
-                <dt className="text-xs uppercase text-panel-text-muted">Descripción</dt>
+                <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">Descripción</dt>
                 <dd>{seleccionada.descripcion}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase text-panel-text-muted">Ubicación</dt>
+                <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">Ubicación</dt>
                 <dd>{seleccionada.ubicacion}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase text-panel-text-muted">Solicitante</dt>
+                <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">Solicitante</dt>
                 <dd>
                   {seleccionada.solicitante} · {seleccionada.telefono}
                 </dd>

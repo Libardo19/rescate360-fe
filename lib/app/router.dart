@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:rescate360/features/landing/views/landing_screen.dart';
 import '../features/alertas/presentation/views/alertas_screen.dart';
 import '../features/auth/presentation/views/activar_cuenta_screen.dart';
 import '../features/auth/presentation/views/bienvenida_screen.dart';
@@ -56,7 +58,8 @@ class AppRouter {
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case inicial:
-        return _build(const BienvenidaScreen(), settings);
+        // En la web se abre la landing; en el móvil, la bienvenida.
+        return _build(kIsWeb ? const LandingScreen() : const BienvenidaScreen(), settings);
       case login:
         return _build(const LoginScreen(), settings);
       case registro:

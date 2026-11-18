@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Ban, Building2, CircleCheck, KeyRound, Pencil, Plus, ShieldCheck, UserMinus, Users, X } from 'lucide-react'
 import {
   actualizarOrganizacion,
@@ -15,7 +16,7 @@ import { TIPOS_ORGANIZACION, type Organizacion, type TipoOrganizacion } from '..
 import type { Invitacion, UsuarioSistema } from '../../types/usuarioSistema'
 
 const campo =
-  'w-full rounded-lg border border-panel-border bg-panel-card px-3 py-2 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
+  'w-full rounded-xl border border-panel-border bg-panel-card px-3.5 py-2.5 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
 
 const estadoUsuario: Record<UsuarioSistema['estado'], { etiqueta: string; clase: string }> = {
   activo: { etiqueta: 'Activo', clase: 'bg-green-100 text-green-700' },
@@ -29,7 +30,13 @@ type ModalOrg = { modo: 'crear' } | { modo: 'editar'; org: Organizacion } | null
 export default function OrganizacionesPage() {
   const [organizaciones, setOrganizaciones] = useState<Organizacion[] | null>(null)
   const [error, setError] = useState('')
-  const [modal, setModal] = useState<ModalOrg>(null)
+    // ?accion=nueva abre el formulario directamente (desde la paleta de comandos o el Inicio).
+  const [params, setParams] = useSearchParams()
+  const abrirDesdeUrl = params.get('accion') === 'nueva'
+  useEffect(() => {
+    if (abrirDesdeUrl) setParams({}, { replace: true })
+  }, [abrirDesdeUrl, setParams])
+  const [modal, setModal] = useState<ModalOrg>(abrirDesdeUrl ? { modo: 'crear' } : null)
   const [form, setForm] = useState({ nombre: '', tipo: 'cruz_roja' as TipoOrganizacion, telefono_contacto: '' })
   const [errorForm, setErrorForm] = useState('')
   const [guardando, setGuardando] = useState(false)
@@ -153,23 +160,27 @@ export default function OrganizacionesPage() {
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold text-panel-primary">Organizaciones</h1>
-          <p className="mt-1 text-sm text-panel-info">Crea organizaciones y asígnales sus administradores.</p>
+          <p className="flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-panel-text-muted">
+            <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+            Super admin
+          </p>
+          <h1 className="mt-3 break-words text-[34px] font-semibold leading-[1] tracking-[-0.045em] sm:text-[52px] sm:tracking-[-0.05em]">Organizaciones</h1>
+          <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-panel-text-soft">Crea organizaciones y asígnales sus administradores.</p>
         </div>
         <button
           onClick={abrirCrear}
-          className="flex items-center justify-center gap-2 rounded-lg bg-panel-info px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+          className="flex items-center justify-center gap-2 rounded-full bg-navy-950 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_-12px_rgba(11,27,54,0.8)] transition hover:bg-navy-800 active:scale-[0.98] dark:bg-white dark:text-navy-950"
         >
           <Plus size={16} /> Nueva organización
         </button>
       </div>
 
-      {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mt-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,420px)]">
-        <section className="overflow-x-auto rounded-2xl border border-panel-border bg-panel-card">
+        <section className="overflow-x-auto rounded-3xl border border-panel-border bg-panel-card">
           <table className="w-full text-left text-sm">
-            <thead className="text-xs uppercase text-panel-text-muted">
+            <thead className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">
               <tr>
                 <th className="px-5 py-3">Organización</th>
                 <th className="hidden px-5 py-3 md:table-cell">Tipo</th>
@@ -227,7 +238,7 @@ export default function OrganizacionesPage() {
           </table>
         </section>
 
-        <section className="rounded-2xl border border-panel-border bg-panel-card p-5">
+        <section className="rounded-3xl border border-panel-border bg-panel-card p-5">
           {!seleccionada ? (
             <p className="text-sm text-panel-text-soft">
               Elige una organización (<Users size={14} className="inline" />) para ver y asignar sus administradores.
@@ -271,11 +282,11 @@ export default function OrganizacionesPage() {
                 <input required placeholder="Nombre completo" value={nuevoAdmin.nombre} onChange={(e) => setNuevoAdmin({ ...nuevoAdmin, nombre: e.target.value })} className={campo} />
                 <input required type="email" placeholder="Correo" value={nuevoAdmin.email} onChange={(e) => setNuevoAdmin({ ...nuevoAdmin, email: e.target.value })} className={campo} />
                 <input type="tel" placeholder="Celular (opcional)" value={nuevoAdmin.telefono} onChange={(e) => setNuevoAdmin({ ...nuevoAdmin, telefono: e.target.value })} className={campo} />
-                {errorAdmin && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{errorAdmin}</p>}
+                {errorAdmin && <p className="rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{errorAdmin}</p>}
                 <button
                   type="submit"
                   disabled={!seleccionada.activa}
-                  className="w-full rounded-lg bg-panel-primary py-2 text-sm font-semibold text-white hover:bg-panel-primary-dark disabled:opacity-50"
+                  className="w-full rounded-full bg-panel-primary py-2 text-sm font-semibold text-white hover:bg-panel-primary-dark disabled:opacity-50"
                 >
                   Invitar y generar código
                 </button>
@@ -286,10 +297,10 @@ export default function OrganizacionesPage() {
       </div>
 
       {modal && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 p-4" onClick={() => setModal(null)}>
-          <form onSubmit={guardar} className="w-full max-w-md rounded-2xl bg-panel-card p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="panel-enfoque fixed inset-0 z-[1100] flex items-start justify-center overflow-y-auto bg-navy-950/35 p-4 backdrop-blur-md sm:p-6" onClick={() => setModal(null)}>
+          <form onSubmit={guardar} className="panel-modal-enter my-auto w-full max-w-md rounded-[28px] border border-panel-border bg-panel-card p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between">
-              <h2 className="text-xl font-extrabold text-panel-primary">{modal.modo === 'crear' ? 'Nueva organización' : 'Editar organización'}</h2>
+              <h2 className="text-xl font-semibold tracking-[-0.02em]">{modal.modo === 'crear' ? 'Nueva organización' : 'Editar organización'}</h2>
               <button type="button" onClick={() => setModal(null)} aria-label="Cerrar">
                 <X size={20} />
               </button>
@@ -323,12 +334,12 @@ export default function OrganizacionesPage() {
                 />
               </div>
             </div>
-            {errorForm && <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{errorForm}</p>}
+            {errorForm && <p className="mt-4 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{errorForm}</p>}
             <div className="mt-6 flex justify-end gap-3">
-              <button type="button" onClick={() => setModal(null)} className="rounded-lg border border-panel-border px-4 py-2 text-sm text-panel-text-soft hover:bg-panel-bg">
+              <button type="button" onClick={() => setModal(null)} className="rounded-full border border-panel-border px-4 py-2 text-sm text-panel-text-soft hover:bg-panel-bg">
                 Cancelar
               </button>
-              <button type="submit" disabled={guardando} className="rounded-lg bg-panel-primary px-5 py-2 text-sm font-semibold text-white hover:bg-panel-primary-dark disabled:opacity-60">
+              <button type="submit" disabled={guardando} className="rounded-full bg-panel-primary px-5 py-2 text-sm font-semibold text-white hover:bg-panel-primary-dark disabled:opacity-60">
                 {guardando ? 'Guardando…' : 'Guardar'}
               </button>
             </div>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   HandHeart,
   Banknote,
@@ -45,7 +46,7 @@ const numero = new Intl.NumberFormat('es-CO')
 const formatearFecha = (iso: string) => new Date(iso).toLocaleDateString('es-CO', { dateStyle: 'medium' })
 
 const campo =
-  'w-full rounded-lg border border-panel-border bg-panel-card px-3 py-2 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
+  'w-full rounded-xl border border-panel-border bg-panel-card px-3.5 py-2.5 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
 
 interface FormCampana {
   titulo: string
@@ -71,7 +72,13 @@ export default function DonacionesPage() {
   const [error, setError] = useState('')
   const [busqueda, setBusqueda] = useState('')
   const [filtroCategoria, setFiltroCategoria] = useState<'todas' | CategoriaDonacion>('todas')
-  const [modalAbierto, setModalAbierto] = useState(false)
+    // ?accion=nueva abre el formulario directamente (desde la paleta de comandos o el Inicio).
+  const [params, setParams] = useSearchParams()
+  const abrirDesdeUrl = params.get('accion') === 'nueva'
+  useEffect(() => {
+    if (abrirDesdeUrl) setParams({}, { replace: true })
+  }, [abrirDesdeUrl, setParams])
+  const [modalAbierto, setModalAbierto] = useState(abrirDesdeUrl)
   const [form, setForm] = useState<FormCampana>(formVacio)
   const [errorForm, setErrorForm] = useState('')
   const [guardando, setGuardando] = useState(false)
@@ -180,17 +187,21 @@ export default function DonacionesPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold text-panel-primary">Donaciones</h1>
-      <p className="mt-1 text-sm text-panel-info">
+      <p className="flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-panel-text-muted">
+        <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+        Recursos
+      </p>
+      <h1 className="mt-3 break-words text-[34px] font-semibold leading-[1] tracking-[-0.045em] sm:text-[52px] sm:tracking-[-0.05em]">Donaciones</h1>
+      <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-panel-text-soft">
         Ayuda a quienes más lo necesitan. Con tu donación haces la diferencia.
       </p>
 
-      {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mt-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {tarjetas.map(({ valor, titulo, pie, icono: Icono, color, pieColor }) => (
-          <div key={titulo} className="flex items-center gap-4 rounded-2xl border border-panel-border bg-panel-card p-5">
-            <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white ${color}`}>
+        {tarjetas.map(({ valor, titulo, pie, icono: Icono, pieColor }) => (
+          <div key={titulo} className="flex items-center gap-4 rounded-3xl border border-panel-border bg-panel-card p-5">
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-panel-border text-panel-text-soft`}>
               <Icono size={24} />
             </div>
             <div className="min-w-0">
@@ -203,8 +214,8 @@ export default function DonacionesPage() {
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <section className="min-w-0 rounded-2xl border border-panel-border bg-panel-card">
-          <h2 className="px-5 pt-5 font-bold">Listado de donaciones</h2>
+        <section className="min-w-0 rounded-3xl border border-panel-border bg-panel-card">
+          <h2 className="px-5 pt-5 text-lg font-semibold tracking-[-0.02em]">Listado de donaciones</h2>
 
           <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row">
             <div className="relative flex-1">
@@ -232,7 +243,7 @@ export default function DonacionesPage() {
 
           <div className="max-w-full overflow-x-auto">
             <table className="w-full min-w-[680px] text-left text-sm">
-              <thead className="text-xs uppercase text-panel-text-muted">
+              <thead className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">
                 <tr>
                   <th className="px-5 py-3">Fecha</th>
                   <th className="px-5 py-3">Tipo</th>
@@ -289,16 +300,16 @@ export default function DonacionesPage() {
           </div>
         </section>
 
-        <section className="min-w-0 rounded-2xl border border-panel-border bg-panel-card p-5">
+        <section className="min-w-0 rounded-3xl border border-panel-border bg-panel-card p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-bold">Campañas de donación</h2>
+            <h2 className="text-lg font-semibold tracking-[-0.02em]">Campañas de donación</h2>
             <button
               onClick={() => {
                 setForm(formVacio)
                 setErrorForm('')
                 setModalAbierto(true)
               }}
-              className="flex shrink-0 items-center gap-1.5 rounded-lg bg-panel-info px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+              className="flex shrink-0 items-center gap-1.5 rounded-full bg-navy-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-navy-800 dark:bg-white dark:text-navy-950"
             >
               <Plus size={16} /> Nueva campaña
             </button>
@@ -349,7 +360,7 @@ export default function DonacionesPage() {
 
       {modalAbierto && (
         <div
-          className="fixed inset-0 z-[1000] flex items-center justify-center overflow-y-auto bg-black/40 p-4 sm:p-6"
+          className="panel-enfoque fixed inset-0 z-[1100] flex items-start justify-center overflow-y-auto bg-navy-950/35 p-4 backdrop-blur-md sm:p-6"
           onClick={() => setModalAbierto(false)}
         >
           <form
@@ -358,7 +369,7 @@ export default function DonacionesPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between">
-              <h2 className="text-xl font-extrabold text-panel-primary">Nueva campaña</h2>
+              <h2 className="text-xl font-semibold tracking-[-0.02em]">Nueva campaña</h2>
               <button type="button" onClick={() => setModalAbierto(false)} aria-label="Cerrar">
                 <X size={20} />
               </button>
@@ -449,20 +460,20 @@ export default function DonacionesPage() {
               </div>
             </div>
 
-            {errorForm && <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{errorForm}</p>}
+            {errorForm && <p className="mt-4 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{errorForm}</p>}
 
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setModalAbierto(false)}
-                className="rounded-lg border border-panel-border px-4 py-2 text-sm text-panel-text-soft transition hover:bg-panel-bg"
+                className="rounded-full border border-panel-border px-4 py-2 text-sm text-panel-text-soft transition hover:bg-panel-bg"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={guardando}
-                className="rounded-lg bg-panel-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark disabled:opacity-60"
+                className="rounded-full bg-panel-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark disabled:opacity-60"
               >
                 {guardando ? 'Creando…' : 'Crear campaña'}
               </button>
