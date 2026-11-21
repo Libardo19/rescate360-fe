@@ -17,6 +17,15 @@ class OfflineQueue {
   static const _ajenos = 'offline_ajenos';
 
   final SecureStorage _storage;
+  Future<void> _pendiente = Future.value();
+
+  /// Nearby y la sincronización pueden modificar la cola al mismo tiempo.
+  Future<T> _mutar<T>(Future<T> Function() accion) {
+    final operacion = _pendiente.then((_) => accion());
+    _pendiente =
+        operacion.then<void>((_) {}, onError: (Object _, StackTrace __) {});
+    return operacion;
+  }
 
   /// Migra una cola antigua de SharedPreferences a almacenamiento cifrado.
   Future<String?> _contenidoSeguro(String clave, {required bool ajena}) async {
@@ -76,43 +85,45 @@ class OfflineQueue {
   Future<List<MensajeOffline>> todos() async =>
       [...await propios(), ...await ajenos()];
 
-  Future<void> agregarPropio(MensajeOffline mensaje) async =>
-      _escribir(_propios, [...await propios(), mensaje], ajena: false);
+  Future<void> agregarPropio(MensajeOffline mensaje) async => _mutar(() async =>
+      _escribir(_propios, [...await propios(), mensaje], ajena: false));
 
   /// Guarda los que llegaron por Bluetooth y no se conocían. Devuelve cuántos eran nuevos.
   Future<int> agregarAjenos(Iterable<MensajeOffline> recibidos,
-      {required String miUsuarioId}) async {
-    final conocidos = {for (final m in await todos()) m.uuidOrigen};
-    final nuevos = [
-      for (final m in recibidos)
-        if (m.usuarioId != miUsuarioId &&
-            !conocidos.contains(m.uuidOrigen) &&
-            m.relevable)
-          m.conUnSaltoMas()
-    ];
-    if (nuevos.isNotEmpty) {
-      await _escribir(_ajenos, [...await ajenos(), ...nuevos], ajena: true);
-    }
-    return nuevos.length;
-  }
+          {required String miUsuarioId}) =>
+      _mutar(() async {
+        final conocidos = {for (final m in await todos()) m.uuidOrigen};
+        final nuevos = <MensajeOffline>[];
+        for (final m in recibidos) {
+          if (m.usuarioId != miUsuarioId &&
+              m.relevable &&
+              conocidos.add(m.uuidOrigen)) {
+            nuevos.add(m.conUnSaltoMas());
+          }
+        }
+        if (nuevos.isNotEmpty) {
+          await _escribir(_ajenos, [...await ajenos(), ...nuevos], ajena: true);
+        }
+        return nuevos.length;
+      });
 
   /// Quita los que el backend ya recibió (aceptados, duplicados o rechazados para siempre).
-  Future<void> quitar(Set<String> uuids) async {
-    await _escribir(
-        _propios,
-        [
-          for (final m in await propios())
-            if (!uuids.contains(m.uuidOrigen)) m
-        ],
-        ajena: false);
-    await _escribir(
-        _ajenos,
-        [
-          for (final m in await ajenos())
-            if (!uuids.contains(m.uuidOrigen)) m
-        ],
-        ajena: true);
-  }
+  Future<void> quitar(Set<String> uuids) => _mutar(() async {
+        await _escribir(
+            _propios,
+            [
+              for (final m in await propios())
+                if (!uuids.contains(m.uuidOrigen)) m
+            ],
+            ajena: false);
+        await _escribir(
+            _ajenos,
+            [
+              for (final m in await ajenos())
+                if (!uuids.contains(m.uuidOrigen)) m
+            ],
+            ajena: true);
+      });
 }
 
 final offlineQueueProvider =

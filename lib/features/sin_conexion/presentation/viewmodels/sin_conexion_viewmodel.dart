@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/location/location_service.dart';
 import '../../../../core/network/api_client.dart';
@@ -19,13 +20,24 @@ class SinConexionState {
   // Mensajes en la cola (propios y de otras personas) esperando internet
   final int enCola;
   final String? aviso;
+  final EstadoRelevo enlace;
 
-  const SinConexionState({this.relevoActivo = false, this.enCola = 0, this.aviso});
+  const SinConexionState(
+      {this.relevoActivo = false,
+      this.enCola = 0,
+      this.aviso,
+      this.enlace = const EstadoRelevo()});
 
-  SinConexionState copyWith({bool? relevoActivo, int? enCola, String? aviso}) => SinConexionState(
+  SinConexionState copyWith(
+          {bool? relevoActivo,
+          int? enCola,
+          String? aviso,
+          EstadoRelevo? enlace}) =>
+      SinConexionState(
         relevoActivo: relevoActivo ?? this.relevoActivo,
         enCola: enCola ?? this.enCola,
         aviso: aviso,
+        enlace: enlace ?? this.enlace,
       );
 }
 
@@ -38,19 +50,26 @@ class SinConexionViewModel extends Notifier<SinConexionState> {
   final _uuid = const Uuid();
   StreamSubscription<bool>? _red;
   StreamSubscription<int>? _relevados;
+  StreamSubscription<EstadoRelevo>? _enlaces;
+  Future<String>? _sincronizacion;
 
   @override
   SinConexionState build() {
     ref.onDispose(() {
       _red?.cancel();
       _relevados?.cancel();
+      _enlaces?.cancel();
     });
     return const SinConexionState();
   }
 
   Future<void> iniciar() async {
+    _escucharRelevo();
     _red ??= ref.read(connectivityServiceProvider).cambios().listen((hayRed) {
-      if (hayRed) sincronizar();
+      if (hayRed) {
+        _asegurarLlave();
+        sincronizar();
+      }
     });
     _relevados ??= ref.read(nearbyMeshProvider).recibidos.listen((_) async {
       await _contar();
@@ -60,8 +79,15 @@ class SinConexionViewModel extends Notifier<SinConexionState> {
     await sincronizar();
   }
 
+  void _escucharRelevo() {
+    _enlaces ??= ref.read(nearbyMeshProvider).cambios.listen((enlace) {
+      state = state.copyWith(enlace: enlace, aviso: state.aviso);
+    });
+  }
+
   Future<void> _contar() async {
-    state = state.copyWith(enCola: (await ref.read(offlineQueueProvider).todos()).length);
+    state = state.copyWith(
+        enCola: (await ref.read(offlineQueueProvider).todos()).length);
   }
 
   Future<String?> _asegurarLlave() async {
@@ -69,7 +95,9 @@ class SinConexionViewModel extends Notifier<SinConexionState> {
     final guardada = await storage.llaveOffline();
     if (guardada != null) return guardada;
     try {
-      final json = await ref.read(apiClientProvider).get<Map<String, dynamic>>(Endpoints.llaveOffline);
+      final json = await ref
+          .read(apiClientProvider)
+          .get<Map<String, dynamic>>(Endpoints.llaveOffline);
       final llave = json['llave'] as String;
       await storage.guardarLlaveOffline(llave);
       return llave;
@@ -80,6 +108,18 @@ class SinConexionViewModel extends Notifier<SinConexionState> {
 
   /// Sube la cola al backend. Devuelve qué pasó, para mostrarlo cuando la persona lo pide.
   Future<String> sincronizar() async {
+    final pendiente = _sincronizacion;
+    if (pendiente != null) return pendiente;
+    final operacion = _sincronizar();
+    _sincronizacion = operacion;
+    try {
+      return await operacion;
+    } finally {
+      _sincronizacion = null;
+    }
+  }
+
+  Future<String> _sincronizar() async {
     String resultado;
     try {
       final entregados = await ref.read(syncWorkerProvider).subir();
@@ -98,13 +138,15 @@ class SinConexionViewModel extends Notifier<SinConexionState> {
           : 'Sin internet: los mensajes siguen guardados. Activa el relevo para pasarlos por Bluetooth.';
     }
     await _contar();
+    state = state.copyWith(aviso: resultado);
     return resultado;
   }
 
   /// Firma y encola un mensaje propio, y prende el relevo para que salga por Bluetooth.
   /// Un `reporte` ya trae la ubicación del formulario (`lat`/`lng`); los demás usan el GPS.
   /// Devuelve null si quedó en la cola, o el motivo por el que no se pudo.
-  Future<String?> encolar(String tipo, {ReporteOffline? reporte, double? lat, double? lng}) async {
+  Future<String?> encolar(String tipo,
+      {ReporteOffline? reporte, double? lat, double? lng}) async {
     final usuario = ref.read(authViewModelProvider).usuario;
     final llave = await ref.read(secureStorageProvider).llaveOffline();
     if (usuario == null || llave == null) {
@@ -131,7 +173,10 @@ class SinConexionViewModel extends Notifier<SinConexionState> {
           reporte: reporte,
         ));
     await _contar();
-    await activarRelevo();
+    final errorRelevo = await activarRelevo();
+    if (errorRelevo != null) {
+      state = state.copyWith(aviso: 'El mensaje quedó guardado. $errorRelevo');
+    }
     // Si ya había teléfonos conectados, el mensaje nuevo sale de una vez
     try {
       await ref.read(nearbyMeshProvider).compartir();
@@ -143,16 +188,33 @@ class SinConexionViewModel extends Notifier<SinConexionState> {
   Future<String?> activarRelevo() async {
     final usuario = ref.read(authViewModelProvider).usuario;
     if (usuario == null) return 'Inicia sesión para usar el relevo.';
-    if (!await ref.read(permissionsServiceProvider).pedirRelevoBluetooth()) {
-      return 'Sin los permisos de Bluetooth y dispositivos cercanos no se puede pasar el mensaje.';
-    }
     try {
-      final activo = await ref.read(nearbyMeshProvider).iniciar(miUsuarioId: usuario.id, nombre: usuario.primerNombre);
-      state = state.copyWith(relevoActivo: activo);
-      return activo ? null : 'No se pudo activar el Bluetooth.';
+      _escucharRelevo();
+      final requisito =
+          await ref.read(permissionsServiceProvider).prepararRelevoBluetooth();
+      if (requisito != null) {
+        state = state.copyWith(aviso: requisito);
+        return requisito;
+      }
+      final activo = await ref
+          .read(nearbyMeshProvider)
+          .iniciar(miUsuarioId: usuario.id, nombre: usuario.primerNombre);
+      final enlace = ref.read(nearbyMeshProvider).estado;
+      state = state.copyWith(
+          relevoActivo: activo,
+          enlace: enlace,
+          aviso: activo ? null : enlace.mensaje);
+      return activo ? null : enlace.mensaje;
+    } on PlatformException catch (error) {
+      final mensaje =
+          'No se pudo iniciar Nearby (${error.code}). Revisa permisos y servicios de Google Play.';
+      state = state.copyWith(relevoActivo: false, aviso: mensaje);
+      return mensaje;
     } catch (_) {
-      // Web, iOS o un Android sin Google Play services: el relevo no está disponible
-      return 'El relevo por Bluetooth solo funciona en Android.';
+      const mensaje =
+          'No se pudo activar el relevo. Reinicia la app y revisa los permisos.';
+      state = state.copyWith(relevoActivo: false, aviso: mensaje);
+      return mensaje;
     }
   }
 
@@ -164,4 +226,6 @@ class SinConexionViewModel extends Notifier<SinConexionState> {
   }
 }
 
-final sinConexionProvider = NotifierProvider<SinConexionViewModel, SinConexionState>(SinConexionViewModel.new);
+final sinConexionProvider =
+    NotifierProvider<SinConexionViewModel, SinConexionState>(
+        SinConexionViewModel.new);
