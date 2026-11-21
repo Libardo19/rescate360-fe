@@ -37,14 +37,18 @@ export default function SuperAdminDashboard() {
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold text-panel-primary">Hola, {usuario?.nombre}</h1>
-      <p className="mt-1 text-sm text-panel-info">Vista global de RESCATE360: todas las organizaciones y todos los casos.</p>
-      {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      <p className="flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-panel-text-muted">
+        <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+        Vista global
+      </p>
+      <h1 className="mt-3 break-words text-[34px] font-semibold leading-[1] tracking-[-0.045em] sm:text-[52px] sm:tracking-[-0.05em]">Hola, {usuario?.nombre}</h1>
+      <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-panel-text-soft">Vista global de RESCATE360: todas las organizaciones y todos los casos.</p>
+      {error && <p className="mt-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {tarjetas.map(({ titulo, valor, icono: Icono, ruta, color }) => (
-          <Link key={titulo} to={ruta} className="flex items-center gap-4 rounded-2xl border border-panel-border bg-panel-card p-5 transition hover:shadow-md">
-            <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white ${color}`}>
+        {tarjetas.map(({ titulo, valor, icono: Icono, ruta }) => (
+          <Link key={titulo} to={ruta} className="flex items-center gap-4 rounded-3xl border border-panel-border bg-panel-card p-5 transition hover:shadow-md">
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-panel-border text-panel-text-soft`}>
               <Icono size={24} />
             </div>
             <div>

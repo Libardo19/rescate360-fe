@@ -56,7 +56,7 @@ export default function RecuperarClave({ emailInicial, onCerrar, onListo }: Prop
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onCerrar}>
+    <div className="panel-enfoque fixed inset-0 z-[1100] flex items-start justify-center overflow-y-auto bg-navy-950/35 p-4 backdrop-blur-md sm:p-6" onClick={onCerrar}>
       <div
         role="dialog"
         aria-modal="true"
@@ -102,7 +102,7 @@ export default function RecuperarClave({ emailInicial, onCerrar, onListo }: Prop
                 ))}
               </div>
             </fieldset>
-            {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>}
+            {error && <p role="alert" className="rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>}
             <button type="submit" disabled={enviando} className="min-h-11 w-full rounded-lg bg-navy-900 font-semibold text-white hover:bg-navy-800 disabled:opacity-60">
               {enviando ? 'Enviando…' : 'Enviar código'}
             </button>
@@ -146,7 +146,7 @@ export default function RecuperarClave({ emailInicial, onCerrar, onListo }: Prop
                 className={campo}
               />
             </div>
-            {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>}
+            {error && <p role="alert" className="rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>}
             <div className="flex gap-2">
               <button type="button" onClick={() => setPaso(1)} className="min-h-11 flex-1 rounded-lg border border-slate-300 text-sm">
                 Pedir otro código

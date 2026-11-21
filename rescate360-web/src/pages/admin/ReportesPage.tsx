@@ -59,7 +59,7 @@ const formatearFecha = (iso: string) =>
   new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
 
 const campo =
-  'rounded-lg border border-panel-border bg-panel-card px-3 py-2 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
+  'rounded-xl border border-panel-border bg-panel-card px-3.5 py-2.5 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
 
 export default function ReportesPage() {
   const [reportes, setReportes] = useState<Reporte[] | null>(null)
@@ -147,13 +147,17 @@ export default function ReportesPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold text-panel-primary">Reportes</h1>
-      <p className="mt-1 text-sm text-panel-text-soft">
+      <p className="flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-panel-text-muted">
+        <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+        Operación
+      </p>
+      <h1 className="mt-3 break-words text-[34px] font-semibold leading-[1] tracking-[-0.045em] sm:text-[52px] sm:tracking-[-0.05em]">Reportes</h1>
+      <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-panel-text-soft">
         Revisa los reportes de tu organización y verifícalos, recházalos o márcalos como duplicados. Un reporte
         verificado aparece en el mapa de todos los ciudadanos.
       </p>
 
-      {error && !seleccionado && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && !seleccionado && <p className="mt-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
@@ -192,9 +196,9 @@ export default function ReportesPage() {
         Mostrando {filtrados.length} de {reportes.length} reportes
       </p>
 
-      <div className="mt-2 max-w-full overflow-x-auto rounded-2xl border border-panel-border bg-panel-card">
+      <div className="mt-2 max-w-full overflow-x-auto rounded-3xl border border-panel-border bg-panel-card">
         <table className="w-full min-w-[740px] text-left text-sm">
-          <thead className="text-xs uppercase text-panel-text-muted">
+          <thead className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">
             <tr>
               <th className="px-5 py-3">Prioridad</th>
               <th className="px-5 py-3">Tipo</th>
@@ -262,7 +266,7 @@ export default function ReportesPage() {
 
       {seleccionado && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4 sm:p-6"
+          className="panel-enfoque fixed inset-0 z-[1100] flex items-start justify-center overflow-y-auto bg-navy-950/35 p-4 backdrop-blur-md sm:p-6"
           onClick={() => setSeleccionado(null)}
         >
           <div
@@ -271,7 +275,7 @@ export default function ReportesPage() {
           >
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-xl font-extrabold text-panel-primary">{seleccionado.tipoEtiqueta}</h2>
+                <h2 className="text-xl font-semibold tracking-[-0.02em]">{seleccionado.tipoEtiqueta}</h2>
                 <span
                   className={`mt-2 inline-block rounded-full px-3 py-1 text-xs font-medium ${colorEstado[seleccionado.estado]}`}
                 >
@@ -285,24 +289,24 @@ export default function ReportesPage() {
 
             <dl className="mt-5 space-y-3 text-sm">
               <div>
-                <dt className="text-xs uppercase text-panel-text-muted">Descripción</dt>
+                <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">Descripción</dt>
                 <dd>{seleccionado.descripcion}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase text-panel-text-muted">Ubicación</dt>
+                <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">Ubicación</dt>
                 <dd>{seleccionado.ubicacion}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase text-panel-text-muted">Reportado por</dt>
+                <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">Reportado por</dt>
                 <dd>{seleccionado.reportante}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase text-panel-text-muted">Fecha</dt>
+                <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">Fecha</dt>
                 <dd>{formatearFecha(seleccionado.fecha)}</dd>
               </div>
               {seleccionado.motivoRechazo && (
                 <div>
-                  <dt className="text-xs uppercase text-panel-text-muted">Motivo del rechazo</dt>
+                  <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">Motivo del rechazo</dt>
                   <dd>{seleccionado.motivoRechazo}</dd>
                 </div>
               )}
@@ -364,7 +368,7 @@ export default function ReportesPage() {
               </div>
             )}
 
-            {error && <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+            {error && <p className="mt-4 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
             {pendiente ? (
               <div className="mt-6 space-y-3">
@@ -405,7 +409,7 @@ export default function ReportesPage() {
                   <button
                     disabled={guardando || !original}
                     onClick={() => guardar(() => marcarDuplicado(seleccionado.id, original))}
-                    className="flex items-center justify-center gap-2 rounded-lg border border-panel-border px-4 py-2 text-sm font-semibold text-panel-text-soft transition hover:bg-panel-bg disabled:opacity-40"
+                    className="flex items-center justify-center gap-2 rounded-full border border-panel-border px-4 py-2 text-sm font-semibold text-panel-text-soft transition hover:bg-panel-bg disabled:opacity-40"
                   >
                     <Copy size={16} /> Duplicado
                   </button>

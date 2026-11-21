@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Users,
   ShieldCheck,
@@ -49,7 +50,7 @@ const formatearAcceso = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' }) : 'Nunca'
 
 const campo =
-  'w-full rounded-lg border border-panel-border bg-panel-card px-3 py-2 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
+  'w-full rounded-xl border border-panel-border bg-panel-card px-3.5 py-2.5 text-sm outline-none focus:border-panel-primary focus:ring-2 focus:ring-panel-primary/20'
 
 type Modal = { modo: 'crear' } | { modo: 'editar'; usuario: UsuarioSistema } | null
 
@@ -60,7 +61,13 @@ export default function UsuariosPage() {
   const [busqueda, setBusqueda] = useState('')
   const [filtroRol, setFiltroRol] = useState<'todos' | Rol>('todos')
   const [pagina, setPagina] = useState(1)
-  const [modal, setModal] = useState<Modal>(null)
+    // ?accion=nueva abre el formulario directamente (desde la paleta de comandos o el Inicio).
+  const [params, setParams] = useSearchParams()
+  const abrirDesdeUrl = params.get('accion') === 'nueva'
+  useEffect(() => {
+    if (abrirDesdeUrl) setParams({}, { replace: true })
+  }, [abrirDesdeUrl, setParams])
+  const [modal, setModal] = useState<Modal>(abrirDesdeUrl ? { modo: 'crear' } : null)
   const [form, setForm] = useState({ nombre: '', email: '', telefono: '', organizacion_id: '' })
   const [invitacion, setInvitacion] = useState<Invitacion | null>(null)
   const [organizaciones, setOrganizaciones] = useState<Organizacion[]>([])
@@ -219,23 +226,27 @@ export default function UsuariosPage() {
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold text-panel-primary">Usuarios</h1>
-          <p className="mt-1 text-sm text-panel-info">Administra los usuarios del sistema y sus permisos.</p>
+          <p className="flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-panel-text-muted">
+            <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+            Administración
+          </p>
+          <h1 className="mt-3 break-words text-[34px] font-semibold leading-[1] tracking-[-0.045em] sm:text-[52px] sm:tracking-[-0.05em]">Usuarios</h1>
+          <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-panel-text-soft">Administra los usuarios del sistema y sus permisos.</p>
         </div>
         <button
           onClick={abrirCrear}
-          className="flex items-center justify-center gap-2 rounded-lg bg-panel-info px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+          className="flex items-center justify-center gap-2 rounded-full bg-navy-950 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_-12px_rgba(11,27,54,0.8)] transition hover:bg-navy-800 active:scale-[0.98] dark:bg-white dark:text-navy-950"
         >
           <Plus size={16} /> Nuevo usuario
         </button>
       </div>
 
-      {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mt-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {tarjetas.map(({ valor, titulo, icono: Icono, color }) => (
-          <div key={titulo} className="flex items-center gap-4 rounded-2xl border border-panel-border bg-panel-card p-5">
-            <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white ${color}`}>
+        {tarjetas.map(({ valor, titulo, icono: Icono }) => (
+          <div key={titulo} className="flex items-center gap-4 rounded-3xl border border-panel-border bg-panel-card p-5">
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-panel-border text-panel-text-soft`}>
               <Icono size={24} />
             </div>
             <div>
@@ -246,9 +257,9 @@ export default function UsuariosPage() {
         ))}
       </div>
 
-      <section className="mt-6 rounded-2xl border border-panel-border bg-panel-card">
+      <section className="mt-6 rounded-3xl border border-panel-border bg-panel-card">
         <div className="flex flex-col gap-3 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-          <h2 className="font-bold">Lista de usuarios</h2>
+          <h2 className="text-lg font-semibold tracking-[-0.02em]">Lista de usuarios</h2>
           <div className="flex flex-col gap-3 sm:flex-row">
             <div className="relative">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-panel-text-muted" />
@@ -276,7 +287,7 @@ export default function UsuariosPage() {
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="text-xs uppercase text-panel-text-muted">
+            <thead className="font-mono text-[10px] uppercase tracking-[0.12em] text-panel-text-muted">
               <tr>
                 <th className="px-5 py-3">ID</th>
                 <th className="px-5 py-3">Nombre</th>
@@ -396,16 +407,16 @@ export default function UsuariosPage() {
 
       {modal && (
         <div
-          className="fixed inset-0 z-[1000] flex items-center justify-center overflow-y-auto bg-black/40 p-4"
+          className="panel-enfoque fixed inset-0 z-[1100] flex items-start justify-center overflow-y-auto bg-navy-950/35 p-4 backdrop-blur-md sm:p-6"
           onClick={() => setModal(null)}
         >
           <form
             onSubmit={guardar}
-            className="w-full max-w-md rounded-2xl bg-panel-card p-6 shadow-2xl"
+            className="panel-modal-enter my-auto w-full max-w-md rounded-[28px] border border-panel-border bg-panel-card p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between">
-              <h2 className="text-xl font-extrabold text-panel-primary">
+              <h2 className="text-xl font-semibold tracking-[-0.02em]">
                 {modal.modo === 'crear' ? 'Nuevo voluntario' : 'Detalles del usuario'}
               </h2>
               <button type="button" onClick={() => setModal(null)} aria-label="Cerrar">
@@ -489,20 +500,20 @@ export default function UsuariosPage() {
               </div>
             </div>
 
-            {errorForm && <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{errorForm}</p>}
+            {errorForm && <p className="mt-4 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{errorForm}</p>}
 
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setModal(null)}
-                className="rounded-lg border border-panel-border px-4 py-2 text-sm text-panel-text-soft transition hover:bg-panel-bg"
+                className="rounded-full border border-panel-border px-4 py-2 text-sm text-panel-text-soft transition hover:bg-panel-bg"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={guardando}
-                className="rounded-lg bg-panel-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark disabled:opacity-60"
+                className="rounded-full bg-panel-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-panel-primary-dark disabled:opacity-60"
               >
                 {guardando ? 'Guardando…' : modal.modo === 'crear' ? 'Crear e invitar' : 'Guardar'}
               </button>
