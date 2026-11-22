@@ -8,6 +8,7 @@ class CheckInModel {
   final String? eventoSismicoId;
   final DateTime venceEn;
   final String? solicitudId;
+  final DateTime? creadoEn;
 
   const CheckInModel({
     required this.id,
@@ -16,6 +17,7 @@ class CheckInModel {
     required this.venceEn,
     this.eventoSismicoId,
     this.solicitudId,
+    this.creadoEn,
   });
 
   factory CheckInModel.fromJson(Map<String, dynamic> json) => CheckInModel(
@@ -25,6 +27,7 @@ class CheckInModel {
         eventoSismicoId: json['evento_sismico_id'] as String?,
         venceEn: DateTime.parse(json['vence_en'] as String).toLocal(),
         solicitudId: json['solicitud_id'] as String?,
+        creadoEn: json['creado_en'] == null ? null : DateTime.parse(json['creado_en'] as String).toLocal(),
       );
 
   bool get pendiente => estado == 'pendiente';

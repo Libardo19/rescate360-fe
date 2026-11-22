@@ -9,7 +9,8 @@ class MarcadorMapaModel {
   final String? prioridad;
   final double lat;
   final double lng;
-  final double? radioM; // zonas y alertas se dibujan como círculo
+  final double? radioM; // zonas, alertas y sismos de Colombia se dibujan como círculo
+  final double? magnitud; // solo los sismos (de todo el mundo)
   final bool aproximada; // posición redondeada (~200 m): no es mío ni de mi organización
   final bool propio;
   final bool activo; // false = se cerró y hay que quitarlo del mapa
@@ -25,6 +26,7 @@ class MarcadorMapaModel {
     required this.lat,
     required this.lng,
     this.radioM,
+    this.magnitud,
     required this.aproximada,
     required this.propio,
     required this.activo,
@@ -41,6 +43,7 @@ class MarcadorMapaModel {
         lat: (json['lat'] as num).toDouble(),
         lng: (json['lng'] as num).toDouble(),
         radioM: (json['radio_m'] as num?)?.toDouble(),
+        magnitud: (json['magnitud'] as num?)?.toDouble(),
         aproximada: json['aproximada'] as bool? ?? false,
         propio: json['propio'] as bool? ?? false,
         activo: json['activo'] as bool? ?? true,

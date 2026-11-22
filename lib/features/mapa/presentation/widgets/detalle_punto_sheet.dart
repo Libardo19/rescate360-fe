@@ -231,6 +231,8 @@ class _Cabecera extends StatelessWidget {
         'pendiente' => ('Pendiente de verificación', AppColors.warning),
         'activa' => ('Activa', AppColors.danger),
         'activo' => ('Activo', AppColors.success),
+        'colombia' => ('Sismo en Colombia', AppColors.warning),
+        'mundo' => ('Fuera de Colombia · informativo', AppColors.textSecondary),
         _ when valor.isEmpty => ('Sin estado', AppColors.textSecondary),
         _ => (
             '${valor[0].toUpperCase()}${valor.substring(1).replaceAll('_', ' ')}',
