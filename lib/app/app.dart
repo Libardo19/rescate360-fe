@@ -21,7 +21,27 @@ class _RescateAppState extends ConsumerState<RescateApp> {
   @override
   void initState() {
     super.initState();
-    PushNotificationService().initialize();
+    PushNotificationService()
+      ..alRecibirAlerta = _alRecibirAlerta
+      ..initialize();
+  }
+
+  /// Push de alerta: la urgente (sismo muy fuerte y estoy en la zona) abre la alerta SOS a
+  /// pantalla completa; la informativa (estoy lejos) se muestra como aviso o abre las alertas.
+  void _alRecibirAlerta({required bool urgente, required bool abrio, required String titulo, required String cuerpo}) {
+    final navegador = AppRouter.navigatorKey.currentState;
+    if (navegador == null || !ref.read(authViewModelProvider).autenticado) return;
+    if (urgente) {
+      navegador.pushNamed(AppRouter.alertaSismo, arguments: {'titulo': titulo, 'mensaje': cuerpo});
+    } else if (abrio) {
+      navegador.pushNamed(AppRouter.alertas);
+    } else {
+      ScaffoldMessenger.maybeOf(navegador.context)?.showSnackBar(SnackBar(
+        duration: const Duration(seconds: 8),
+        content: Text('$titulo · $cuerpo'),
+        action: SnackBarAction(label: 'Ver', onPressed: () => navegador.pushNamed(AppRouter.alertas)),
+      ));
+    }
   }
 
   @override

@@ -14,6 +14,22 @@ class PushNotificationService {
 
   static const String _tokenKey = 'fcm_token';
 
+  /// Lo registra la app: qué hacer con un push de alerta (`tipo=alerta`).
+  /// `urgente` = sismo muy fuerte y estoy dentro de la zona afectada (alerta SOS);
+  /// `abrio` = el usuario tocó la notificación (la app estaba en segundo plano o cerrada).
+  void Function({required bool urgente, required bool abrio, required String titulo, required String cuerpo})?
+      alRecibirAlerta;
+
+  void _procesar(RemoteMessage message, {required bool abrio}) {
+    if (message.data['tipo'] != 'alerta') return;
+    alRecibirAlerta?.call(
+      urgente: message.data['urgente'] == '1',
+      abrio: abrio,
+      titulo: message.notification?.title ?? 'Alerta',
+      cuerpo: message.notification?.body ?? '',
+    );
+  }
+
   Future<void> initialize() async {
     if (kIsWeb) {
       return;
@@ -45,13 +61,19 @@ class PushNotificationService {
       if (kDebugMode) {
         print('Foreground message: ${message.notification?.title}');
       }
+      _procesar(message, abrio: false);
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       if (kDebugMode) {
         print('Message opened app: ${message.notification?.title}');
       }
+      _procesar(message, abrio: true);
     });
+
+    // La app estaba cerrada y se abrió tocando la notificación
+    final inicial = await _messaging.getInitialMessage();
+    if (inicial != null) _procesar(inicial, abrio: true);
 
     _messaging.onTokenRefresh.listen((String newToken) async {
       await _storage.write(key: _tokenKey, value: newToken);
