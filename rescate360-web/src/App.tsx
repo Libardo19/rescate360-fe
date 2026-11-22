@@ -18,6 +18,7 @@ import DonacionesPage from './pages/admin/DonacionesPage'
 import DesaparecidosPage from './pages/admin/DesaparecidosPage'
 import UsuariosPage from './pages/admin/UsuariosPage'
 import AuditoriaPage from './pages/admin/AuditoriaPage'
+import SismosPage from './pages/admin/SismosPage'
 
 export default function App() {
   return (
@@ -39,6 +40,7 @@ export default function App() {
             <Route path="reportes" element={<ReportesPage />} />
             <Route path="solicitudes" element={<SolicitudesPage />} />
             <Route path="mapa" element={<MapaPage />} />
+            <Route path="sismos" element={<SismosPage />} />
             <Route path="alertas" element={<AlertasPage />} />
             <Route path="centros" element={<CentrosPage />} />
             <Route path="zonas" element={<ZonasPage />} />
@@ -62,6 +64,7 @@ export default function App() {
             <Route path="solicitudes" element={<SolicitudesPage />} />
             <Route path="reportes" element={<ReportesPage />} />
             <Route path="mapa" element={<MapaPage />} />
+            <Route path="sismos" element={<SismosPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

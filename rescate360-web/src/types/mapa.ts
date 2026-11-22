@@ -1,6 +1,6 @@
 // Capas del mapa: las mismas que devuelve GET /mapa. Centros, zonas y alertas llegan vacías
 // hasta que existan sus módulos en el backend.
-export type TipoPunto = 'solicitud' | 'reporte' | 'centro' | 'zona' | 'alerta'
+export type TipoPunto = 'solicitud' | 'reporte' | 'centro' | 'zona' | 'alerta' | 'sismo'
 
 // PuntoMapa del backend (igual para la app y el panel)
 export interface PuntoMapa {
@@ -14,6 +14,7 @@ export interface PuntoMapa {
   lat: number
   lng: number
   radio_m: number | null
+  magnitud?: number | null // solo los sismos
   aproximada: boolean // posición redondeada (~200 m): no es de mi organización
   propio: boolean
   activo: boolean // false = se cerró: se quita del mapa
