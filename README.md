@@ -30,6 +30,9 @@ Equipo: Libardo José Acosta García, Sergio Eli Saucedo, Oscar Javier Ávila Ov
 **Pruebas del equipo en teléfonos (Wi-Fi o datos móviles):** ver
 [docs/PRUEBA_MOVIL.md](docs/PRUEBA_MOVIL.md). Compilar con
 `scripts/compilar-apk.ps1` para incluir la URL HTTPS de `config/demo.json`.
+El despliegue permanente en Azure ya está configurado en `config/demo.json`; si
+cambia el FQDN, actualizarlo con el indicado en `deploy/azure/README.md` del
+backend y volver a compilar.
 
 > Guía paso a paso (backend + app) para montar el proyecto en tu PC: [AMBIENTACION.md](https://github.com/Libardo19/rescate360-be/blob/main/docs/AMBIENTACION.md).
 
