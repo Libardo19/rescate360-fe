@@ -27,6 +27,7 @@ ios/Runner/GoogleService-Info.plist
 
 # Entorno
 .env
+.env.local
 !.env.example
 
 # IDE / SO
