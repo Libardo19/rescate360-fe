@@ -80,7 +80,7 @@ class _EstasBienScreenState extends ConsumerState<EstasBienScreen> {
                 Text(reloj, textAlign: TextAlign.center, style: AppTextStyles.h1.copyWith(color: AppColors.danger)),
                 const SizedBox(height: 6),
                 const Text(
-                  'Si no respondes, avisaremos a tus contactos de emergencia con tu última ubicación.',
+                  'Si no respondes, enviaremos tu SOS automáticamente con tu última ubicación y avisaremos a tus contactos.',
                   textAlign: TextAlign.center,
                   style: AppTextStyles.caption,
                 ),

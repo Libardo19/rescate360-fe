@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../sin_conexion/presentation/viewmodels/sin_conexion_viewmodel.dart';
+import '../../../sismos/presentation/views/alerta_sismo_screen.dart';
 import '../viewmodels/check_in_viewmodel.dart';
 import '../views/estas_bien_screen.dart';
 
@@ -51,6 +52,8 @@ class _VigilanteCheckInState extends ConsumerState<VigilanteCheckIn> with Widget
     ref.listen(checkInProvider, (_, actual) {
       if (actual == null || !actual.pendiente || actual.id == _mostrado) return;
       _mostrado = actual.id;
+      // La alerta SOS del sismo ya permite responderlo: no se abre otra pantalla encima
+      if (AlertaSismoScreen.abierta) return;
       Navigator.of(context).push(
         MaterialPageRoute(fullscreenDialog: true, builder: (_) => const EstasBienScreen()),
       );

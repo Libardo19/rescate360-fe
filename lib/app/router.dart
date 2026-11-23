@@ -22,6 +22,8 @@ import '../features/reportes/presentation/views/reportar_incidente_screen.dart';
 import '../features/solicitudes_ayuda/presentation/views/mis_solicitudes_screen.dart';
 import '../features/voluntario/presentation/views/voluntario_screen.dart';
 import '../features/solicitudes_ayuda/presentation/views/solicitar_ayuda_screen.dart';
+import '../features/sismos/presentation/views/alerta_sismo_screen.dart';
+import '../features/sismos/presentation/views/sismos_screen.dart';
 
 /// Rutas nombradas de la app.
 /// Navegación inicial (según lo pedido):
@@ -54,6 +56,8 @@ class AppRouter {
   static const guiaEmergencia = '/guia-emergencia';
   static const donaciones = '/donaciones';
   static const centrosAyuda = '/centros-ayuda';
+  static const sismos = '/sismos';
+  static const alertaSismo = '/alerta-sismo';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -100,6 +104,19 @@ class AppRouter {
         return _build(const DonacionesScreen(), settings);
       case centrosAyuda:
         return _build(const CentrosAyudaScreen(), settings);
+      case sismos:
+        return _build(const SismosScreen(), settings);
+      case alertaSismo:
+        // Llega por push urgente: argumentos {titulo, mensaje}
+        final datos = (settings.arguments as Map<String, String>?) ?? const {};
+        return MaterialPageRoute(
+          fullscreenDialog: true,
+          settings: settings,
+          builder: (_) => AlertaSismoScreen(
+            titulo: datos['titulo'] ?? 'Sismo fuerte',
+            mensaje: datos['mensaje'] ?? 'Revisa si hay heridos y daños y aléjate de estructuras afectadas.',
+          ),
+        );
       default:
         return _build(
           Scaffold(

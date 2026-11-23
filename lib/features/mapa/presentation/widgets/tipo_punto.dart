@@ -3,7 +3,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../data/models/marcador_mapa_model.dart';
 
 /// Cómo se ve cada punto del mapa. Lo comparten el mapa y su vista previa del inicio.
-enum TipoPunto { incidente, solicitud, alerta, centro }
+enum TipoPunto { incidente, solicitud, alerta, centro, sismo }
 
 extension TipoPuntoVisual on TipoPunto {
   String get etiqueta {
@@ -16,6 +16,8 @@ extension TipoPuntoVisual on TipoPunto {
         return 'Alerta';
       case TipoPunto.centro:
         return 'Centro de ayuda';
+      case TipoPunto.sismo:
+        return 'Sismo';
     }
   }
 
@@ -29,6 +31,8 @@ extension TipoPuntoVisual on TipoPunto {
         return AppColors.warning;
       case TipoPunto.centro:
         return AppColors.info;
+      case TipoPunto.sismo:
+        return const Color(0xFFEA580C);
     }
   }
 
@@ -42,14 +46,17 @@ extension TipoPuntoVisual on TipoPunto {
         return Icons.warning_amber_rounded;
       case TipoPunto.centro:
         return Icons.local_hospital_outlined;
+      case TipoPunto.sismo:
+        return Icons.vibration;
     }
   }
 }
 
-/// Capa del backend → tipo visual. Las zonas peligrosas y los sismos se pintan como alertas.
+/// Capa del backend → tipo visual. Las zonas peligrosas se pintan como alertas.
 TipoPunto tipoDePunto(MarcadorMapaModel p) => switch (p.capa) {
       'reporte' => TipoPunto.incidente,
       'solicitud' => TipoPunto.solicitud,
       'centro' => TipoPunto.centro,
+      'sismo' => TipoPunto.sismo,
       _ => TipoPunto.alerta,
     };

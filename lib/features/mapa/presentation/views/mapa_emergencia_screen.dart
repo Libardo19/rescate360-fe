@@ -5,13 +5,15 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
+import '../../../../app/router.dart';
 import '../../../../core/config/env.dart';
+import '../../../sismos/data/models/sismo_model.dart';
 import '../../data/models/marcador_mapa_model.dart';
 import '../viewmodels/mapa_viewmodel.dart';
 import '../widgets/detalle_punto_sheet.dart';
 import '../widgets/tipo_punto.dart';
 
-enum FiltroMapa { todos, incidentes, solicitudes, alertas, centros }
+enum FiltroMapa { todos, incidentes, solicitudes, alertas, centros, sismos }
 
 const _tipoDe = tipoDePunto;
 
@@ -74,6 +76,7 @@ class _MapaEmergenciaScreenState extends ConsumerState<MapaEmergenciaScreen>
         FiltroMapa.solicitudes => tipo == TipoPunto.solicitud,
         FiltroMapa.alertas => tipo == TipoPunto.alerta,
         FiltroMapa.centros => tipo == TipoPunto.centro,
+        FiltroMapa.sismos => tipo == TipoPunto.sismo,
       };
       final pasaBusqueda = q.isEmpty ||
           p.titulo.toLowerCase().contains(q) ||
@@ -117,7 +120,36 @@ class _MapaEmergenciaScreenState extends ConsumerState<MapaEmergenciaScreen>
     _mapa.move(LatLng(visibles.first.lat, visibles.first.lng), 17);
   }
 
+  /// Los sismos son de todo el mundo: al elegir el filtro se aleja el mapa a la vista mundial.
+  void _verSismos() {
+    setState(() => _filtro = FiltroMapa.sismos);
+    if (_mapaListo) _mapa.move(const LatLng(10, -40), 2);
+  }
+
+  /// Sismo: un círculo del color y el tamaño de su magnitud.
+  Marker _marcadorSismo(MarcadorMapaModel p) {
+    final m = p.magnitud ?? 0;
+    final lado = tamanoMagnitud(m);
+    return Marker(
+      point: LatLng(p.lat, p.lng),
+      width: lado,
+      height: lado,
+      child: GestureDetector(
+        onTap: () => _verDetalle(p),
+        child: Container(
+          decoration: BoxDecoration(
+            color: colorMagnitud(m).withValues(alpha: 0.85),
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 1.5),
+            boxShadow: const [BoxShadow(color: Color(0x44000000), blurRadius: 4)],
+          ),
+        ),
+      ),
+    );
+  }
+
   Marker _marcador(MarcadorMapaModel p) {
+    if (p.capa == 'sismo') return _marcadorSismo(p);
     final tipo = _tipoDe(p);
     final critico = p.prioridad == 'critica';
     return Marker(
@@ -295,6 +327,19 @@ class _MapaEmergenciaScreenState extends ConsumerState<MapaEmergenciaScreen>
             ),
           ),
         ),
+        // Lista de sismos recientes (de todo el mundo)
+        Positioned(
+          right: 16,
+          bottom: 124,
+          child: FloatingActionButton.small(
+            heroTag: 'lista_sismos',
+            backgroundColor: Colors.white,
+            foregroundColor: const Color(0xFFEA580C),
+            tooltip: 'Sismos recientes',
+            onPressed: () => Navigator.of(context).pushNamed(AppRouter.sismos),
+            child: const Icon(Icons.vibration),
+          ),
+        ),
         // Botón para volver a mi ubicación
         Positioned(
           right: 16,
@@ -349,6 +394,13 @@ class _MapaEmergenciaScreenState extends ConsumerState<MapaEmergenciaScreen>
                   color: AppColors.info,
                   activo: _filtro == FiltroMapa.centros,
                   onTap: () => setState(() => _filtro = FiltroMapa.centros),
+                ),
+                const SizedBox(width: 8),
+                _ChipFiltro(
+                  etiqueta: 'Sismos',
+                  color: const Color(0xFFEA580C),
+                  activo: _filtro == FiltroMapa.sismos,
+                  onTap: _verSismos,
                 ),
               ],
             ),
