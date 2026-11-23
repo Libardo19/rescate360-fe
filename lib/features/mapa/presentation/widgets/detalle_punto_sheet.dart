@@ -10,7 +10,8 @@ import '../../../reportes/presentation/viewmodels/reportes_viewmodel.dart';
 import '../../data/models/marcador_mapa_model.dart';
 import 'tipo_punto.dart';
 
-export '../../../reportes/presentation/viewmodels/reportes_viewmodel.dart' show detalleReporteProvider;
+export '../../../reportes/presentation/viewmodels/reportes_viewmodel.dart'
+    show detalleReporteProvider;
 
 /// Abre la hoja con la información completa del punto que se tocó en el mapa.
 /// Si es un incidente, trae su detalle del backend con las fotos.
@@ -19,6 +20,7 @@ Future<void> mostrarDetallePunto(
   required MarcadorMapaModel punto,
   required String distancia,
   required VoidCallback onCentrar,
+  VoidCallback? onAbrirCaso,
 }) {
   HapticFeedback.selectionClick();
   return showModalBottomSheet(
@@ -36,6 +38,7 @@ Future<void> mostrarDetallePunto(
         distancia: distancia,
         scroll: scroll,
         onCentrar: onCentrar,
+        onAbrirCaso: onAbrirCaso,
       ),
     ),
   );
@@ -46,14 +49,21 @@ class _Hoja extends ConsumerWidget {
   final String distancia;
   final ScrollController scroll;
   final VoidCallback onCentrar;
+  final VoidCallback? onAbrirCaso;
 
-  const _Hoja({required this.punto, required this.distancia, required this.scroll, required this.onCentrar});
+  const _Hoja(
+      {required this.punto,
+      required this.distancia,
+      required this.scroll,
+      required this.onCentrar,
+      this.onAbrirCaso});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tipo = tipoDePunto(punto);
     final esReporte = tipo == TipoPunto.incidente;
-    final detalle = esReporte ? ref.watch(detalleReporteProvider(punto.id)) : null;
+    final detalle =
+        esReporte ? ref.watch(detalleReporteProvider(punto.id)) : null;
     final reporte = detalle?.valueOrNull;
 
     return DecoratedBox(
@@ -69,7 +79,9 @@ class _Hoja extends ConsumerWidget {
             child: Container(
               width: 40,
               height: 4,
-              decoration: BoxDecoration(color: AppColors.surfaceBorder, borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(
+                  color: AppColors.surfaceBorder,
+                  borderRadius: BorderRadius.circular(2)),
             ),
           ),
           const SizedBox(height: 14),
@@ -87,13 +99,15 @@ class _Hoja extends ConsumerWidget {
           const SizedBox(height: 14),
           Text(
             reporte?.descripcion ?? punto.detalle,
-            style: const TextStyle(color: AppColors.textPrimary, fontSize: 15, height: 1.45),
+            style: const TextStyle(
+                color: AppColors.textPrimary, fontSize: 15, height: 1.45),
           ),
           if (detalle != null && detalle.hasError) ...[
             const SizedBox(height: 10),
             _AvisoError(
               mensaje: ApiException.desde(detalle.error!).mensaje,
-              onReintentar: () => ref.invalidate(detalleReporteProvider(punto.id)),
+              onReintentar: () =>
+                  ref.invalidate(detalleReporteProvider(punto.id)),
             ),
           ],
           const SizedBox(height: 16),
@@ -101,18 +115,45 @@ class _Hoja extends ConsumerWidget {
             filas: [
               (
                 Icons.place_outlined,
-                reporte?.lugar ?? (punto.aproximada ? 'Ubicación aproximada' : 'Ubicación exacta'),
+                reporte?.lugar ??
+                    (punto.aproximada
+                        ? 'Ubicación aproximada'
+                        : 'Ubicación exacta'),
                 distancia,
               ),
-              if (reporte != null) (Icons.schedule_rounded, reporte.haceCuanto, _fecha(reporte.fecha)),
+              if (reporte != null)
+                (
+                  Icons.schedule_rounded,
+                  reporte.haceCuanto,
+                  _fecha(reporte.fecha)
+                ),
               if (reporte != null && reporte.videos > 0)
                 (
                   Icons.videocam_outlined,
-                  reporte.videos == 1 ? '1 video adjunto' : '${reporte.videos} videos adjuntos',
+                  reporte.videos == 1
+                      ? '1 video adjunto'
+                      : '${reporte.videos} videos adjuntos',
                   'Se pueden ver desde el panel de la organización',
                 ),
             ],
           ),
+          if (onAbrirCaso != null) ...[
+            const SizedBox(height: 18),
+            FilledButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop();
+                onAbrirCaso!();
+              },
+              icon: const Icon(Icons.assignment_ind_outlined),
+              label: const Text('Gestionar este caso'),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(50),
+                backgroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
+          ],
           const SizedBox(height: 18),
           Row(
             children: [
@@ -122,13 +163,15 @@ class _Hoja extends ConsumerWidget {
                     Navigator.of(context).pop();
                     onCentrar();
                   },
-                  icon: const Icon(Icons.center_focus_strong_outlined, size: 20),
+                  icon:
+                      const Icon(Icons.center_focus_strong_outlined, size: 20),
                   label: const Text('Ver en el mapa'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
                     minimumSize: const Size.fromHeight(48),
                     side: const BorderSide(color: AppColors.surfaceBorder),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
                   ),
                 ),
               ),
@@ -136,7 +179,8 @@ class _Hoja extends ConsumerWidget {
               Expanded(
                 child: FilledButton.icon(
                   onPressed: () => launchUrl(
-                    Uri.parse('https://www.google.com/maps/dir/?api=1&destination=${punto.lat},${punto.lng}'),
+                    Uri.parse(
+                        'https://www.google.com/maps/dir/?api=1&destination=${punto.lat},${punto.lng}'),
                     mode: LaunchMode.externalApplication,
                   ),
                   icon: const Icon(Icons.directions_rounded, size: 20),
@@ -144,7 +188,8 @@ class _Hoja extends ConsumerWidget {
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     minimumSize: const Size.fromHeight(48),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
                   ),
                 ),
               ),
@@ -155,7 +200,20 @@ class _Hoja extends ConsumerWidget {
     );
   }
 
-  static const _meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  static const _meses = [
+    'ene',
+    'feb',
+    'mar',
+    'abr',
+    'may',
+    'jun',
+    'jul',
+    'ago',
+    'sep',
+    'oct',
+    'nov',
+    'dic'
+  ];
 
   /// "9 nov · 3:05 p. m."
   static String _fecha(DateTime f) {
@@ -182,10 +240,14 @@ class _Galeria extends StatelessWidget {
       // Cargando (o sin detalle): un espacio mientras llega
       return Container(
         height: detalle.isLoading ? alto : 0,
-        decoration: BoxDecoration(color: AppColors.surface, borderRadius: radio),
+        decoration:
+            BoxDecoration(color: AppColors.surface, borderRadius: radio),
         alignment: Alignment.center,
         child: detalle.isLoading
-            ? const SizedBox(width: 26, height: 26, child: CircularProgressIndicator(strokeWidth: 2.5))
+            ? const SizedBox(
+                width: 26,
+                height: 26,
+                child: CircularProgressIndicator(strokeWidth: 2.5))
             : null,
       );
     }
@@ -193,13 +255,16 @@ class _Galeria extends StatelessWidget {
     if (reporte.fotos.isEmpty) {
       return Container(
         height: 92,
-        decoration: BoxDecoration(color: tipo.color.withValues(alpha: 0.07), borderRadius: radio),
+        decoration: BoxDecoration(
+            color: tipo.color.withValues(alpha: 0.07), borderRadius: radio),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.hide_image_outlined, color: tipo.color.withValues(alpha: 0.7)),
+            Icon(Icons.hide_image_outlined,
+                color: tipo.color.withValues(alpha: 0.7)),
             const SizedBox(width: 10),
-            const Text('Este reporte no tiene fotos', style: TextStyle(color: AppColors.textSecondary)),
+            const Text('Este reporte no tiene fotos',
+                style: TextStyle(color: AppColors.textSecondary)),
           ],
         ),
       );
@@ -227,7 +292,10 @@ class _Cabecera extends StatelessWidget {
   static (String, Color) _estado(String valor) => switch (valor) {
         'verificado' => ('Verificado', AppColors.success),
         'atendido' => ('Atendido', AppColors.info),
-        'en_proceso' || 'asignada' || 'en_atencion' => ('En atención', AppColors.info),
+        'en_proceso' || 'asignada' || 'en_atencion' => (
+            'En atención',
+            AppColors.info
+          ),
         'pendiente' => ('Pendiente de verificación', AppColors.warning),
         'activa' => ('Activa', AppColors.danger),
         'activo' => ('Activo', AppColors.success),
@@ -282,7 +350,10 @@ class _Cabecera extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     titulo,
-                    style: const TextStyle(color: AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.w800),
+                    style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800),
                   ),
                 ],
               ),
@@ -295,7 +366,8 @@ class _Cabecera extends StatelessWidget {
           runSpacing: 6,
           children: [
             _Chip(texto: textoEstado, color: colorEstado),
-            if (prioridadVisible != null) _Chip(texto: prioridadVisible.$1, color: prioridadVisible.$2),
+            if (prioridadVisible != null)
+              _Chip(texto: prioridadVisible.$1, color: prioridadVisible.$2),
             if (propio) const _Chip(texto: 'Tuyo', color: AppColors.primary),
           ],
         ),
@@ -321,9 +393,14 @@ class _Chip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
           const SizedBox(width: 6),
-          Text(texto, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w700)),
+          Text(texto,
+              style: TextStyle(
+                  color: color, fontSize: 12, fontWeight: FontWeight.w700)),
         ],
       ),
     );
@@ -346,7 +423,9 @@ class _Datos extends StatelessWidget {
       child: Column(
         children: [
           for (var i = 0; i < filas.length; i++) ...[
-            if (i > 0) const Divider(height: 1, indent: 52, color: AppColors.surfaceBorder),
+            if (i > 0)
+              const Divider(
+                  height: 1, indent: 52, color: AppColors.surfaceBorder),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(
@@ -367,7 +446,10 @@ class _Datos extends StatelessWidget {
                         ),
                         if (filas[i].$3.isNotEmpty) ...[
                           const SizedBox(height: 2),
-                          Text(filas[i].$3, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                          Text(filas[i].$3,
+                              style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 13)),
                         ],
                       ],
                     ),
@@ -398,12 +480,14 @@ class _AvisoError extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.info_outline_rounded, color: AppColors.warning, size: 20),
+          const Icon(Icons.info_outline_rounded,
+              color: AppColors.warning, size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               'No se pudieron cargar las fotos. $mensaje',
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              style:
+                  const TextStyle(color: AppColors.textSecondary, fontSize: 13),
             ),
           ),
           TextButton(onPressed: onReintentar, child: const Text('Reintentar')),

@@ -4,7 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
 import '../../../../shared/widgets/etiqueta_estado.dart';
-import '../../../../shared/widgets/pestanas_segmentadas.dart';
+import '../widgets/encabezado_casos.dart';
 import '../../data/models/asignacion_model.dart';
 import '../viewmodels/voluntario_local_viewmodel.dart';
 import '../viewmodels/voluntario_viewmodel.dart';
@@ -26,6 +26,7 @@ class AsignacionesVoluntarioScreen extends ConsumerStatefulWidget {
 class _AsignacionesVoluntarioScreenState
     extends ConsumerState<AsignacionesVoluntarioScreen> {
   int _pestana = 0;
+  int _filtroHistorial = 0;
 
   Future<void> _refrescar() async {
     try {
@@ -72,39 +73,78 @@ class _AsignacionesVoluntarioScreenState
     final tareas = ref.watch(misTareasProvider);
     final historial = ref.watch(historialTareasProvider);
     final posicion = ref.watch(miUbicacionProvider).valueOrNull;
+    final activas = tareas.valueOrNull?.length;
+    final cerradas = historial.valueOrNull?.length;
 
-    return SafeArea(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 16, 20, 2),
-            child: Text('Mis asignaciones', style: AppTextStyles.h1),
+    final atendidas =
+        historial.valueOrNull?.where((a) => a.estado == 'finalizada').length;
+    return ColoredBox(
+        color: const Color(0xFFF5F7FC),
+        child: Column(children: [
+          EncabezadoCasos(
+            titulo: 'Mis asignaciones',
+            subtitulo: 'Cada caso atendido cuenta',
+            cifras: [
+              (
+                valor: activas,
+                etiqueta: 'En curso',
+                icono: Icons.route_rounded
+              ),
+              (
+                valor: atendidas,
+                etiqueta: 'Atendidas',
+                icono: Icons.task_alt_rounded
+              ),
+              (
+                valor: cerradas,
+                etiqueta: 'Historial',
+                icono: Icons.history_rounded
+              ),
+            ],
+            etiquetas: const ['En curso', 'Historial'],
+            indice: _pestana,
+            onCambiar: (i) => setState(() => _pestana = i),
           ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 0, 20, 14),
-            child: Text(
-              'Casos que tienes a tu cargo',
-              style: AppTextStyles.bodySecondary,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: PestanasSegmentadas(
-              etiquetas: const ['Activas', 'Historial'],
-              indice: _pestana,
-              onCambiar: (i) => setState(() => _pestana = i),
-            ),
-          ),
-          const SizedBox(height: 12),
+          if (_pestana == 1)
+            SizedBox(
+                height: 60,
+                child: ListView.separated(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  scrollDirection: Axis.horizontal,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  itemCount: 3,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (_, i) => ChoiceChip(
+                    label: Text(const ['Todas', 'Atendidas', 'Canceladas'][i]),
+                    selected: _filtroHistorial == i,
+                    onSelected: (_) => setState(() => _filtroHistorial = i),
+                    selectedColor: AppColors.primary,
+                    backgroundColor: Colors.white,
+                    showCheckmark: false,
+                    labelStyle: TextStyle(
+                        color: _filtroHistorial == i
+                            ? Colors.white
+                            : AppColors.textSecondary),
+                  ),
+                ))
+          else
+            const Padding(
+                padding: EdgeInsets.fromLTRB(20, 16, 20, 12),
+                child: Row(children: [
+                  Icon(Icons.assignment_ind_outlined,
+                      size: 18, color: AppColors.primary),
+                  SizedBox(width: 8),
+                  Expanded(
+                      child: Text('Continúa la atención de tus casos',
+                          style: TextStyle(
+                              color: AppColors.textSecondary, fontSize: 13))),
+                ])),
           Expanded(
-            child: _pestana == 0
-                ? _listaActivas(tareas, posicion)
-                : _listaHistorial(historial, posicion),
-          ),
-        ],
-      ),
-    );
+              child: _pestana == 0
+                  ? _listaActivas(tareas, posicion)
+                  : _listaHistorial(historial, posicion)),
+        ]));
   }
 
   Widget _listaActivas(
@@ -133,6 +173,7 @@ class _AsignacionesVoluntarioScreenState
         return RefreshIndicator(
           onRefresh: _refrescar,
           child: ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
             itemCount: lista.length,
             separatorBuilder: (_, __) => const SizedBox(height: 10),
@@ -169,7 +210,14 @@ class _AsignacionesVoluntarioScreenState
           ref.invalidate(historialTareasProvider);
         },
       ),
-      data: (lista) {
+      data: (todas) {
+        final lista = todas
+            .where((a) =>
+                _filtroHistorial == 0 ||
+                (_filtroHistorial == 1
+                    ? a.estado == 'finalizada'
+                    : a.estado == 'cancelada'))
+            .toList();
         if (lista.isEmpty) {
           return MensajeLista(
             icono: Icons.history,
@@ -181,6 +229,7 @@ class _AsignacionesVoluntarioScreenState
         return RefreshIndicator(
           onRefresh: _refrescar,
           child: ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
             itemCount: lista.length,
             separatorBuilder: (_, __) => const SizedBox(height: 10),
@@ -195,7 +244,8 @@ class _AsignacionesVoluntarioScreenState
                 etiqueta: atendida ? 'Atendida' : 'Cancelada',
                 etiquetaColor:
                     atendida ? AppColors.success : AppColors.textMuted,
-                pie: 'Cerrada ${textoHace(a.asignadoEn).toLowerCase()}',
+                pie:
+                    'Cerrada ${textoHace(a.cerradaEn ?? a.asignadoEn).toLowerCase()}',
                 onTap: () => _abrirDetalle(a),
               );
             },
@@ -247,7 +297,9 @@ class _AsignacionesVoluntarioScreenState
           ),
           const SizedBox(height: 4),
           Text(
-            'Asignada ${textoHace(a.asignadoEn).toLowerCase()}',
+            activa
+                ? 'Asignada ${textoHace(a.asignadoEn).toLowerCase()}'
+                : 'Cerrada ${textoHace(a.cerradaEn ?? a.asignadoEn).toLowerCase()}',
             style: AppTextStyles.caption,
           ),
           if (activa) ...[

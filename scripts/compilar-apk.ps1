@@ -11,7 +11,7 @@ try {
     }
     $r360Salud = Invoke-RestMethod -Uri ($r360Url.AbsoluteUri.TrimEnd('/') + '/health/ready') -TimeoutSec 20
     if ($r360Salud.status -ne 'ok') { throw 'El API no tiene conexion lista con PostgreSQL y Redis.' }
-    & flutter build apk --release "--dart-define-from-file=$Configuracion"
+    & flutter build apk --release --obfuscate --split-debug-info=build/symbols/android "--dart-define-from-file=$Configuracion"
     if ($LASTEXITCODE -ne 0) { throw 'Fallo la compilacion del APK.' }
     Write-Output 'APK: build/app/outputs/flutter-apk/app-release.apk'
 } finally {

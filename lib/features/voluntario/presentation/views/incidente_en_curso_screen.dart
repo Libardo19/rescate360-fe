@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../../../shared/widgets/galeria_fotos.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -162,6 +163,10 @@ class _IncidenteEnCursoScreenState
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           children: [
+            if (solicitud.evidenciaImagenes.isNotEmpty) ...[
+              GaleriaFotos(fotos: solicitud.evidenciaImagenes, alto: 230),
+              const SizedBox(height: 16),
+            ],
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(

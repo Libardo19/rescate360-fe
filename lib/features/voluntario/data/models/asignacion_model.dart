@@ -7,6 +7,7 @@ class AsignacionModel {
   final String? reporteId;
   final String estado; // activa | finalizada | cancelada
   final DateTime asignadoEn;
+  final DateTime? cerradaEn;
   final SolicitudAyudaModel? solicitud;
 
   const AsignacionModel({
@@ -15,6 +16,7 @@ class AsignacionModel {
     this.reporteId,
     required this.estado,
     required this.asignadoEn,
+    this.cerradaEn,
     this.solicitud,
   });
 
@@ -25,6 +27,9 @@ class AsignacionModel {
         reporteId: json['reporte_id'] as String?,
         estado: json['estado_asignacion'] as String,
         asignadoEn: DateTime.parse(json['asignado_en'] as String).toLocal(),
+        cerradaEn: json['cerrada_en'] == null
+            ? null
+            : DateTime.parse(json['cerrada_en'] as String).toLocal(),
       );
 
   AsignacionModel conSolicitud(SolicitudAyudaModel? s) => AsignacionModel(
@@ -33,6 +38,7 @@ class AsignacionModel {
         reporteId: reporteId,
         estado: estado,
         asignadoEn: asignadoEn,
+        cerradaEn: cerradaEn,
         solicitud: s,
       );
 }

@@ -16,6 +16,7 @@ class SolicitudAyudaModel {
   final String estado; // pendiente, en_proceso, atendida, cancelada
   final String prioridad; // la manual del admin si existe; si no, la de la IA
   final DateTime creadoEn;
+  final List<String> evidenciaImagenes;
 
   const SolicitudAyudaModel({
     required this.id,
@@ -30,6 +31,7 @@ class SolicitudAyudaModel {
     required this.estado,
     required this.prioridad,
     required this.creadoEn,
+    this.evidenciaImagenes = const [],
   });
 
   factory SolicitudAyudaModel.fromJson(Map<String, dynamic> json) {
@@ -64,6 +66,14 @@ class SolicitudAyudaModel {
       estado: json['estado'] as String,
       prioridad: (json['prioridad_manual'] ?? json['prioridad_ia']) as String,
       creadoEn: DateTime.parse(json['creado_en'] as String).toLocal(),
+      evidenciaImagenes: [
+        for (final evidencia in (json['evidencias'] as List? ?? const []))
+          if (evidencia is Map<String, dynamic> &&
+              (evidencia['tipo'] == 'foto' ||
+                  (evidencia['mime'] as String? ?? '').startsWith('image/')) &&
+              evidencia['url'] is String)
+            evidencia['url'] as String,
+      ],
     );
   }
 

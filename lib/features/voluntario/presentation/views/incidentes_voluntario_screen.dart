@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_text_styles.dart';
-import '../../../../shared/widgets/pestanas_segmentadas.dart';
+import '../widgets/encabezado_casos.dart';
 import '../../../solicitudes_ayuda/data/models/solicitud_ayuda_model.dart';
 import '../../data/models/asignacion_model.dart';
 import '../viewmodels/voluntario_local_viewmodel.dart';
@@ -43,6 +43,8 @@ class IncidentesVoluntarioScreen extends ConsumerStatefulWidget {
 class _IncidentesVoluntarioScreenState
     extends ConsumerState<IncidentesVoluntarioScreen> {
   int _pestana = 0;
+  String _consulta = '';
+  int _tipo = 0;
   _OrdenLista _orden = _OrdenLista.prioridad;
 
   Future<void> _refrescar() async {
@@ -144,53 +146,98 @@ class _IncidentesVoluntarioScreenState
     final activas = tareas.valueOrNull ?? const <AsignacionModel>[];
     final porSolicitud = <String, AsignacionModel>{
       for (final a in activas)
-        if (a.solicitudId != null) a.solicitudId!: a,
+        if (a.solicitudId != null)
+          a.solicitudId!: a
+        else if (a.reporteId != null)
+          a.reporteId!: a,
     };
 
-    return SafeArea(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 16, 20, 2),
-            child: Text('Incidentes cercanos', style: AppTextStyles.h1),
-          ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 0, 20, 14),
-            child: Text(
-              'Casos abiertos de tu organización',
-              style: AppTextStyles.bodySecondary,
+    final lista = casos.valueOrNull;
+    return ColoredBox(
+      color: const Color(0xFFF5F7FC),
+      child: Column(children: [
+        EncabezadoCasos(
+          titulo: 'Incidentes',
+          subtitulo: 'Tu ayuda empieza con un caso',
+          cifras: [
+            (
+              valor: lista?.where((s) => !ocultos.contains(s.id)).length,
+              etiqueta: 'Abiertos',
+              icono: Icons.layers_outlined
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: PestanasSegmentadas(
-                    etiquetas: const ['Todos', 'Cercanos', 'Asignados'],
-                    indice: _pestana,
-                    onCambiar: (i) => setState(() => _pestana = i),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton.filledTonal(
-                  onPressed: _elegirOrden,
-                  tooltip: 'Ordenar',
-                  icon: const Icon(Icons.tune, size: 20),
-                ),
-              ],
+            (
+              valor: lista
+                  ?.where((s) => s.esReporte && !ocultos.contains(s.id))
+                  .length,
+              etiqueta: 'Reportes',
+              icono: Icons.article_outlined
             ),
-          ),
-          const SizedBox(height: 12),
-          Expanded(
+            (
+              valor: tareas.valueOrNull?.length,
+              etiqueta: 'A tu cargo',
+              icono: Icons.assignment_ind_outlined
+            ),
+          ],
+          etiquetas: const ['Todos', 'Cercanos', 'Asignados'],
+          indice: _pestana,
+          onCambiar: (i) => setState(() => _pestana = i),
+        ),
+        Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+            child: TextField(
+              onChanged: (v) =>
+                  setState(() => _consulta = v.trim().toLowerCase()),
+              decoration: InputDecoration(
+                hintText: 'Buscar por incidente o ubicación',
+                prefixIcon: const Icon(Icons.search_rounded),
+                suffixIcon: IconButton(
+                    onPressed: _elegirOrden,
+                    tooltip: 'Ordenar casos',
+                    icon: const Icon(Icons.tune_rounded)),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none),
+              ),
+            )),
+        SizedBox(
+            height: 58,
+            child: ListView.separated(
+              physics: const AlwaysScrollableScrollPhysics(),
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              itemCount: 4,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (_, i) => ChoiceChip(
+                label: Text(const ['Todos', 'SOS', 'Reportes', 'Ayuda'][i]),
+                selected: _tipo == i,
+                onSelected: (_) => setState(() => _tipo = i),
+                selectedColor: AppColors.primary,
+                backgroundColor: Colors.white,
+                labelStyle: TextStyle(
+                    color: _tipo == i ? Colors.white : AppColors.textSecondary),
+                showCheckmark: false,
+              ),
+            )),
+        Expanded(
             child: _pestana == 2
                 ? _listaAsignados(tareas, posicion)
-                : _listaCasos(casos, ocultos, porSolicitud, posicion),
-          ),
-        ],
-      ),
+                : _listaCasos(casos, ocultos, porSolicitud, posicion)),
+      ]),
     );
+  }
+
+  bool _coincide(SolicitudAyudaModel s) {
+    final tipo = _tipo == 0 ||
+        (_tipo == 1 && s.esSos) ||
+        (_tipo == 2 && s.esReporte) ||
+        (_tipo == 3 && !s.esReporte && !s.esSos);
+    return tipo &&
+        (_consulta.isEmpty ||
+            '${s.titulo} ${s.descripcion} ${s.direccion ?? ''}'
+                .toLowerCase()
+                .contains(_consulta));
   }
 
   Widget _listaCasos(
@@ -211,9 +258,13 @@ class _IncidentesVoluntarioScreenState
       ),
       data: (lista) {
         var visibles = lista.where((s) {
-          if (ocultos.contains(s.id)) return false;
+          if (ocultos.contains(s.id) || !_coincide(s)) return false;
           // Un caso ya en proceso solo interesa si es mío.
-          return s.estado == 'pendiente' || porSolicitud.containsKey(s.id);
+          return s.esReporte
+              ? s.estado == 'pendiente' ||
+                  s.estado == 'verificado' ||
+                  porSolicitud.containsKey(s.id)
+              : s.estado == 'pendiente' || porSolicitud.containsKey(s.id);
         }).toList();
 
         if (_pestana == 1) {
@@ -241,6 +292,7 @@ class _IncidentesVoluntarioScreenState
         return RefreshIndicator(
           onRefresh: _refrescar,
           child: ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
             itemCount: ordenados.length,
             separatorBuilder: (_, __) => const SizedBox(height: 10),
@@ -286,7 +338,9 @@ class _IncidentesVoluntarioScreenState
         },
       ),
       data: (lista) {
-        final conSolicitud = lista.where((a) => a.solicitud != null).toList();
+        final conSolicitud = lista
+            .where((a) => a.solicitud != null && _coincide(a.solicitud!))
+            .toList();
         if (conSolicitud.isEmpty) {
           return MensajeLista(
             icono: Icons.assignment_outlined,
@@ -299,6 +353,7 @@ class _IncidentesVoluntarioScreenState
         return RefreshIndicator(
           onRefresh: _refrescar,
           child: ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
             itemCount: conSolicitud.length,
             separatorBuilder: (_, __) => const SizedBox(height: 10),
