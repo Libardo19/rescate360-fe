@@ -13,10 +13,13 @@ sin claves ni contraseñas. Desde la raíz del repo:
 .\scripts\compilar-apk.ps1
 ```
 
-El script comprueba HTTPS y `/health/ready` antes de compilar. Compartir el archivo
-`build/app/outputs/flutter-apk/app-release.apk`. Instalar esta compilación sobre
-la anterior y probar registro/login con una cuenta de prueba propia. Comprobar
-tanto Wi-Fi como datos móviles. No hace falta conectar el teléfono por USB.
+El script comprueba HTTPS y `/health/ready`, compila en release con ofuscación y
+genera un APK por arquitectura en `build/app/outputs/flutter-apk/app-*-release.apk`.
+Compartir el APK correspondiente al teléfono (`arm64-v8a` en la mayoría de los
+dispositivos recientes) o todos. Conservar `build/symbols`: permite leer stack
+traces de la app ofuscada; no subirlo al repo. `minifyEnabled` y `shrinkResources`
+ya están activos en `android/app/build.gradle.kts`. Instalar sobre la anterior y
+probar registro/login con una cuenta de prueba propia, en Wi-Fi y datos móviles.
 
 Para ejecutar desde Flutter con el mismo API:
 
@@ -28,27 +31,28 @@ Cambiar `.env` no modifica un APK ya instalado: la URL se incorpora al compilar.
 No compilar el APK compartido sin `--dart-define-from-file`; el valor por defecto
 de desarrollo es el emulador. Los builds release mantienen HTTPS obligatorio.
 
-## Alcance de la conexión temporal
+## API en Azure
 
-La URL de `config/demo.json` es un túnel de pruebas de Cloudflare hacia el PC de
-Libardo. Funciona desde cualquier red con acceso a Internet mientras permanezcan
-encendidos el PC, Docker, API, worker y cloudflared. No es un despliegue permanente.
-Si se reinicia el túnel cambia la URL: actualizar el JSON y volver a compilar e instalar.
+`config/demo.json` ya trae el FQDN de Azure desplegado
+(`https://rescate360-api.agreeabletree-830cccf5.westus2.azurecontainerapps.io`).
+Si se redepliega en otra suscripción, actualizar la URL con el FQDN que imprime
+`deploy.ps1` en el backend, volver a compilar e instalar. No hace falta tener el PC
+encendido: la API, PostgreSQL y Redis viven en Azure.
 
 Para revisar la conexión, abrir la URL de `API_BASE_URL` seguida de `/health/ready`
 desde el navegador del teléfono. Debe mostrar `status: ok`, PostGIS y Redis.
 
 ## Panel web y datos
 
-El panel usa el API real por defecto. Para apuntarlo al mismo entorno, crear
-`rescate360-web/.env.local` con:
+El panel usa el API real por defecto. Para apuntarlo al mismo entorno, definir las
+variables antes de compilar o de arrancar Vite:
 
-```dotenv
-VITE_API_URL=https://tackle-pac-momentum-redhead.trycloudflare.com
-VITE_USE_MOCK=false
+```powershell
+$env:VITE_API_URL = 'https://rescate360-api.<region>.azurecontainerapps.io'
+$env:VITE_USE_MOCK = 'false'
 ```
 
-Reiniciar Vite después del cambio. Los administradores deben ingresar con su cuenta
+No crear `rescate360-web/.env.local`: no está ignorado por Git. Los administradores deben ingresar con su cuenta
 de administrador; el registro móvil crea ciudadanos. Reportes y solicitudes se
 guardan en la misma base y se listan según el rol y la organización asignada.
 La IA clasifica de forma asíncrona: refrescar los listados unos segundos después.
