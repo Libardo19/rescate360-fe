@@ -20,13 +20,16 @@ const _tipoDe = tipoDePunto;
 /// Mapa en vivo (mockup 5): tu ubicación y lo que pasa alrededor (GET /mapa cada 15 s),
 /// con búsqueda y filtros. Mapa de OpenStreetMap con flutter_map (no requiere API key).
 class MapaEmergenciaScreen extends ConsumerStatefulWidget {
-  const MapaEmergenciaScreen({super.key});
+  const MapaEmergenciaScreen({super.key, this.onAbrirCaso});
+  final void Function(MarcadorMapaModel)? onAbrirCaso;
 
   @override
-  ConsumerState<MapaEmergenciaScreen> createState() => _MapaEmergenciaScreenState();
+  ConsumerState<MapaEmergenciaScreen> createState() =>
+      _MapaEmergenciaScreenState();
 }
 
-class _MapaEmergenciaScreenState extends ConsumerState<MapaEmergenciaScreen> with WidgetsBindingObserver {
+class _MapaEmergenciaScreenState extends ConsumerState<MapaEmergenciaScreen>
+    with WidgetsBindingObserver {
   final _busquedaCtrl = TextEditingController();
   final _mapa = MapController();
   FiltroMapa _filtro = FiltroMapa.todos;
@@ -38,12 +41,15 @@ class _MapaEmergenciaScreenState extends ConsumerState<MapaEmergenciaScreen> wit
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     // Si la vista previa del inicio ya lo arrancó, se reutiliza
-    Future.microtask(() => ref.read(mapaViewModelProvider.notifier).iniciarSiHaceFalta());
+    Future.microtask(
+        () => ref.read(mapaViewModelProvider.notifier).iniciarSiHaceFalta());
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState estado) {
-    ref.read(mapaViewModelProvider.notifier).pausar(estado != AppLifecycleState.resumed);
+    ref
+        .read(mapaViewModelProvider.notifier)
+        .pausar(estado != AppLifecycleState.resumed);
   }
 
   @override
@@ -72,7 +78,9 @@ class _MapaEmergenciaScreenState extends ConsumerState<MapaEmergenciaScreen> wit
         FiltroMapa.centros => tipo == TipoPunto.centro,
         FiltroMapa.sismos => tipo == TipoPunto.sismo,
       };
-      final pasaBusqueda = q.isEmpty || p.titulo.toLowerCase().contains(q) || p.detalle.toLowerCase().contains(q);
+      final pasaBusqueda = q.isEmpty ||
+          p.titulo.toLowerCase().contains(q) ||
+          p.detalle.toLowerCase().contains(q);
       return pasaFiltro && pasaBusqueda;
     }).toList();
   }
@@ -80,9 +88,14 @@ class _MapaEmergenciaScreenState extends ConsumerState<MapaEmergenciaScreen> wit
   String _distanciaA(MarcadorMapaModel p) {
     final posicion = ref.read(mapaViewModelProvider).posicion;
     if (posicion == null) return '';
-    final metros = Geolocator.distanceBetween(posicion.lat, posicion.lng, p.lat, p.lng);
-    final texto = metros < 1000 ? '${metros.round()} m' : '${(metros / 1000).toStringAsFixed(1)} km';
-    return p.aproximada ? 'A unos $texto de ti (ubicación aproximada)' : 'A $texto de ti';
+    final metros =
+        Geolocator.distanceBetween(posicion.lat, posicion.lng, p.lat, p.lng);
+    final texto = metros < 1000
+        ? '${metros.round()} m'
+        : '${(metros / 1000).toStringAsFixed(1)} km';
+    return p.aproximada
+        ? 'A unos $texto de ti (ubicación aproximada)'
+        : 'A $texto de ti';
   }
 
   /// Información completa del punto; los incidentes traen sus fotos del backend.
@@ -91,6 +104,11 @@ class _MapaEmergenciaScreenState extends ConsumerState<MapaEmergenciaScreen> wit
       context,
       punto: p,
       distancia: _distanciaA(p),
+      onAbrirCaso: widget.onAbrirCaso != null &&
+              p.propio &&
+              (p.capa == 'solicitud' || p.capa == 'reporte')
+          ? () => widget.onAbrirCaso!(p)
+          : null,
       onCentrar: () {
         if (_mapaListo) _mapa.move(LatLng(p.lat, p.lng), 17);
       },
@@ -157,7 +175,8 @@ class _MapaEmergenciaScreenState extends ConsumerState<MapaEmergenciaScreen> wit
     final estado = ref.watch(mapaViewModelProvider);
 
     if (estado.cargando) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return const Center(
+          child: CircularProgressIndicator(color: AppColors.primary));
     }
 
     if (estado.posicion == null) {
@@ -168,7 +187,8 @@ class _MapaEmergenciaScreenState extends ConsumerState<MapaEmergenciaScreen> wit
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.location_off_outlined, size: 48, color: AppColors.textMuted),
+                const Icon(Icons.location_off_outlined,
+                    size: 48, color: AppColors.textMuted),
                 const SizedBox(height: 14),
                 Text(
                   estado.error ?? 'No pudimos obtener tu ubicación.',
@@ -177,7 +197,8 @@ class _MapaEmergenciaScreenState extends ConsumerState<MapaEmergenciaScreen> wit
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: () => ref.read(mapaViewModelProvider.notifier).iniciar(),
+                  onPressed: () =>
+                      ref.read(mapaViewModelProvider.notifier).iniciar(),
                   child: const Text('Reintentar'),
                 ),
                 if (estado.permisoBloqueado) ...[
@@ -207,7 +228,9 @@ class _MapaEmergenciaScreenState extends ConsumerState<MapaEmergenciaScreen> wit
             onMapReady: () => _mapaListo = true,
           ),
           children: [
-            TileLayer(urlTemplate: Env.mapTileUrl, userAgentPackageName: 'co.rescate360.app'),
+            TileLayer(
+                urlTemplate: Env.mapTileUrl,
+                userAgentPackageName: 'co.rescate360.app'),
             // Zonas y alertas con radio real en metros
             CircleLayer(
               circles: [
@@ -236,7 +259,12 @@ class _MapaEmergenciaScreenState extends ConsumerState<MapaEmergenciaScreen> wit
                       color: AppColors.info,
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 3),
-                      boxShadow: const [BoxShadow(color: Color(0x553E7BFA), blurRadius: 10, spreadRadius: 4)],
+                      boxShadow: const [
+                        BoxShadow(
+                            color: Color(0x553E7BFA),
+                            blurRadius: 10,
+                            spreadRadius: 4)
+                      ],
                     ),
                   ),
                 ),
@@ -262,7 +290,10 @@ class _MapaEmergenciaScreenState extends ConsumerState<MapaEmergenciaScreen> wit
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: const [
-                    BoxShadow(color: Color(0x26000000), blurRadius: 8, offset: Offset(0, 2)),
+                    BoxShadow(
+                        color: Color(0x26000000),
+                        blurRadius: 8,
+                        offset: Offset(0, 2)),
                   ],
                 ),
                 child: TextField(
@@ -277,11 +308,13 @@ class _MapaEmergenciaScreenState extends ConsumerState<MapaEmergenciaScreen> wit
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,
-                    prefixIcon: const Icon(Icons.search, color: AppColors.textMuted, size: 22),
+                    prefixIcon: const Icon(Icons.search,
+                        color: AppColors.textMuted, size: 22),
                     suffixIcon: _consulta.isEmpty
                         ? null
                         : IconButton(
-                            icon: const Icon(Icons.close, color: AppColors.textMuted, size: 20),
+                            icon: const Icon(Icons.close,
+                                color: AppColors.textMuted, size: 20),
                             onPressed: () {
                               _busquedaCtrl.clear();
                               setState(() => _consulta = '');
@@ -405,7 +438,8 @@ class _ChipFiltro extends StatelessWidget {
             color: activo ? AppColors.primary : AppColors.surfaceBorder,
           ),
           boxShadow: const [
-            BoxShadow(color: Color(0x1F000000), blurRadius: 6, offset: Offset(0, 2)),
+            BoxShadow(
+                color: Color(0x1F000000), blurRadius: 6, offset: Offset(0, 2)),
           ],
         ),
         child: Row(

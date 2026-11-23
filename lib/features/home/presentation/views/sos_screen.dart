@@ -47,14 +47,20 @@ class _SosScreenState extends ConsumerState<SosScreen>
 
   Future<void> _activar() async {
     if (mounted) setState(() => _activado = true);
-    final resultado = await ref.read(solicitudesAyudaViewModelProvider).enviarSos();
+    final resultado =
+        await ref.read(solicitudesAyudaViewModelProvider).enviarSos();
     if (!mounted) return;
     if (resultado.error == ApiException.sinConexion.mensaje) {
       // Sin internet: se firma, se guarda y sale por Bluetooth hacia quien tenga red
-      final problema = await ref.read(sinConexionProvider.notifier).encolar('sos');
+      final problema =
+          await ref.read(sinConexionProvider.notifier).encolar('sos');
       if (!mounted) return;
       if (problema == null) {
-        _avisar('Sin internet: tu SOS se guardó y se está pasando por Bluetooth a teléfonos cercanos.');
+        final estado = ref.read(sinConexionProvider);
+        _avisar(estado.relevoActivo
+            ? 'Tu SOS quedó guardado. Revisa los teléfonos conectados en Modo sin conexión.'
+            : estado.aviso ??
+                'Tu SOS quedó guardado. Activa el relevo en Modo sin conexión.');
         return;
       }
     }
@@ -79,7 +85,8 @@ class _SosScreenState extends ConsumerState<SosScreen>
   Future<void> _cancelarAlerta() async {
     final id = _solicitudId;
     if (id != null) {
-      final resultado = await ref.read(solicitudesAyudaViewModelProvider).cancelar(id);
+      final resultado =
+          await ref.read(solicitudesAyudaViewModelProvider).cancelar(id);
       if (!mounted) return;
       if (resultado.error != null) return _avisar(resultado.error!);
     }
@@ -89,7 +96,8 @@ class _SosScreenState extends ConsumerState<SosScreen>
   }
 
   Future<void> _activarModoEmergencia() async {
-    final error = await ref.read(checkInProvider.notifier).activarModoEmergencia();
+    final error =
+        await ref.read(checkInProvider.notifier).activarModoEmergencia();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(error ??
@@ -224,7 +232,8 @@ class _SosScreenState extends ConsumerState<SosScreen>
                   style: TextButton.styleFrom(foregroundColor: Colors.white),
                   onPressed: _activarModoEmergencia,
                   icon: const Icon(Icons.timer_outlined),
-                  label: const Text('Modo emergencia: pregúntame si estoy bien'),
+                  label:
+                      const Text('Modo emergencia: pregúntame si estoy bien'),
                 ),
                 const SizedBox(height: 8),
                 const Padding(
@@ -239,8 +248,7 @@ class _SosScreenState extends ConsumerState<SosScreen>
                         child: Text(
                           'Tu ubicación será compartida con los organismos '
                           'de atención y voluntarios cercanos.',
-                          style:
-                              TextStyle(color: Colors.white70, fontSize: 12),
+                          style: TextStyle(color: Colors.white70, fontSize: 12),
                         ),
                       ),
                     ],

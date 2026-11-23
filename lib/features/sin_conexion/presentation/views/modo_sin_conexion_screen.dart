@@ -9,7 +9,8 @@ import '../viewmodels/sin_conexion_viewmodel.dart';
 class ModoSinConexionScreen extends ConsumerWidget {
   const ModoSinConexionScreen({super.key});
 
-  Future<void> _cambiarRelevo(BuildContext context, WidgetRef ref, bool activar) async {
+  Future<void> _cambiarRelevo(
+      BuildContext context, WidgetRef ref, bool activar) async {
     final vm = ref.read(sinConexionProvider.notifier);
     if (!activar) {
       await vm.desactivarRelevo();
@@ -17,7 +18,8 @@ class ModoSinConexionScreen extends ConsumerWidget {
     }
     final error = await vm.activarRelevo();
     if (error != null && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error)));
     }
   }
 
@@ -27,7 +29,9 @@ class ModoSinConexionScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Modo sin conexión', style: AppTextStyles.h2), centerTitle: false),
+      appBar: AppBar(
+          title: const Text('Modo sin conexión', style: AppTextStyles.h2),
+          centerTitle: false),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
@@ -44,7 +48,8 @@ class ModoSinConexionScreen extends ConsumerWidget {
               contentPadding: EdgeInsets.zero,
               value: estado.relevoActivo,
               activeThumbColor: AppColors.primary,
-              title: const Text('Ayudar a pasar mensajes por Bluetooth', style: AppTextStyles.body),
+              title: const Text('Ayudar a pasar mensajes por Bluetooth',
+                  style: AppTextStyles.body),
               subtitle: const Text(
                 'Mientras esté activo, el teléfono busca a otros cercanos. Gasta batería.',
                 style: AppTextStyles.caption,
@@ -52,12 +57,37 @@ class ModoSinConexionScreen extends ConsumerWidget {
               onChanged: (valor) => _cambiarRelevo(context, ref, valor),
             ),
             const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.surfaceBorder),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(estado.enlace.mensaje, style: AppTextStyles.body),
+                  const SizedBox(height: 10),
+                  Text('Teléfonos encontrados: ${estado.enlace.encontrados}',
+                      style: AppTextStyles.caption),
+                  Text('Teléfonos conectados: ${estado.enlace.conectados}',
+                      style: AppTextStyles.caption),
+                  Text(
+                      'Mensajes nuevos recibidos en esta sesión: ${estado.enlace.recibidos}',
+                      style: AppTextStyles.caption),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
             Row(
               children: [
-                const Icon(Icons.outbox_outlined, color: AppColors.textSecondary),
+                const Icon(Icons.outbox_outlined,
+                    color: AppColors.textSecondary),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text('Mensajes esperando internet: ${estado.enCola}', style: AppTextStyles.body),
+                  child: Text('Mensajes esperando internet: ${estado.enCola}',
+                      style: AppTextStyles.body),
                 ),
               ],
             ),
@@ -71,13 +101,22 @@ class ModoSinConexionScreen extends ConsumerWidget {
               icon: Icons.sync,
               outlined: true,
               onPressed: () async {
-                final resultado = await ref.read(sinConexionProvider.notifier).sincronizar();
+                final resultado =
+                    await ref.read(sinConexionProvider.notifier).sincronizar();
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(resultado)));
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(SnackBar(content: Text(resultado)));
                 }
               },
             ),
             const SizedBox(height: 20),
+            const Text(
+              'En ambos celulares enciende Bluetooth, Wi-Fi y ubicación/GPS. '
+              'El Wi-Fi puede quedar encendido sin conexión a internet. '
+              'Usa cuentas distintas y mantén el relevo activo en los dos.',
+              style: AppTextStyles.bodySecondary,
+            ),
+            const SizedBox(height: 12),
             const Text(
               'Prueba de concepto: funciona solo entre teléfonos Android, a unos 10-100 m por salto, y los '
               'teléfonos intermedios deben tener la app abierta con este modo activo.',

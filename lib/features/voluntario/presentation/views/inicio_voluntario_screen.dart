@@ -35,7 +35,12 @@ class InicioVoluntarioScreen extends ConsumerWidget {
     final casos = ref.watch(casosOrganizacionProvider);
     final tareas = ref.watch(misTareasProvider);
     final ocultos = ref.watch(casosOcultosProvider);
-    final disponibilidad = ref.watch(disponibilidadProvider);
+    final disponibilidadManual = ref.watch(disponibilidadProvider);
+    // La pantalla refleja la carga real aunque el voluntario vuelva al inicio.
+    final tieneCasoActivo = tareas.valueOrNull?.any((a) => a.estado == 'activa') ?? false;
+    final disponibilidad = tieneCasoActivo
+        ? EstadoDisponibilidad.ocupado
+        : disponibilidadManual;
     final nombre = ref.watch(authViewModelProvider).usuario?.primerNombre ?? '';
 
     final totalCasos = casos.whenData((lista) => lista.where((c) => !ocultos.contains(c.id)).length);

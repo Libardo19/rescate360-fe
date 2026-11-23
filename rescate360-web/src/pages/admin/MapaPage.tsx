@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { MapContainer, TileLayer, CircleMarker, Circle, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
-import { RefreshCw } from 'lucide-react'
+import { Globe2, LocateFixed, RefreshCw } from 'lucide-react'
 import { obtenerMapa } from '../../services/mapa.service'
 import { mensajeDeError } from '../../services/api'
+import VolarA from '../../components/VolarA'
+import { colorMagnitud, radioMagnitud } from '../../utils/sismos'
 import type { PuntoMapa, TipoPunto } from '../../types/mapa'
 
 const CENTRO_INICIAL: [number, number] = [10.4631, -73.2532]
@@ -16,7 +18,11 @@ const config: Record<TipoPunto, { etiqueta: string; color: string }> = {
   centro: { etiqueta: 'Centros de ayuda', color: '#2fa96b' },
   zona: { etiqueta: 'Zonas peligrosas', color: '#f5a524' },
   alerta: { etiqueta: 'Alertas', color: '#9333ea' },
+  sismo: { etiqueta: 'Sismos', color: '#ea580c' },
 }
+
+// Vista mundial (para ver los sismos de todo el mundo) y vista local
+const VISTAS = { mundo: { lat: 15, lng: -40, zoom: 2 }, local: { lat: CENTRO_INICIAL[0], lng: CENTRO_INICIAL[1], zoom: 13 } }
 
 const tipos = Object.keys(config) as TipoPunto[]
 
@@ -34,7 +40,9 @@ export default function MapaPage() {
     centro: true,
     zona: true,
     alerta: true,
+    sismo: true,
   })
+  const [vista, setVista] = useState<keyof typeof VISTAS | null>(null)
 
   useEffect(() => {
     let vivo = true
@@ -72,7 +80,7 @@ export default function MapaPage() {
   const lista = useMemo(() => [...(puntos?.values() ?? [])], [puntos])
 
   const cantidades = useMemo(() => {
-    const total: Record<TipoPunto, number> = { reporte: 0, solicitud: 0, centro: 0, zona: 0, alerta: 0 }
+    const total: Record<TipoPunto, number> = { reporte: 0, solicitud: 0, centro: 0, zona: 0, alerta: 0, sismo: 0 }
     lista.forEach((p) => {
       total[p.capa] += 1
     })
@@ -92,7 +100,7 @@ export default function MapaPage() {
           </p>
           <h1 className="mt-3 break-words text-[34px] font-semibold leading-[1] tracking-[-0.045em] sm:text-[52px] sm:tracking-[-0.05em]">Mapa operativo</h1>
           <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-panel-text-soft">
-            Reportes, solicitudes y centros de ayuda en vivo. Pulsa un punto para ver sus datos.
+            Reportes, solicitudes, centros de ayuda y sismos de todo el mundo en vivo. Pulsa un punto para ver sus datos.
           </p>
         </div>
         <p className="flex items-center gap-1 text-xs text-panel-text-muted" role="status">
@@ -120,6 +128,19 @@ export default function MapaPage() {
             {config[tipo].etiqueta} ({cantidades[tipo]})
           </button>
         ))}
+        <span className="mx-1 hidden w-px bg-panel-border sm:block" />
+        <button
+          onClick={() => setVista('mundo')}
+          className="flex items-center gap-2 rounded-full border border-panel-border bg-panel-card px-4 py-2 text-sm transition hover:border-panel-primary"
+        >
+          <Globe2 size={15} /> Vista mundial
+        </button>
+        <button
+          onClick={() => setVista('local')}
+          className="flex items-center gap-2 rounded-full border border-panel-border bg-panel-card px-4 py-2 text-sm transition hover:border-panel-primary"
+        >
+          <LocateFixed size={15} /> Volver a la zona
+        </button>
       </div>
 
       <div className="relative z-0 mt-4 overflow-hidden rounded-2xl border border-panel-border">
@@ -128,6 +149,7 @@ export default function MapaPage() {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
+          {vista && <VolarA key={vista} {...VISTAS[vista]} />}
           {lista
             .filter((p) => visibles[p.capa])
             .map((p) => {
@@ -143,6 +165,26 @@ export default function MapaPage() {
                   {p.aproximada && <p className="text-xs italic">Ubicación aproximada (otra organización)</p>}
                 </Popup>
               )
+              // Sismo: punto del tamaño y color de su magnitud; los de Colombia, además, su radio de afectación
+              if (p.capa === 'sismo') {
+                const m = p.magnitud ?? 0
+                const color = colorMagnitud(m)
+                return (
+                  <Fragment key={p.id}>
+                    {p.radio_m && <Circle center={[p.lat, p.lng]} radius={p.radio_m} pathOptions={{ color, weight: 1, fillColor: color, fillOpacity: 0.12 }} />}
+                    <CircleMarker center={[p.lat, p.lng]} radius={radioMagnitud(m)} pathOptions={{ color: '#ffffff', weight: 1.5, fillColor: color, fillOpacity: 0.85 }}>
+                      <Popup>
+                        <p className="font-bold">{p.titulo}</p>
+                        <p>{p.detalle}</p>
+                        <p className="mt-1 text-xs">
+                          {p.estado === 'colombia' ? 'En Colombia' : 'Fuera de Colombia (informativo)'} ·{' '}
+                          {new Date(p.actualizado_en).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}
+                        </p>
+                      </Popup>
+                    </CircleMarker>
+                  </Fragment>
+                )
+              }
               // Zonas y alertas se dibujan como círculo de radio real
               return p.radio_m ? (
                 <Circle key={p.id} center={[p.lat, p.lng]} radius={p.radio_m} pathOptions={{ ...estilo, color: config[p.capa].color, fillOpacity: 0.2 }}>

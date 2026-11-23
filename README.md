@@ -46,6 +46,7 @@ flutter run --dart-define-from-file=.env
 - `.env` se lee en `lib/core/config/env.dart` (`API_BASE_URL`, `MAP_TILE_URL`, `EMERGENCY_LINE`). No guardar secretos ahí: todo lo que va en la app se puede extraer del APK.
 - **API local:** con el backend arriba (`docker compose up -d`), el emulador Android llega a tu PC por `http://10.0.2.2:8000`. En un celular físico usa la IP de tu PC en la red (ej. `http://192.168.1.10:8000`).
 - `http://` sin HTTPS solo está permitido en el build **debug** (`android/app/src/debug/AndroidManifest.xml`).
+- En Android, el build release desactiva HTTP claro, backups automáticos y activa R8; `scripts/compilar-apk.ps1` también ofusca Dart. La configuración local todavía firma con la llave debug: no distribuyas ese APK como release de producción.
 - **Permisos ya declarados:** Internet, ubicación (Android y iOS), cámara y galería (iOS), y abrir el marcador para llamar al 123.
 
 ### Mapa: `flutter_map` + OpenStreetMap
@@ -138,6 +139,8 @@ Navegación inferior: **Inicio · Mapa · Reportes · Más**.
 2. `sync_worker` reintenta en segundo plano y envía el lote a `POST /offline/sync`.
 3. Sin datos móviles: SMS directo (Android) o composer asistido (iOS).
 4. Sin señal: intercambio con dispositivos cercanos (`nearby_mesh`). Es una **prueba de concepto**, no una red mesh completa.
+
+La cola offline usa Android Keystore/iOS Keychain y migra datos de instalaciones anteriores desde `SharedPreferences`. La auditoría, los riesgos pendientes y el guion de demostración están en [`docs/SEGURIDAD_MOVIL.md`](docs/SEGURIDAD_MOVIL.md).
 
 ## Requisitos legales que afectan a la app
 

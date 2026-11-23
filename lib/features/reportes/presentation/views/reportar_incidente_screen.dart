@@ -219,7 +219,8 @@ class _ReportarIncidenteScreenState
       archivos: [for (final a in _adjuntos) a.archivo],
     );
     if (!mounted) return;
-    if (error == ApiException.sinConexion.mensaje) return _guardarSinConexion(tipo);
+    if (error == ApiException.sinConexion.mensaje)
+      return _guardarSinConexion(tipo);
     setState(() => _enviando = false);
     if (error != null) return _avisar(error);
     _avisar('Reporte enviado. Míralo en la pestaña Reportes.');
@@ -244,9 +245,11 @@ class _ReportarIncidenteScreenState
     if (!mounted) return;
     setState(() => _enviando = false);
     if (problema != null) return _avisar(problema);
-    _avisar(_adjuntos.isEmpty
-        ? 'Sin internet: tu reporte se guardó y se está pasando por Bluetooth a teléfonos cercanos.'
-        : 'Sin internet: tu reporte se guardó sin las fotos y se está pasando por Bluetooth a teléfonos cercanos.');
+    final estado = ref.read(sinConexionProvider);
+    _avisar(estado.relevoActivo
+        ? 'Tu reporte quedó guardado sin fotos. Revisa el enlace en Modo sin conexión.'
+        : estado.aviso ??
+            'Tu reporte quedó guardado sin fotos. Activa el relevo en Modo sin conexión.');
     Navigator.of(context).pop();
   }
 
